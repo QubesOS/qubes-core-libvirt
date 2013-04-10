@@ -335,10 +335,9 @@
 %define with_systemd_macros 0
 %endif
 
-
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 0.10.2.3
+Version: 1.0.4
 Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
@@ -349,18 +348,6 @@ URL: http://libvirt.org/
 %define mainturl stable_updates/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
-# Fix qemu -> qemu-system-i386 (RHBZ#857026).
-# keep: This patch is Fedora-specific and not upstream.
-Patch1: 0001-Use-qemu-system-i386-as-binary-instead-of-qemu.patch
-# Cleanly save session VMs on logout/shutdown (bz 872254)
-# keep: Fixed upstream, but using patches not suitable for stable
-Patch2: libvirt-dbus.patch
-# Cleanly save session VMs on logout/shutdown (bz 872254)
-# keep: Fixed upstream, but using patches not suitable for stable
-Patch3: libvirt-save-with-session.patch
-# Fix selinux denials when launching non-kvm qemu guests (bz 885837)
-# keep: missed stable release
-Patch4: 0002-Support-custom-svirt_tcg_t-context-for-TCG-based-gue.patch
 
 
 %if %{with_libvirtd}
@@ -1079,10 +1066,6 @@ of recent versions of Linux (and other OSes).
 
 %prep
 %setup -q
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
 
 %build
 %if ! %{with_xen}
@@ -1648,11 +1631,14 @@ fi
 
 %if %{with_systemd}
 %{_unitdir}/libvirtd.service
+%{_unitdir}/virtlockd.service
+%{_unitdir}/virtlockd.socket
 %else
 %{_sysconfdir}/rc.d/init.d/libvirtd
 %endif
 %doc daemon/libvirtd.upstart
 %config(noreplace) %{_sysconfdir}/sysconfig/libvirtd
+%config(noreplace) %{_sysconfdir}/sysconfig/virtlockd
 %config(noreplace) %{_sysconfdir}/libvirt/libvirtd.conf
 %if 0%{?fedora} >= 14 || 0%{?rhel} >= 6
 %config(noreplace) %{_prefix}/lib/sysctl.d/libvirtd.conf
@@ -1667,6 +1653,7 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd
 %if %{with_qemu}
 %config(noreplace) %{_sysconfdir}/libvirt/qemu.conf
+%config(noreplace) %{_sysconfdir}/libvirt/qemu-lockd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
 %endif
 %if %{with_lxc}
@@ -1681,7 +1668,7 @@ fi
 
 %if %{with_network}
 %dir %{_datadir}/libvirt/networks/
-%{_datadir}/libvirt/networks/default.xml
+%config(noreplace) %{_datadir}/libvirt/networks/default.xml
 %endif
 
 %ghost %dir %{_localstatedir}/run/libvirt/
@@ -1716,7 +1703,9 @@ fi
 
 %if %{with_qemu}
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
+%{_datadir}/augeas/lenses/libvirt_lockd.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
+%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
 %endif
 
 %if %{with_lxc}
@@ -1737,6 +1726,8 @@ fi
 
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/
 
+%attr(0755, root, root) %{_libdir}/%{name}/lock-driver/lockd.so
+
 %if %{with_lxc}
 %attr(0755, root, root) %{_libexecdir}/libvirt_lxc
 %endif
@@ -1747,6 +1738,7 @@ fi
 
 %attr(0755, root, root) %{_libexecdir}/libvirt_iohelper
 %attr(0755, root, root) %{_sbindir}/libvirtd
+%attr(0755, root, root) %{_sbindir}/virtlockd
 
 %{_mandir}/man8/libvirtd.8*
 
@@ -1860,6 +1852,7 @@ fi
 %config(noreplace) %{_sysconfdir}/libvirt/qemu-sanlock.conf
 %endif
 %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
+%attr(0755, root, root) %{_libexecdir}/libvirt_sanlock_helper
 %{_datadir}/augeas/lenses/libvirt_sanlock.aug
 %{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
 %dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/sanlock
@@ -1932,6 +1925,7 @@ fi
 %dir %{_datadir}/libvirt/api/
 %{_datadir}/libvirt/api/libvirt-api.xml
 %{_datadir}/libvirt/api/libvirt-qemu-api.xml
+%{_datadir}/libvirt/api/libvirt-lxc-api.xml
 
 %doc docs/*.html docs/html docs/*.gif
 %doc docs/libvirt-api.xml
@@ -1950,6 +1944,7 @@ fi
 %doc AUTHORS NEWS README COPYING.LIB
 %{_libdir}/python*/site-packages/libvirt.py*
 %{_libdir}/python*/site-packages/libvirt_qemu.py*
+%{_libdir}/python*/site-packages/libvirt_lxc.py*
 %{_libdir}/python*/site-packages/libvirtmod*
 %doc python/tests/*.py
 %doc python/TODO

@@ -1,0 +1,867 @@
+From 589e5b6276345d67a7f33619d6c71180e875d8f4 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Wed, 3 Apr 2013 17:13:46 +0200
+Subject: [PATCH 03/17] libxl: nodeDevice* support for PCI devices
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+For now only for PCI devices. Mostly copy-paste from old xen driver.
+
+Changes since v1:
+ - rebase on 1.0.5
+ - keep activePciHostdevs and inactivePciHostdevs lists to track device
+   usage. Based on qemu driver code.
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ po/POTFILES.in            |   1 +
+ src/Makefile.am           |   1 +
+ src/libxl/libxl_conf.h    |   7 +
+ src/libxl/libxl_driver.c  | 203 +++++++++++++++++++++
+ src/libxl/libxl_hostdev.c | 452 ++++++++++++++++++++++++++++++++++++++++++++++
+ src/libxl/libxl_hostdev.h |  55 ++++++
+ 6 files changed, 719 insertions(+)
+ create mode 100644 src/libxl/libxl_hostdev.c
+ create mode 100644 src/libxl/libxl_hostdev.h
+
+diff --git a/po/POTFILES.in b/po/POTFILES.in
+index bf5a864..0e9e0aa 100644
+--- a/po/POTFILES.in
++++ b/po/POTFILES.in
+@@ -66,6 +66,7 @@ src/lxc/lxc_driver.c
+ src/lxc/lxc_process.c
+ src/libxl/libxl_driver.c
+ src/libxl/libxl_conf.c
++src/libxl/libxl_hostdev.c
+ src/network/bridge_driver.c
+ src/node_device/node_device_driver.c
+ src/node_device/node_device_hal.c
+diff --git a/src/Makefile.am b/src/Makefile.am
+index cd098db..78277bc 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -626,6 +626,7 @@ XENAPI_DRIVER_SOURCES =						\
+ 
+ LIBXL_DRIVER_SOURCES =						\
+ 		libxl/libxl_conf.c libxl/libxl_conf.h		\
++		libxl/libxl_hostdev.c libxl/libxl_hostdev.h	\
+ 		libxl/libxl_driver.c libxl/libxl_driver.h
+ 
+ UML_DRIVER_SOURCES =						\
+diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
+index 4247930..4e7813e 100644
+--- a/src/libxl/libxl_conf.h
++++ b/src/libxl/libxl_conf.h
+@@ -36,6 +36,7 @@
+ # include "configmake.h"
+ # include "virportallocator.h"
+ # include "virobject.h"
++# include "virpci.h"
+ 
+ 
+ # define LIBXL_VNC_PORT_MIN  5900
+@@ -70,6 +71,12 @@ struct _libxlDriverPrivate {
+ 
+     virDomainObjListPtr domains;
+ 
++    /* Immutable pointers. Requires locks to be held before
++     * calling APIs. activePciHostdevs must be locked before
++     * inactivePciHostdevs */
++    virPCIDeviceListPtr activePciHostdevs;
++    virPCIDeviceListPtr inactivePciHostdevs;
++
+     virDomainEventStatePtr domainEventState;
+ 
+     char *configDir;
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 212d0fc..a67cea3 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -41,6 +41,8 @@
+ #include "vircommand.h"
+ #include "libxl_driver.h"
+ #include "libxl_conf.h"
++#include "libxl_hostdev.h"
++#include "node_device_conf.h"
+ #include "xen_xm.h"
+ #include "virtypedparam.h"
+ #include "viruri.h"
+@@ -632,6 +634,8 @@ libxlVmCleanup(libxlDriverPrivatePtr driver,
+         virDomainObjSetState(vm, VIR_DOMAIN_SHUTOFF, reason);
+     }
+ 
++    libxlDomainReAttachHostDevices(driver, vm->def);
++
+     driver->nactive--;
+     if (!driver->nactive && driver->inhibitCallback)
+         driver->inhibitCallback(false, driver->inhibitOpaque);
+@@ -948,6 +952,9 @@ libxlVmStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+     if (libxlBuildDomainConfig(driver, vm->def, &d_config) < 0)
+         goto error;
+ 
++    if (libxlDomainPrepareHostDevices(driver, vm->def, restore_fd < 0) < 0)
++        goto error;
++
+     if (libxlFreeMem(priv, &d_config) < 0) {
+         virReportError(VIR_ERR_INTERNAL_ERROR,
+                        _("libxenlight failed to get free memory for domain '%s'"),
+@@ -1076,6 +1083,10 @@ libxlReconnectDomain(virDomainObjPtr vm,
+         driver->inhibitCallback(true, driver->inhibitOpaque);
+     driver->nactive++;
+ 
++    if (libxlUpdateActivePciHostdevs(driver, vm->def) < 0) {
++        goto out;
++    }
++
+     /* Recreate domain death et. al. events */
+     libxlCreateDomEvents(vm);
+     virObjectUnlock(vm);
+@@ -1107,6 +1118,8 @@ libxlStateCleanup(void)
+     virObjectUnref(libxl_driver->caps);
+     virObjectUnref(libxl_driver->xmlopt);
+     virObjectUnref(libxl_driver->domains);
++    virObjectUnref(libxl_driver->activePciHostdevs);
++    virObjectUnref(libxl_driver->inactivePciHostdevs);
+     libxl_ctx_free(libxl_driver->ctx);
+     xtl_logger_destroy(libxl_driver->logger);
+     if (libxl_driver->logger_file)
+@@ -1269,6 +1282,15 @@ libxlStateInitialize(bool privileged,
+                                                        NULL)))
+         goto error;
+ 
++    if ((libxl_driver->activePciHostdevs = virPCIDeviceListNew()) == NULL)
++        goto error;
++
++    if ((libxl_driver->inactivePciHostdevs = virPCIDeviceListNew()) == NULL)
++        goto error;
++
++    if (libxlUpdateInactivePciHostdevs(libxl_driver) < 0)
++        goto error;
++
+     /* Load running domains first. */
+     if (virDomainObjListLoadAllConfigs(libxl_driver->domains,
+                                        libxl_driver->stateDir,
+@@ -1299,6 +1321,8 @@ libxlStateInitialize(bool privileged,
+     virDomainObjListForEach(libxl_driver->domains, libxlDomainManagedSaveLoad,
+                             libxl_driver);
+ 
++    libxlUpdateInactivePciHostdevs(libxl_driver);
++
+     libxlDriverUnlock(libxl_driver);
+ 
+     return 0;
+@@ -3695,6 +3719,181 @@ libxlDomainUpdateDeviceFlags(virDomainPtr dom, const char *xml,
+     return libxlDomainModifyDeviceFlags(dom, xml, flags, LIBXL_DEVICE_UPDATE);
+ }
+ 
++static int
++libxlNodeDeviceGetPciInfo(virNodeDevicePtr dev,
++                               unsigned *domain,
++                               unsigned *bus,
++                               unsigned *slot,
++                               unsigned *function)
++{
++    virNodeDeviceDefPtr def = NULL;
++    virNodeDevCapsDefPtr cap;
++    char *xml = NULL;
++    int ret = -1;
++
++    xml = virNodeDeviceGetXMLDesc(dev, 0);
++    if (!xml)
++        goto out;
++
++    def = virNodeDeviceDefParseString(xml, EXISTING_DEVICE, NULL);
++    if (!def)
++        goto out;
++
++    cap = def->caps;
++    while (cap) {
++        if (cap->type == VIR_NODE_DEV_CAP_PCI_DEV) {
++            *domain   = cap->data.pci_dev.domain;
++            *bus      = cap->data.pci_dev.bus;
++            *slot     = cap->data.pci_dev.slot;
++            *function = cap->data.pci_dev.function;
++            break;
++        }
++
++        cap = cap->next;
++    }
++
++    if (!cap) {
++        virReportError(VIR_ERR_INVALID_ARG,
++                       _("device %s is not a PCI device"), dev->name);
++        goto out;
++    }
++
++    ret = 0;
++out:
++    virNodeDeviceDefFree(def);
++    VIR_FREE(xml);
++    return ret;
++}
++
++static int
++libxlNodeDeviceDetachFlags(virNodeDevicePtr dev,
++        const char *driverName,
++        unsigned int flags)
++{
++    libxlDriverPrivatePtr driver = dev->conn->privateData;
++    virPCIDevicePtr pci;
++    unsigned domain, bus, slot, function;
++    int ret = -1;
++    bool in_inactive_list = false;
++
++    virCheckFlags(0, -1);
++
++    if (libxlNodeDeviceGetPciInfo(dev, &domain, &bus, &slot, &function) < 0)
++        return -1;
++
++    pci = virPCIDeviceNew(domain, bus, slot, function);
++    if (!pci)
++        return -1;
++
++    if (!driverName || STREQ(driverName, "pciback") ||
++            STREQ(driverName, "xen-pciback")) {
++        virPCIDeviceSetStubDriver(pci, "pciback");
++    } else {
++        virReportError(VIR_ERR_INVALID_ARG,
++                _("unknown driver name '%s'"), driverName);
++        goto out;
++    }
++
++    virObjectLock(driver->activePciHostdevs);
++    virObjectLock(driver->inactivePciHostdevs);
++
++    if (virPCIDeviceDetach(pci, driver->activePciHostdevs,
++                driver->inactivePciHostdevs, NULL) < 0)
++        goto out;
++
++    ret = 0;
++out:
++    virObjectUnlock(driver->inactivePciHostdevs);
++    virObjectUnlock(driver->activePciHostdevs);
++    if (in_inactive_list)
++        virPCIDeviceFree(pci);
++    return ret;
++}
++
++static int
++libxlNodeDeviceDettach(virNodeDevicePtr dev)
++{
++    return libxlNodeDeviceDetachFlags(dev, NULL, 0);
++}
++
++static int
++libxlNodeDeviceReAttach(virNodeDevicePtr dev)
++{
++    libxlDriverPrivatePtr driver = dev->conn->privateData;
++    virPCIDevicePtr pci;
++    virPCIDevicePtr other;
++    unsigned domain, bus, slot, function;
++    int ret = -1;
++
++    if (libxlNodeDeviceGetPciInfo(dev, &domain, &bus, &slot, &function) < 0)
++        return -1;
++
++    pci = virPCIDeviceNew(domain, bus, slot, function);
++    if (!pci)
++        return -1;
++
++    virObjectLock(driver->activePciHostdevs);
++    virObjectLock(driver->inactivePciHostdevs);
++    other = virPCIDeviceListFind(driver->activePciHostdevs, pci);
++    if (other) {
++        const char *other_name = virPCIDeviceGetUsedBy(other);
++
++        if (other_name)
++            virReportError(VIR_ERR_OPERATION_INVALID,
++                    _("PCI device %s is still in use by domain %s"),
++                    virPCIDeviceGetName(pci), other_name);
++        else
++            virReportError(VIR_ERR_OPERATION_INVALID,
++                    _("PCI device %s is still in use"),
++                    virPCIDeviceGetName(pci));
++        goto out;
++    }
++
++    virPCIDeviceReattachInit(pci);
++
++    if (virPCIDeviceReattach(pci, driver->activePciHostdevs,
++                driver->inactivePciHostdevs) < 0)
++        goto out;
++
++    ret = 0;
++out:
++    virObjectUnlock(driver->inactivePciHostdevs);
++    virObjectUnlock(driver->activePciHostdevs);
++    virPCIDeviceFree(pci);
++    return ret;
++}
++
++static int
++libxlNodeDeviceReset(virNodeDevicePtr dev)
++{
++    libxlDriverPrivatePtr driver = dev->conn->privateData;
++    virPCIDevicePtr pci;
++    unsigned domain, bus, slot, function;
++    int ret = -1;
++
++    if (libxlNodeDeviceGetPciInfo(dev, &domain, &bus, &slot, &function) < 0)
++        return -1;
++
++    pci = virPCIDeviceNew(domain, bus, slot, function);
++    if (!pci)
++        return -1;
++
++    virObjectLock(driver->activePciHostdevs);
++    virObjectLock(driver->inactivePciHostdevs);
++
++    if (virPCIDeviceReset(pci, driver->activePciHostdevs,
++                driver->inactivePciHostdevs) < 0)
++        goto out;
++
++    ret = 0;
++out:
++    virObjectUnlock(driver->inactivePciHostdevs);
++    virObjectUnlock(driver->activePciHostdevs);
++    virPCIDeviceFree(pci);
++    return ret;
++}
++
++
+ static unsigned long long
+ libxlNodeGetFreeMemory(virConnectPtr conn)
+ {
+@@ -4262,6 +4461,10 @@ static virDriver libxlDriver = {
+     .nodeGetFreeMemory = libxlNodeGetFreeMemory, /* 0.9.0 */
+     .connectDomainEventRegister = libxlConnectDomainEventRegister, /* 0.9.0 */
+     .connectDomainEventDeregister = libxlConnectDomainEventDeregister, /* 0.9.0 */
++    .nodeDeviceDettach = libxlNodeDeviceDettach, /* 1.0.6 */
++    .nodeDeviceDetachFlags = libxlNodeDeviceDetachFlags, /* 1.0.6 */
++    .nodeDeviceReAttach = libxlNodeDeviceReAttach, /* 1.0.6 */
++    .nodeDeviceReset = libxlNodeDeviceReset, /* 1.0.6 */
+     .domainManagedSave = libxlDomainManagedSave, /* 0.9.2 */
+     .domainHasManagedSaveImage = libxlDomainHasManagedSaveImage, /* 0.9.2 */
+     .domainManagedSaveRemove = libxlDomainManagedSaveRemove, /* 0.9.2 */
+diff --git a/src/libxl/libxl_hostdev.c b/src/libxl/libxl_hostdev.c
+new file mode 100644
+index 0000000..77085d7
+--- /dev/null
++++ b/src/libxl/libxl_hostdev.c
+@@ -0,0 +1,452 @@
++/*---------------------------------------------------------------------------*/
++/* Copyright (C) 2013 Invisible Things Lab
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library.  If not, see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Authors:
++ *     Marek Marczykowski <marmarek@invisiblethingslab.com>
++ */
++/*---------------------------------------------------------------------------*/
++
++#include <config.h>
++
++#include "virlog.h"
++#include "virerror.h"
++#include "viralloc.h"
++#include "libxl_driver.h"
++#include "libxl_conf.h"
++#include "libxl_utils.h"
++#include "libxl_hostdev.h"
++
++#define VIR_FROM_THIS VIR_FROM_LIBXL
++
++/*
++ * Pre-condition: driver->activePciHostdevs is locked
++ */
++static virPCIDeviceListPtr
++libxlGetPciHostDeviceList(libxlDriverPrivatePtr driver,
++        virDomainHostdevDefPtr *hostdevs, int nhostdevs, bool activeonly)
++{
++    virPCIDeviceListPtr list;
++    int i;
++
++    if (!(list = virPCIDeviceListNew()))
++        return NULL;
++
++    for (i = 0 ; i < nhostdevs ; i++) {
++        virDomainHostdevDefPtr hostdev = hostdevs[i];
++        virPCIDevicePtr dev;
++        virPCIDevicePtr activeDev;
++
++        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
++            continue;
++        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI)
++            continue;
++
++        dev = virPCIDeviceNew(hostdev->source.subsys.u.pci.addr.domain,
++                              hostdev->source.subsys.u.pci.addr.bus,
++                              hostdev->source.subsys.u.pci.addr.slot,
++                              hostdev->source.subsys.u.pci.addr.function);
++        if (!dev) {
++            virObjectUnref(list);
++            return NULL;
++        }
++
++        if (activeonly) {
++            if ((activeDev = virPCIDeviceListFind(driver->activePciHostdevs, dev))) {
++                if (virPCIDeviceListAdd(list, activeDev) < 0) {
++                    virPCIDeviceFree(dev);
++                    virObjectUnref(list);
++                    return NULL;
++                }
++            }
++        } else {
++            if (virPCIDeviceListAdd(list, dev) < 0) {
++                virPCIDeviceFree(dev);
++                virObjectUnref(list);
++                return NULL;
++            }
++
++            virPCIDeviceSetManaged(dev, hostdev->managed);
++            virPCIDeviceSetStubDriver(dev, "pciback");
++        }
++    }
++
++    return list;
++}
++
++int libxlUpdateActivePciHostdevs(libxlDriverPrivatePtr driver,
++                                virDomainDefPtr def)
++{
++    virDomainHostdevDefPtr hostdev = NULL;
++    int i;
++    int ret = -1;
++
++    if (!def->nhostdevs)
++        return 0;
++
++    virObjectLock(driver->activePciHostdevs);
++    virObjectLock(driver->inactivePciHostdevs);
++
++    for (i = 0; i < def->nhostdevs; i++) {
++        virPCIDevicePtr dev = NULL;
++        hostdev = def->hostdevs[i];
++
++        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
++            continue;
++        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI)
++            continue;
++
++        dev = virPCIDeviceNew(hostdev->source.subsys.u.pci.addr.domain,
++                              hostdev->source.subsys.u.pci.addr.bus,
++                              hostdev->source.subsys.u.pci.addr.slot,
++                              hostdev->source.subsys.u.pci.addr.function);
++
++        if (!dev)
++            goto cleanup;
++
++        virPCIDeviceSetManaged(dev, hostdev->managed);
++        virPCIDeviceSetStubDriver(dev, "pciback");
++        virPCIDeviceSetUsedBy(dev, def->name);
++
++        /* Setup the original states for the PCI device */
++        virPCIDeviceSetUnbindFromStub(dev, hostdev->origstates.states.pci.unbind_from_stub);
++        virPCIDeviceSetRemoveSlot(dev, hostdev->origstates.states.pci.remove_slot);
++        virPCIDeviceSetReprobe(dev, hostdev->origstates.states.pci.reprobe);
++
++        if (virPCIDeviceListAdd(driver->activePciHostdevs, dev) < 0) {
++            virPCIDeviceFree(dev);
++            goto cleanup;
++        }
++    }
++
++cleanup:
++    virObjectUnlock(driver->activePciHostdevs);
++    virObjectUnlock(driver->inactivePciHostdevs);
++    return ret;
++}
++
++
++int libxlUpdateInactivePciHostdevs(libxlDriverPrivatePtr driver)
++{
++    libxl_device_pci *pcidevs;
++    int num, i;
++    int ret = -1;
++
++    pcidevs = libxl_device_pci_assignable_list(driver->ctx, &num);
++    for (i = 0; i < num; i++) {
++        virPCIDevicePtr dev = NULL;
++
++        dev = virPCIDeviceNew(pcidevs[i].domain,
++                              pcidevs[i].bus, pcidevs[i].dev, pcidevs[i].func);
++
++        if (!dev)
++            goto cleanup;
++
++        virPCIDeviceSetStubDriver(dev, "pciback");
++
++        if (virPCIDeviceListAdd(driver->inactivePciHostdevs, dev) < 0) {
++            virPCIDeviceFree(dev);
++            goto cleanup;
++        }
++
++    }
++    ret  = 0;
++
++cleanup:
++    VIR_FREE(pcidevs);
++    return ret;
++}
++
++int libxlDomainPrepareHostdevPCIDevices(libxlDriverPrivatePtr driver,
++        const char *name,
++        const unsigned char *uuid ATTRIBUTE_UNUSED,
++        virDomainHostdevDefPtr *hostdevs,
++        int nhostdevs)
++{
++    virPCIDeviceListPtr pcidevs;
++    int i;
++    int ret = -1;
++
++    virObjectLock(driver->activePciHostdevs);
++    virObjectLock(driver->inactivePciHostdevs);
++
++    if (!(pcidevs = libxlGetPciHostDeviceList(driver, hostdevs, nhostdevs, false)))
++        goto cleanup;
++
++    /* We have to use 9 loops here. *All* devices must
++     * be detached before we reset any of them, because
++     * in some cases you have to reset the whole PCI,
++     * which impacts all devices on it. Also, all devices
++     * must be reset before being marked as active.
++     */
++
++    /* Loop 1: validate that non-managed device isn't in use, eg
++     * by checking that device is either un-bound, or bound
++     * to pciback.ko
++     */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        virPCIDevicePtr other;
++
++        if (!virPCIDeviceIsAssignable(dev, 0)) {
++            virReportError(VIR_ERR_OPERATION_INVALID,
++                    _("PCI device %s is not assignable"),
++                    virPCIDeviceGetName(dev));
++            goto cleanup;
++        }
++        /* The device is in use by other active domain if
++         * the dev is in list driver->activePciHostdevs.
++         */
++        if ((other = virPCIDeviceListFind(driver->activePciHostdevs, dev))) {
++            const char *other_name = virPCIDeviceGetUsedBy(other);
++
++            if (other_name)
++                virReportError(VIR_ERR_OPERATION_INVALID,
++                        _("PCI device %s is in use by domain %s"),
++                        virPCIDeviceGetName(dev), other_name);
++            else
++                virReportError(VIR_ERR_OPERATION_INVALID,
++                        _("PCI device %s is already in use"),
++                        virPCIDeviceGetName(dev));
++            goto cleanup;
++        }
++    }
++    /* Loop 2: detach managed devices (i.e. bind to appropriate stub driver) */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        if (virPCIDeviceGetManaged(dev) &&
++                virPCIDeviceDetach(dev, driver->activePciHostdevs, NULL, NULL) < 0)
++            goto reattachdevs;
++    }
++
++    /* Loop 3: Now that all the PCI hostdevs have been detached, we
++     * can safely reset them */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        if (virPCIDeviceReset(dev, driver->activePciHostdevs,
++                    driver->inactivePciHostdevs) < 0)
++            goto reattachdevs;
++    }
++
++    /* TODO: Handle SRIOV, check loop 4 of qemuPrepareHostdevPCIDevices */
++
++    /* Loop 5: Now mark all the devices as active */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        if (virPCIDeviceListAdd(driver->activePciHostdevs, dev) < 0)
++            goto inactivedevs;
++    }
++
++    /* Loop 6: Now remove the devices from inactive list. */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        virPCIDeviceListDel(driver->inactivePciHostdevs, dev);
++    }
++    /* Loop 7: Now set the used_by_domain of the device in
++     * driver->activePciHostdevs as domain name.
++     */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev, activeDev;
++
++        dev = virPCIDeviceListGet(pcidevs, i);
++        activeDev = virPCIDeviceListFind(driver->activePciHostdevs, dev);
++
++        if (activeDev)
++            virPCIDeviceSetUsedBy(activeDev, name);
++    }
++
++    /* Loop 8: Now set the original states for hostdev def */
++    for (i = 0; i < nhostdevs; i++) {
++        virPCIDevicePtr dev;
++        virPCIDevicePtr pcidev;
++        virDomainHostdevDefPtr hostdev = hostdevs[i];
++
++        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
++            continue;
++        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI)
++            continue;
++
++        dev = virPCIDeviceNew(hostdev->source.subsys.u.pci.addr.domain,
++                hostdev->source.subsys.u.pci.addr.bus,
++                hostdev->source.subsys.u.pci.addr.slot,
++                hostdev->source.subsys.u.pci.addr.function);
++
++        /* original states "unbind_from_stub", "remove_slot",
++         * "reprobe" were already set by pciDettachDevice in
++         * loop 2.
++         */
++        if ((pcidev = virPCIDeviceListFind(pcidevs, dev))) {
++            hostdev->origstates.states.pci.unbind_from_stub =
++                virPCIDeviceGetUnbindFromStub(pcidev);
++            hostdev->origstates.states.pci.remove_slot =
++                virPCIDeviceGetRemoveSlot(pcidev);
++            hostdev->origstates.states.pci.reprobe =
++                virPCIDeviceGetReprobe(pcidev);
++        }
++
++        virPCIDeviceFree(dev);
++    }
++
++    /* Loop 9: Now steal all the devices from pcidevs */
++    while (virPCIDeviceListCount(pcidevs) > 0)
++        virPCIDeviceListStealIndex(pcidevs, 0);
++
++    ret = 0;
++    goto cleanup;
++inactivedevs:
++    /* Only steal all the devices from driver->activePciHostdevs. We will
++     * free them in virObjectUnref().
++     */
++    while (virPCIDeviceListCount(pcidevs) > 0) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, 0);
++        virPCIDeviceListSteal(driver->activePciHostdevs, dev);
++    }
++
++reattachdevs:
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++
++        /* NB: This doesn't actually re-bind to original driver, just
++         * unbinds from the stub driver
++         */
++        virPCIDeviceReattach(dev, driver->activePciHostdevs, NULL);
++    }
++
++cleanup:
++    virObjectUnlock(driver->activePciHostdevs);
++    virObjectUnlock(driver->inactivePciHostdevs);
++    virObjectUnref(pcidevs);
++    return ret;
++}
++
++/*
++ * Pre-condition: driver->inactivePciHostdevs & driver->activePciHostdevs
++ * are locked
++ */
++static
++void libxlReattachPciDevice(virPCIDevicePtr dev, libxlDriverPrivatePtr driver)
++{
++    /* If the device is not managed and was attached to guest
++     * successfully, it must have been inactive.
++     */
++    if (!virPCIDeviceGetManaged(dev)) {
++        if (virPCIDeviceListAdd(driver->inactivePciHostdevs, dev) < 0)
++            virPCIDeviceFree(dev);
++        return;
++    }
++
++    if (virPCIDeviceReattach(dev, driver->activePciHostdevs,
++                driver->inactivePciHostdevs) < 0) {
++        virErrorPtr err = virGetLastError();
++        VIR_ERROR(_("Failed to re-attach PCI device: %s"),
++                err ? err->message : _("unknown error"));
++        virResetError(err);
++    }
++    virPCIDeviceFree(dev);
++}
++
++
++void libxlDomainReAttachHostdevDevices(libxlDriverPrivatePtr driver,
++                                      const char *name,
++                                      virDomainHostdevDefPtr *hostdevs,
++                                      int nhostdevs)
++{
++    virPCIDeviceListPtr pcidevs;
++    int i;
++
++    virObjectLock(driver->activePciHostdevs);
++    virObjectLock(driver->inactivePciHostdevs);
++
++    if (!(pcidevs = libxlGetPciHostDeviceList(driver,
++                                                   hostdevs,
++                                                   nhostdevs,
++                                                   true))) {
++        virErrorPtr err = virGetLastError();
++        VIR_ERROR(_("Failed to allocate PCI device list: %s"),
++                  err ? err->message : _("unknown error"));
++        virResetError(err);
++        goto cleanup;
++    }
++
++    /* Again 4 loops; mark all devices as inactive before reset
++     * them and reset all the devices before re-attach.
++     * Attach mac and port profile parameters to devices
++     */
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        virPCIDevicePtr activeDev = NULL;
++
++        /* Never delete the dev from list driver->activePciHostdevs
++         * if it's used by other domain.
++         */
++        activeDev = virPCIDeviceListFind(driver->activePciHostdevs, dev);
++        if (activeDev &&
++            STRNEQ_NULLABLE(name, virPCIDeviceGetUsedBy(activeDev))) {
++            virPCIDeviceListSteal(pcidevs, dev);
++            continue;
++        }
++
++        /* virObjectUnref() will take care of freeing the dev. */
++        virPCIDeviceListSteal(driver->activePciHostdevs, dev);
++    }
++
++    /* TODO: handle SRIOV, check qemuDomainReAttachHostdevDevices */
++
++    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
++        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
++        if (virPCIDeviceReset(dev, driver->activePciHostdevs,
++                              driver->inactivePciHostdevs) < 0) {
++            virErrorPtr err = virGetLastError();
++            VIR_ERROR(_("Failed to reset PCI device: %s"),
++                      err ? err->message : _("unknown error"));
++            virResetError(err);
++        }
++    }
++
++    while (virPCIDeviceListCount(pcidevs) > 0) {
++        virPCIDevicePtr dev = virPCIDeviceListStealIndex(pcidevs, 0);
++        libxlReattachPciDevice(dev, driver);
++    }
++
++    virObjectUnref(pcidevs);
++cleanup:
++    virObjectUnlock(driver->activePciHostdevs);
++    virObjectUnlock(driver->inactivePciHostdevs);
++}
++
++int libxlDomainPrepareHostDevices(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def,
++        bool coldBoot ATTRIBUTE_UNUSED)
++{
++    if (!def->nhostdevs)
++        return 0;
++
++    if (libxlDomainPrepareHostdevPCIDevices(driver, def->name, def->uuid,
++                def->hostdevs, def->nhostdevs) < 0)
++        return -1;
++
++    return 0;
++}
++
++void libxlDomainReAttachHostDevices(libxlDriverPrivatePtr driver,
++                                   virDomainDefPtr def)
++{
++    if (!def->nhostdevs)
++        return;
++
++    libxlDomainReAttachHostdevDevices(driver, def->name, def->hostdevs,
++                                     def->nhostdevs);
++}
+diff --git a/src/libxl/libxl_hostdev.h b/src/libxl/libxl_hostdev.h
+new file mode 100644
+index 0000000..d0ee12c
+--- /dev/null
++++ b/src/libxl/libxl_hostdev.h
+@@ -0,0 +1,55 @@
++/*---------------------------------------------------------------------------*/
++/* Copyright (C) 2013 Invisible Things Lab
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library.  If not, see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Authors:
++ *     Marek Marczykowski <marmarek@invisiblethingslab.com>
++ */
++/*---------------------------------------------------------------------------*/
++
++#ifndef __LIBXL_HOSTDEV_H
++# define __LIBXL_HOSTDEV_H
++
++# include <config.h>
++
++# include "internal.h"
++# include "domain_conf.h"
++# include "virpci.h"
++
++int libxlUpdateActivePciHostdevs(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def);
++
++int libxlDomainPrepareHostdevPCIDevices(libxlDriverPrivatePtr driver,
++        const char *name,
++        const unsigned char *uuid,
++        virDomainHostdevDefPtr *hostdevs,
++        int nhostdevs);
++
++void libxlDomainReAttachHostdevDevices(libxlDriverPrivatePtr driver,
++        const char *name,
++        virDomainHostdevDefPtr *hostdevs,
++        int nhostdevs);
++
++int libxlDomainPrepareHostDevices(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def,
++        bool coldBoot);
++
++void libxlDomainReAttachHostDevices(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def);
++
++int libxlUpdateInactivePciHostdevs(libxlDriverPrivatePtr driver);
++
++#endif
+-- 
+1.8.1.4
+

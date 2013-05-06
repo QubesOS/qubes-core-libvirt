@@ -1,0 +1,193 @@
+From 33722598e4d77f23695bc7767708f6fce2923a6b Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Fri, 5 Apr 2013 01:41:40 +0200
+Subject: [PATCH 07/17] conf: support backend domain name in disk and network
+ devices
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+At least Xen supports backend drivers in another domain (aka "driver
+domain"). This patch introduces XML config option for such setting as
+'domain' element with 'name' attribute. Verification its content is left
+for the driver.
+
+In the future some option will be needed for USB devices (hostdev
+objects), but for now libxl doesn't have support for PVUSB.
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ docs/schemas/domaincommon.rng | 14 ++++++++++++++
+ src/conf/domain_conf.c        | 27 +++++++++++++++++++++++++++
+ src/conf/domain_conf.h        |  2 ++
+ 3 files changed, 43 insertions(+)
+
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index 10596dc..5a64386 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -898,6 +898,13 @@
+       </optional>
+       <ref name="target"/>
+       <optional>
++        <element name="domain">
++          <attribute name="name">
++            <ref name="domainName"/>
++          </attribute>
++        </element>
++      </optional>
++      <optional>
+         <ref name="deviceBoot"/>
+       </optional>
+       <optional>
+@@ -1928,6 +1935,13 @@
+         </element>
+       </optional>
+       <optional>
++        <element name="domain">
++          <attribute name="name">
++            <ref name="domainName"/>
++          </attribute>
++        </element>
++      </optional>
++      <optional>
+         <element name="model">
+           <attribute name="type">
+             <data type="string">
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 59cf519..e8e50a9 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -1169,6 +1169,7 @@ void virDomainDiskDefFree(virDomainDiskDefPtr def)
+     VIR_FREE(def->vendor);
+     VIR_FREE(def->product);
+     VIR_FREE(def->script);
++    VIR_FREE(def->domain_name);
+     if (def->auth.secretType == VIR_DOMAIN_DISK_SECRET_TYPE_USAGE)
+         VIR_FREE(def->auth.secret.usage);
+     virStorageEncryptionFree(def->encryption);
+@@ -1294,6 +1295,7 @@ void virDomainNetDefFree(virDomainNetDefPtr def)
+ 
+     VIR_FREE(def->virtPortProfile);
+     VIR_FREE(def->script);
++    VIR_FREE(def->domain_name);
+     VIR_FREE(def->ifname);
+ 
+     virDomainDeviceInfoClear(&def->info);
+@@ -4433,6 +4435,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     char *vendor = NULL;
+     char *product = NULL;
+     char *script = NULL;
++    char *domain_name = NULL;
+     int expected_secret_usage = -1;
+     int auth_secret_usage = -1;
+ 
+@@ -4596,6 +4599,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+             } else if (!script &&
+                        xmlStrEqual(cur->name, BAD_CAST "script")) {
+                 script = virXMLPropString(cur, "path");
++            } else if (!domain_name &&
++                       xmlStrEqual(cur->name, BAD_CAST "domain")) {
++                domain_name = virXMLPropString(cur, "name");
+             } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
+                 if (virXPathUInt("string(./geometry/@cyls)",
+                                  ctxt, &def->geometry.cylinders) < 0) {
+@@ -4890,6 +4896,11 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+         ctxt->node = saved_node;
+     }
+ 
++    if (domain_name != NULL) {
++        def->domain_name = domain_name;
++        domain_name = NULL;
++    }
++
+     if (target == NULL) {
+         if (def->srcpool) {
+             char *tmp;
+@@ -5240,6 +5251,7 @@ cleanup:
+     VIR_FREE(vendor);
+     VIR_FREE(product);
+     VIR_FREE(script);
++    VIR_FREE(domain_name);
+ 
+     ctxt->node = save_ctxt;
+     return def;
+@@ -5832,6 +5844,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+     char *mode = NULL;
+     char *linkstate = NULL;
+     char *addrtype = NULL;
++    char *domain_name = NULL;
+     virNWFilterHashTablePtr filterparams = NULL;
+     virDomainActualNetDefPtr actual = NULL;
+     xmlNodePtr oldnode = ctxt->node;
+@@ -5930,6 +5943,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+             } else if (!script &&
+                        xmlStrEqual(cur->name, BAD_CAST "script")) {
+                 script = virXMLPropString(cur, "path");
++            } else if (!domain_name &&
++                       xmlStrEqual(cur->name, BAD_CAST "domain")) {
++                domain_name = virXMLPropString(cur, "name");
+             } else if (xmlStrEqual(cur->name, BAD_CAST "model")) {
+                 model = virXMLPropString(cur, "type");
+             } else if (xmlStrEqual(cur->name, BAD_CAST "driver")) {
+@@ -6161,6 +6177,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+         def->script = script;
+         script = NULL;
+     }
++    if (domain_name != NULL) {
++        def->domain_name = domain_name;
++        domain_name = NULL;
++    }
+     if (ifname != NULL) {
+         def->ifname = ifname;
+         ifname = NULL;
+@@ -6287,6 +6307,7 @@ cleanup:
+     VIR_FREE(mode);
+     VIR_FREE(linkstate);
+     VIR_FREE(addrtype);
++    VIR_FREE(domain_name);
+     virNWFilterHashTableFree(filterparams);
+ 
+     return def;
+@@ -13573,6 +13594,10 @@ virDomainDiskDefFormat(virBufferPtr buf,
+ 
+     virBufferEscapeString(buf, "      <script path='%s'/>\n", def->script);
+ 
++    if (def->domain_name) {
++        virBufferEscapeString(buf, "      <domain name='%s'/>\n", def->domain_name);
++    }
++
+     virDomainDiskGeometryDefFormat(buf, def);
+     virDomainDiskBlockIoDefFormat(buf, def);
+ 
+@@ -14144,6 +14169,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+         return -1;
+     virBufferEscapeString(buf, "<script path='%s'/>\n",
+                           def->script);
++    if (def->domain_name)
++        virBufferEscapeString(buf, "<domain name='%s'/>\n", def->domain_name);
+     if (def->ifname &&
+         !((flags & VIR_DOMAIN_XML_INACTIVE) &&
+           (STRPREFIX(def->ifname, VIR_NET_GENERATED_PREFIX)))) {
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index a2e13ab..b5edfd1 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -701,6 +701,7 @@ struct _virDomainDiskDef {
+     int rawio; /* no = 0, yes = 1 */
+     int sgio; /* enum virDomainDiskSGIO */
+     char *script;
++    char *domain_name; /* backend domain name */
+ 
+     size_t nseclabels;
+     virSecurityDeviceLabelDefPtr *seclabels;
+@@ -960,6 +961,7 @@ struct _virDomainNetDef {
+         unsigned long sndbuf;
+     } tune;
+     char *script;
++    char *domain_name; /* backend domain name */
+     char *ifname;
+     virDomainDeviceInfo info;
+     char *filter;
+-- 
+1.8.1.4
+

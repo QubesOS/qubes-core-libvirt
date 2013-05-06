@@ -1,0 +1,118 @@
+From 8a674f0a0cd07a9c5e713cf7874153b62469e24d Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Wed, 3 Apr 2013 17:16:27 +0200
+Subject: [PATCH 04/17] libxl: populate xenstore memory entries at startup,
+ handle dom0_mem
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+libxl uses some xenstore entries for hints in memory management
+(especially when starting new domain). This includes dom0 memory limit
+and Xen free memory margin, based on current system state. Entries are
+created at first function usage, so force such call at daemon startup,
+which most likely will be before any domain startup.
+Also prevent automatic memory management if dom0_mem= option passed to
+xen hypervisor - it is known to be incompatible with autoballoon.
+
+Changes in v2:
+ - disable autoballoon when dom0_mem option detected
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.h   |  4 ++++
+ src/libxl/libxl_driver.c | 36 +++++++++++++++++++++++++++++++++++-
+ 2 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
+index 4e7813e..7154025 100644
+--- a/src/libxl/libxl_conf.h
++++ b/src/libxl/libxl_conf.h
+@@ -65,6 +65,10 @@ struct _libxlDriverPrivate {
+ 
+     virPortAllocatorPtr reservedVNCPorts;
+ 
++    /* should libxl/libvirt take care of getting memory for new domain from
++     * dom0? */
++    bool autoballoon;
++
+     size_t nactive;
+     virStateInhibitCallback inhibitCallback;
+     void *inhibitOpaque;
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index a67cea3..3d7152a 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -29,6 +29,7 @@
+ #include <math.h>
+ #include <libxl.h>
+ #include <fcntl.h>
++#include <regex.h>
+ 
+ #include "internal.h"
+ #include "virlog.h"
+@@ -955,7 +956,7 @@ libxlVmStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+     if (libxlDomainPrepareHostDevices(driver, vm->def, restore_fd < 0) < 0)
+         goto error;
+ 
+-    if (libxlFreeMem(priv, &d_config) < 0) {
++    if (driver->autoballoon && libxlFreeMem(priv, &d_config) < 0) {
+         virReportError(VIR_ERR_INTERNAL_ERROR,
+                        _("libxenlight failed to get free memory for domain '%s'"),
+                        d_config.c_info.name);
+@@ -1143,6 +1144,28 @@ libxlStateCleanup(void)
+     return 0;
+ }
+ 
++static int auto_autoballoon(libxlDriverPrivatePtr driver)
++{
++    const libxl_version_info *info;
++    regex_t regex;
++    int ret;
++
++    info = libxl_get_version_info(driver->ctx);
++    if (!info)
++        return 1; /* default to on */
++
++    ret = regcomp(&regex,
++            "(^| )dom0_mem=((|min:|max:)[0-9]+[bBkKmMgG]?,?)+($| )",
++            REG_NOSUB | REG_EXTENDED);
++    if (ret)
++        return 1;
++
++    ret = regexec(&regex, info->commandline, 0, NULL, 0);
++    regfree(&regex);
++    return ret == REG_NOMATCH;
++}
++
++
+ static int
+ libxlStateInitialize(bool privileged,
+                      virStateInhibitCallback callback ATTRIBUTE_UNUSED,
+@@ -1152,6 +1175,7 @@ libxlStateInitialize(bool privileged,
+     char *log_file = NULL;
+     virCommandPtr cmd;
+     int status, ret = 0;
++    unsigned int free_mem;
+     char ebuf[1024];
+ 
+     /* Disable libxl driver if non-root */
+@@ -1282,6 +1306,16 @@ libxlStateInitialize(bool privileged,
+                                                        NULL)))
+         goto error;
+ 
++    /* This will fill xenstore info about free and dom0 memory if missing,
++     * should be called before starting first domain */
++    if (libxl_get_free_memory(libxl_driver->ctx, &free_mem)) {
++        VIR_ERROR(_("cannot get free memory info"));
++        goto error;
++    }
++
++    /* setup autoballoon */
++    libxl_driver->autoballoon = auto_autoballoon(libxl_driver);
++
+     if ((libxl_driver->activePciHostdevs = virPCIDeviceListNew()) == NULL)
+         goto error;
+ 
+-- 
+1.8.1.4
+

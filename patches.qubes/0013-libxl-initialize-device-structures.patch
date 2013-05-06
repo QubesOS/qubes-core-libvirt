@@ -1,0 +1,67 @@
+From e716e2bf567d6e680815bda0700b14613dc9d4fb Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Sun, 14 Apr 2013 04:20:07 +0200
+Subject: [PATCH 13/17] libxl: initialize device structures
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+Do not leave uninitialized variables, not all parameters are set in
+libxlMake*.
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index ecd48ae..ea8e63e 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -560,6 +560,8 @@ libxlMakeDisk(libxlDriverPrivatePtr driver,
+         virDomainDiskDefPtr l_disk,
+         libxl_device_disk *x_disk)
+ {
++    libxl_device_disk_init(x_disk);
++
+     if (l_disk->src && (x_disk->pdev_path = strdup(l_disk->src)) == NULL) {
+         virReportOOMError();
+         return -1;
+@@ -699,6 +701,8 @@ libxlMakeNic(libxlDriverPrivatePtr driver,
+      * x_nics[i].mtu = 1492;
+      */
+ 
++    libxl_device_nic_init(x_nic);
++
+     virMacAddrGetRaw(&l_nic->mac, x_nic->mac);
+ 
+     if (l_nic->model && !STREQ(l_nic->model, "netfront")) {
+@@ -799,6 +803,8 @@ libxlMakeVfb(libxlDriverPrivatePtr driver,
+              virDomainGraphicsDefPtr l_vfb,
+              libxl_device_vfb *x_vfb)
+ {
++    libxl_device_vfb_init(x_vfb);
++
+     switch (l_vfb->type) {
+         case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
+             if (libxlMakeSDLInfo(l_vfb, &x_vfb->sdl) < 0)
+@@ -871,6 +877,8 @@ int
+ libxlMakePci(virDomainHostdevDefPtr l_hostdev,
+              libxl_device_pci *x_pci)
+ {
++    libxl_device_pci_init(x_pci);
++
+     if (l_hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s", _("This driver supports only subsystem host device mode (PCI devices only)"));
+         return -1;
+@@ -974,6 +982,8 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
+                        virDomainDefPtr def, libxl_domain_config *d_config)
+ {
+ 
++    libxl_domain_config_init(d_config);
++
+     if (libxlMakeDomCreateInfo(driver, def, &d_config->c_info) < 0)
+         return -1;
+ 
+-- 
+1.8.1.4
+

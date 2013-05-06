@@ -1,0 +1,190 @@
+From 3d2b7d560300eef17bc0b3fa0f23871f41606fe6 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Sun, 7 Apr 2013 19:48:03 +0200
+Subject: [PATCH 09/17] libxl: fill HVM SDL and VNC settings based on
+ <graphics/> entries
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+Vfb entries in domain config are used only by PV drivers. Qemu
+parameters are build based on b_info struct. So fill it with the same
+data as vfb entries (actually the first one).
+This will additionally allow graphic-less domain, when no <graphics/>
+entries are present in domain XML (previously VNC was always enabled).
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 131 +++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 90 insertions(+), 41 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index c9a005c..7db76ec 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -334,7 +334,64 @@ error:
+ }
+ 
+ static int
+-libxlMakeDomBuildInfo(virDomainDefPtr def, libxl_domain_config *d_config)
++libxlMakeVNCInfo(libxlDriverPrivatePtr driver,
++        virDomainGraphicsDefPtr l_vfb,
++        libxl_vnc_info *x_vnc)
++{
++    unsigned short port;
++    const char *listenAddr;
++
++    libxl_defbool_set(&x_vnc->enable, 1);
++    /* driver handles selection of free port */
++    libxl_defbool_set(&x_vnc->findunused, 0);
++    if (l_vfb->data.vnc.autoport) {
++
++        if (virPortAllocatorAcquire(driver->reservedVNCPorts, &port) < 0)
++            return -1;
++        if (port == 0) {
++            virReportError(VIR_ERR_INTERNAL_ERROR,
++                    "%s", _("Unable to find an unused VNC port"));
++            return -1;
++        }
++        l_vfb->data.vnc.port = port;
++    }
++    x_vnc->display = l_vfb->data.vnc.port - LIBXL_VNC_PORT_MIN;
++
++    listenAddr = virDomainGraphicsListenGetAddress(l_vfb, 0);
++    if (listenAddr) {
++        /* libxl_device_vfb_init() does strdup("127.0.0.1") */
++        VIR_FREE(x_vnc->listen);
++        if ((x_vnc->listen = strdup(listenAddr)) == NULL) {
++            virReportOOMError();
++            return -1;
++        }
++    }
++    return 0;
++}
++
++static int
++libxlMakeSDLInfo(virDomainGraphicsDefPtr l_vfb,
++                        libxl_sdl_info *x_sdl)
++{
++    libxl_defbool_set(&x_sdl->enable, 1);
++    if (l_vfb->data.sdl.display &&
++            (x_sdl->display = strdup(l_vfb->data.sdl.display)) == NULL) {
++        virReportOOMError();
++        return -1;
++    }
++    if (l_vfb->data.sdl.xauth &&
++            (x_sdl->xauthority =
++             strdup(l_vfb->data.sdl.xauth)) == NULL) {
++        virReportOOMError();
++        return -1;
++    }
++    return 0;
++}
++
++static int
++libxlMakeDomBuildInfo(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def,
++        libxl_domain_config *d_config)
+ {
+     libxl_domain_build_info *b_info = &d_config->b_info;
+     int hvm = STREQ(def->os.type, "hvm");
+@@ -408,6 +465,34 @@ libxlMakeDomBuildInfo(virDomainDefPtr def, libxl_domain_config *d_config)
+             goto error;
+         }
+ 
++        /* Disable VNC and SDL until explicitly enabled */
++        libxl_defbool_set(&b_info->u.hvm.vnc.enable, 0);
++        libxl_defbool_set(&b_info->u.hvm.sdl.enable, 0);
++
++        for (i = 0; i < def->ngraphics; i++) {
++            switch (def->graphics[i]->type) {
++                case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
++                    if (libxl_defbool_val(b_info->u.hvm.vnc.enable))
++                        continue;
++                    if (libxlMakeVNCInfo(driver, def->graphics[i],
++                                &b_info->u.hvm.vnc) < 0)
++                        goto error;
++                    if (def->graphics[i]->data.vnc.keymap &&
++                            (b_info->u.hvm.keymap =
++                             strdup(def->graphics[i]->data.vnc.keymap)) == NULL) {
++                        virReportOOMError();
++                        goto error;
++                    }
++                    break;
++                case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++                    if (libxl_defbool_val(b_info->u.hvm.sdl.enable))
++                        continue;
++                    if (libxlMakeSDLInfo(def->graphics[i], &b_info->u.hvm.sdl) < 0)
++                        goto error;
++                    break;
++            }
++        }
++
+         /*
+          * The following comment and calculation were taken directly from
+          * libxenlight's internal function libxl_get_required_shadow_memory():
+@@ -702,50 +787,14 @@ libxlMakeVfb(libxlDriverPrivatePtr driver,
+              virDomainGraphicsDefPtr l_vfb,
+              libxl_device_vfb *x_vfb)
+ {
+-    unsigned short port;
+-    const char *listenAddr;
+-
+     switch (l_vfb->type) {
+         case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
+-            libxl_defbool_set(&x_vfb->sdl.enable, 1);
+-            if (l_vfb->data.sdl.display &&
+-                (x_vfb->sdl.display = strdup(l_vfb->data.sdl.display)) == NULL) {
+-                virReportOOMError();
+-                return -1;
+-            }
+-            if (l_vfb->data.sdl.xauth &&
+-                (x_vfb->sdl.xauthority =
+-                    strdup(l_vfb->data.sdl.xauth)) == NULL) {
+-                virReportOOMError();
++            if (libxlMakeSDLInfo(l_vfb, &x_vfb->sdl) < 0)
+                 return -1;
+-            }
+             break;
+         case  VIR_DOMAIN_GRAPHICS_TYPE_VNC:
+-            libxl_defbool_set(&x_vfb->vnc.enable, 1);
+-            /* driver handles selection of free port */
+-            libxl_defbool_set(&x_vfb->vnc.findunused, 0);
+-            if (l_vfb->data.vnc.autoport) {
+-
+-                if (virPortAllocatorAcquire(driver->reservedVNCPorts, &port) < 0)
+-                    return -1;
+-                if (port == 0) {
+-                    virReportError(VIR_ERR_INTERNAL_ERROR,
+-                                   "%s", _("Unable to find an unused VNC port"));
+-                    return -1;
+-                }
+-                l_vfb->data.vnc.port = port;
+-            }
+-            x_vfb->vnc.display = l_vfb->data.vnc.port - LIBXL_VNC_PORT_MIN;
+-
+-            listenAddr = virDomainGraphicsListenGetAddress(l_vfb, 0);
+-            if (listenAddr) {
+-                /* libxl_device_vfb_init() does strdup("127.0.0.1") */
+-                VIR_FREE(x_vfb->vnc.listen);
+-                if ((x_vfb->vnc.listen = strdup(listenAddr)) == NULL) {
+-                    virReportOOMError();
+-                    return -1;
+-                }
+-            }
++            if (libxlMakeVNCInfo(driver, l_vfb, &x_vfb->vnc) < 0)
++                return -1;
+             if (l_vfb->data.vnc.keymap &&
+                 (x_vfb->keymap =
+                     strdup(l_vfb->data.vnc.keymap)) == NULL) {
+@@ -916,7 +965,7 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
+     if (libxlMakeDomCreateInfo(driver, def, &d_config->c_info) < 0)
+         return -1;
+ 
+-    if (libxlMakeDomBuildInfo(def, d_config) < 0) {
++    if (libxlMakeDomBuildInfo(driver, def, d_config) < 0) {
+         return -1;
+     }
+ 
+-- 
+1.8.1.4
+

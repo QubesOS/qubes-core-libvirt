@@ -1,0 +1,37 @@
+From eadc6c13f584cac3f1b015ae4239ea57703826a6 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Fri, 5 Apr 2013 01:41:04 +0200
+Subject: [PATCH 06/17] libxl: use disk 'script' attribute
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+Implement handling of previously introduced <script/> element for disk
+config.
+This can be used for custom backend configuration like non-standard
+device-mapper nodes, or to prepare device in other domain (see the next
+patch).
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 1a567b3..c62025f 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -471,6 +471,11 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
+         return -1;
+     }
+ 
++    if (l_disk->script && (x_disk->script = strdup(l_disk->script)) == NULL) {
++        virReportOOMError();
++        return -1;
++    }
++
+     if (l_disk->driverName) {
+         if (STREQ(l_disk->driverName, "tap") ||
+             STREQ(l_disk->driverName, "tap2")) {
+-- 
+1.8.1.4
+

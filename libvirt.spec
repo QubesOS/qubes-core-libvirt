@@ -373,6 +373,7 @@ URL: http://libvirt.org/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.gz
 
+Source1: patches.qubes
 
 %if %{with_libvirtd}
 Requires: libvirt-daemon = %{version}-%{release}
@@ -1092,6 +1093,10 @@ of recent versions of Linux (and other OSes).
 
 %prep
 %setup -q
+
+for p in %{SOURCE1}/*; do
+  patch -s -F0 -E -p1 --no-backup-if-mismatch -i $p
+done
 
 %build
 %if ! %{with_xen}

@@ -1,0 +1,319 @@
+From 9b83a83e7f03ad4a419b7e56ca80d295a0f918a3 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Fri, 5 Apr 2013 01:42:17 +0200
+Subject: [PATCH 08/17] libxl: support backend domain setting for disk and net
+ devices
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+This implement handling of <domain name=''/> parameter introduced in
+previous patch.
+
+Lookup on domain name (to get domain ID) requires libxlDriverPrivate
+object, so it must be passed down to libxlMakeDisk and libxlMakeNet from
+top level callers.
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c   | 62 +++++++++++++++++++++++++++++++++++++++++-------
+ src/libxl/libxl_conf.h   |  4 ++--
+ src/libxl/libxl_driver.c | 50 +++++++++++++++++++++-----------------
+ 3 files changed, 84 insertions(+), 32 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index c62025f..c9a005c 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -459,7 +459,9 @@ error:
+ }
+ 
+ int
+-libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
++libxlMakeDisk(libxlDriverPrivatePtr driver,
++        virDomainDiskDefPtr l_disk,
++        libxl_device_disk *x_disk)
+ {
+     if (l_disk->src && (x_disk->pdev_path = strdup(l_disk->src)) == NULL) {
+         virReportOOMError();
+@@ -536,11 +538,32 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
+         return -1;
+     }
+ 
++    if (l_disk->domain_name) {
++        uint32_t domid;
++        /* Do not use virDomainObjListFindByName as it causes deadlock here -
++         * we already have lock on this domain object, but
++         * virDomainObjListFindByName will try to take it again.
++         */
++        switch (libxl_name_to_domid(driver->ctx, l_disk->domain_name, &domid)) {
++            case ERROR_INVAL:
++                virReportError(VIR_ERR_XML_DETAIL,
++                        _("Disk backend domain '%s' does not exists"),
++                        l_disk->domain_name);
++                return -1;
++            case ERROR_NOMEM:
++                virReportOOMError();
++                return -1;
++        }
++        x_disk->backend_domid = domid;
++    }
++
+     return 0;
+ }
+ 
+ static int
+-libxlMakeDiskList(virDomainDefPtr def, libxl_domain_config *d_config)
++libxlMakeDiskList(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def,
++        libxl_domain_config *d_config)
+ {
+     virDomainDiskDefPtr *l_disks = def->disks;
+     int ndisks = def->ndisks;
+@@ -553,7 +576,7 @@ libxlMakeDiskList(virDomainDefPtr def, libxl_domain_config *d_config)
+     }
+ 
+     for (i = 0; i < ndisks; i++) {
+-        if (libxlMakeDisk(l_disks[i], &x_disks[i]) < 0)
++        if (libxlMakeDisk(driver, l_disks[i], &x_disks[i]) < 0)
+             goto error;
+     }
+ 
+@@ -570,7 +593,9 @@ error:
+ }
+ 
+ int
+-libxlMakeNic(virDomainNetDefPtr l_nic, libxl_device_nic *x_nic)
++libxlMakeNic(libxlDriverPrivatePtr driver,
++        virDomainNetDefPtr l_nic,
++        libxl_device_nic *x_nic)
+ {
+     /* TODO: Where is mtu stored?
+      *
+@@ -616,11 +641,32 @@ libxlMakeNic(virDomainNetDefPtr l_nic, libxl_device_nic *x_nic)
+             return -1;
+     }
+ 
++    if (l_nic->domain_name) {
++        uint32_t domid;
++        /* Do not use virDomainObjListFindByName as it causes deadlock here -
++         * we already have lock on this domain object, but
++         * virDomainObjListFindByName will try to take it again.
++         */
++        switch (libxl_name_to_domid(driver->ctx, l_nic->domain_name, &domid)) {
++            case ERROR_INVAL:
++                virReportError(VIR_ERR_XML_DETAIL,
++                        _("Network backend domain '%s' does not exists"),
++                        l_nic->domain_name);
++                return -1;
++            case ERROR_NOMEM:
++                virReportOOMError();
++                return -1;
++        }
++        x_nic->backend_domid = domid;
++    }
++
+     return 0;
+ }
+ 
+ static int
+-libxlMakeNicList(virDomainDefPtr def,  libxl_domain_config *d_config)
++libxlMakeNicList(libxlDriverPrivatePtr driver,
++        virDomainDefPtr def,
++        libxl_domain_config *d_config)
+ {
+     virDomainNetDefPtr *l_nics = def->nets;
+     int nnics = def->nnets;
+@@ -635,7 +681,7 @@ libxlMakeNicList(virDomainDefPtr def,  libxl_domain_config *d_config)
+     for (i = 0; i < nnics; i++) {
+         x_nics[i].devid = i;
+ 
+-        if (libxlMakeNic(l_nics[i], &x_nics[i]))
++        if (libxlMakeNic(driver, l_nics[i], &x_nics[i]))
+             goto error;
+     }
+ 
+@@ -874,11 +920,11 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
+         return -1;
+     }
+ 
+-    if (libxlMakeDiskList(def, d_config) < 0) {
++    if (libxlMakeDiskList(driver, def, d_config) < 0) {
+         return -1;
+     }
+ 
+-    if (libxlMakeNicList(def, d_config) < 0) {
++    if (libxlMakeNicList(driver, def, d_config) < 0) {
+         return -1;
+     }
+ 
+diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
+index 7154025..bb226b0 100644
+--- a/src/libxl/libxl_conf.h
++++ b/src/libxl/libxl_conf.h
+@@ -124,9 +124,9 @@ virCapsPtr
+ libxlMakeCapabilities(libxl_ctx *ctx);
+ 
+ int
+-libxlMakeDisk(virDomainDiskDefPtr l_dev, libxl_device_disk *x_dev);
++libxlMakeDisk(libxlDriverPrivatePtr driver, virDomainDiskDefPtr l_dev, libxl_device_disk *x_dev);
+ int
+-libxlMakeNic(virDomainNetDefPtr l_nic, libxl_device_nic *x_nic);
++libxlMakeNic(libxlDriverPrivatePtr driver, virDomainNetDefPtr l_nic, libxl_device_nic *x_nic);
+ int
+ libxlMakeVfb(libxlDriverPrivatePtr driver,
+              virDomainGraphicsDefPtr l_vfb, libxl_device_vfb *x_vfb);
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 3d7152a..3188814 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -3242,8 +3242,9 @@ libxlDomainUndefine(virDomainPtr dom)
+ }
+ 
+ static int
+-libxlDomainChangeEjectableMedia(libxlDomainObjPrivatePtr priv,
+-                                virDomainObjPtr vm, virDomainDiskDefPtr disk)
++libxlDomainChangeEjectableMedia(libxlDriverPrivatePtr driver,
++        libxlDomainObjPrivatePtr priv, virDomainObjPtr vm, virDomainDiskDefPtr
++        disk)
+ {
+     virDomainDiskDefPtr origdisk = NULL;
+     libxl_device_disk x_disk;
+@@ -3272,7 +3273,7 @@ libxlDomainChangeEjectableMedia(libxlDomainObjPrivatePtr priv,
+         return -1;
+     }
+ 
+-    if (libxlMakeDisk(disk, &x_disk) < 0)
++    if (libxlMakeDisk(driver, disk, &x_disk) < 0)
+         goto cleanup;
+ 
+     if ((ret = libxl_cdrom_insert(priv->ctx, vm->def->id, &x_disk, NULL)) < 0) {
+@@ -3297,8 +3298,9 @@ cleanup:
+ }
+ 
+ static int
+-libxlDomainAttachDeviceDiskLive(libxlDomainObjPrivatePtr priv,
+-                                virDomainObjPtr vm, virDomainDeviceDefPtr dev)
++libxlDomainAttachDeviceDiskLive(libxlDriverPrivatePtr driver,
++        libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
++        virDomainDeviceDefPtr dev)
+ {
+     virDomainDiskDefPtr l_disk = dev->data.disk;
+     libxl_device_disk x_disk;
+@@ -3306,7 +3308,7 @@ libxlDomainAttachDeviceDiskLive(libxlDomainObjPrivatePtr priv,
+ 
+     switch (l_disk->device)  {
+         case VIR_DOMAIN_DISK_DEVICE_CDROM:
+-            ret = libxlDomainChangeEjectableMedia(priv, vm, l_disk);
++            ret = libxlDomainChangeEjectableMedia(driver, priv, vm, l_disk);
+             break;
+         case VIR_DOMAIN_DISK_DEVICE_DISK:
+             if (l_disk->bus == VIR_DOMAIN_DISK_BUS_XEN) {
+@@ -3327,7 +3329,7 @@ libxlDomainAttachDeviceDiskLive(libxlDomainObjPrivatePtr priv,
+                     goto cleanup;
+                 }
+ 
+-                if (libxlMakeDisk(l_disk, &x_disk) < 0)
++                if (libxlMakeDisk(driver, l_disk, &x_disk) < 0)
+                     goto cleanup;
+ 
+                 if ((ret = libxl_device_disk_add(priv->ctx, vm->def->id,
+@@ -3358,8 +3360,9 @@ cleanup:
+ }
+ 
+ static int
+-libxlDomainDetachDeviceDiskLive(libxlDomainObjPrivatePtr priv,
+-                                virDomainObjPtr vm, virDomainDeviceDefPtr dev)
++libxlDomainDetachDeviceDiskLive(libxlDriverPrivatePtr driver,
++        libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
++        virDomainDeviceDefPtr dev)
+ {
+     virDomainDiskDefPtr l_disk = NULL;
+     libxl_device_disk x_disk;
+@@ -3380,7 +3383,7 @@ libxlDomainDetachDeviceDiskLive(libxlDomainObjPrivatePtr priv,
+ 
+                 l_disk = vm->def->disks[i];
+ 
+-                if (libxlMakeDisk(l_disk, &x_disk) < 0)
++                if (libxlMakeDisk(driver, l_disk, &x_disk) < 0)
+                     goto cleanup;
+ 
+                 if ((ret = libxl_device_disk_remove(priv->ctx, vm->def->id,
+@@ -3412,14 +3415,15 @@ cleanup:
+ }
+ 
+ static int
+-libxlDomainAttachDeviceLive(libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
+-                            virDomainDeviceDefPtr dev)
++libxlDomainAttachDeviceLive(libxlDriverPrivatePtr driver,
++        libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
++        virDomainDeviceDefPtr dev)
+ {
+     int ret = -1;
+ 
+     switch (dev->type) {
+         case VIR_DOMAIN_DEVICE_DISK:
+-            ret = libxlDomainAttachDeviceDiskLive(priv, vm, dev);
++            ret = libxlDomainAttachDeviceDiskLive(driver, priv, vm, dev);
+             if (!ret)
+                 dev->data.disk = NULL;
+             break;
+@@ -3464,14 +3468,15 @@ libxlDomainAttachDeviceConfig(virDomainDefPtr vmdef, virDomainDeviceDefPtr dev)
+ }
+ 
+ static int
+-libxlDomainDetachDeviceLive(libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
+-                            virDomainDeviceDefPtr dev)
++libxlDomainDetachDeviceLive(libxlDriverPrivatePtr driver,
++        libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
++        virDomainDeviceDefPtr dev)
+ {
+     int ret = -1;
+ 
+     switch (dev->type) {
+         case VIR_DOMAIN_DEVICE_DISK:
+-            ret = libxlDomainDetachDeviceDiskLive(priv, vm, dev);
++            ret = libxlDomainDetachDeviceDiskLive(driver, priv, vm, dev);
+             break;
+ 
+         default:
+@@ -3511,8 +3516,9 @@ libxlDomainDetachDeviceConfig(virDomainDefPtr vmdef, virDomainDeviceDefPtr dev)
+ }
+ 
+ static int
+-libxlDomainUpdateDeviceLive(libxlDomainObjPrivatePtr priv,
+-                            virDomainObjPtr vm, virDomainDeviceDefPtr dev)
++libxlDomainUpdateDeviceLive(libxlDriverPrivatePtr driver,
++        libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
++        virDomainDeviceDefPtr dev)
+ {
+     virDomainDiskDefPtr disk;
+     int ret = -1;
+@@ -3522,7 +3528,7 @@ libxlDomainUpdateDeviceLive(libxlDomainObjPrivatePtr priv,
+             disk = dev->data.disk;
+             switch (disk->device) {
+                 case VIR_DOMAIN_DISK_DEVICE_CDROM:
+-                    ret = libxlDomainChangeEjectableMedia(priv, vm, disk);
++                    ret = libxlDomainChangeEjectableMedia(driver, priv, vm, disk);
+                     if (ret == 0)
+                         dev->data.disk = NULL;
+                     break;
+@@ -3679,13 +3685,13 @@ libxlDomainModifyDeviceFlags(virDomainPtr dom, const char *xml,
+ 
+         switch (action) {
+             case LIBXL_DEVICE_ATTACH:
+-                ret = libxlDomainAttachDeviceLive(priv, vm, dev);
++                ret = libxlDomainAttachDeviceLive(driver, priv, vm, dev);
+                 break;
+             case LIBXL_DEVICE_DETACH:
+-                ret = libxlDomainDetachDeviceLive(priv, vm, dev);
++                ret = libxlDomainDetachDeviceLive(driver, priv, vm, dev);
+                 break;
+             case LIBXL_DEVICE_UPDATE:
+-                ret = libxlDomainUpdateDeviceLive(priv, vm, dev);
++                ret = libxlDomainUpdateDeviceLive(driver, priv, vm, dev);
+                 break;
+             default:
+                 virReportError(VIR_ERR_INTERNAL_ERROR,
+-- 
+1.8.1.4
+

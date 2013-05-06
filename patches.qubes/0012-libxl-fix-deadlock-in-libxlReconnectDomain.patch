@@ -1,0 +1,35 @@
+From bc523b25ffeba03e8e073f17a2bebee1bccf20c4 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Mon, 8 Apr 2013 05:52:59 +0200
+Subject: [PATCH 12/17] libxl: fix deadlock in libxlReconnectDomain
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+Use virDomainObjListRemoveLocked instead of virDomainObjListRemove, as
+driver->domains is already taken by virDomainObjListForEach.
+
+Above deadlock can be triggered when libvirtd is started after some
+domain have been started by hand (in which case driver will not find
+libvirt-xml domain config).
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_driver.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 3188814..4767d58 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -1096,7 +1096,7 @@ libxlReconnectDomain(virDomainObjPtr vm,
+ out:
+     libxlVmCleanup(driver, vm, VIR_DOMAIN_SHUTOFF_UNKNOWN);
+     if (!vm->persistent)
+-        virDomainObjListRemove(driver->domains, vm);
++        virDomainObjListRemoveLocked(driver->domains, vm);
+     else
+         virObjectUnlock(vm);
+ 
+-- 
+1.8.1.4
+

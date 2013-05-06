@@ -1,0 +1,75 @@
+From 787d4d778e4ed4c67b2be1b6dd7413512b21472c Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Mon, 8 Apr 2013 05:50:06 +0200
+Subject: [PATCH 11/17] conf: virDomainObjListRemoveLocked function
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+While iterating with virDomainObjListForEach it is safe to remove
+current element. But while iterating, 'doms' lock is already taken, so
+can't use standard virDomainObjListRemove. So introduce
+virDomainObjListRemoveLocked for this purpose.
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/conf/domain_conf.c   | 17 +++++++++++++++++
+ src/conf/domain_conf.h   |  2 ++
+ src/libvirt_private.syms |  1 +
+ 3 files changed, 20 insertions(+)
+
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index e8e50a9..81cd83a 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -2317,6 +2317,23 @@ void virDomainObjListRemove(virDomainObjListPtr doms,
+     virObjectUnlock(doms);
+ }
+ 
++/* The caller must hold lock on 'doms' in addition to 'virDomainObjListRemove'
++ * requirements
++ *
++ * Can be used to remove current element while iterating with
++ * virDomainObjListForEach
++ */
++void virDomainObjListRemoveLocked(virDomainObjListPtr doms,
++                            virDomainObjPtr dom)
++{
++    char uuidstr[VIR_UUID_STRING_BUFLEN];
++
++    virUUIDFormat(dom->def->uuid, uuidstr);
++    virObjectUnlock(dom);
++
++    virHashRemoveEntry(doms->objs, uuidstr);
++}
++
+ static int
+ virDomainDeviceCCWAddressIsValid(virDomainDeviceCCWAddressPtr addr)
+ {
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index b5edfd1..8e268d5 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -2190,6 +2190,8 @@ virDomainDefPtr virDomainObjCopyPersistentDef(virDomainObjPtr dom,
+ 
+ void virDomainObjListRemove(virDomainObjListPtr doms,
+                             virDomainObjPtr dom);
++void virDomainObjListRemoveLocked(virDomainObjListPtr doms,
++                            virDomainObjPtr dom);
+ 
+ virDomainDeviceDefPtr virDomainDeviceDefParse(const char *xmlStr,
+                                               virDomainDefPtr def,
+diff --git a/src/libvirt_private.syms b/src/libvirt_private.syms
+index a7e1eeb..6e40e7d 100644
+--- a/src/libvirt_private.syms
++++ b/src/libvirt_private.syms
+@@ -270,6 +270,7 @@ virDomainObjListLoadAllConfigs;
+ virDomainObjListNew;
+ virDomainObjListNumOfDomains;
+ virDomainObjListRemove;
++virDomainObjListRemoveLocked;
+ virDomainObjNew;
+ virDomainObjSetDefTransient;
+ virDomainObjSetState;
+-- 
+1.8.1.4
+

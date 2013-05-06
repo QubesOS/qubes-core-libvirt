@@ -1692,6 +1692,7 @@ fi
 %endif
 
 %dir %{_datadir}/libvirt/
+%{_datadir}/libvirt/libvirtLogo.png
 
 %if %{with_network}
 %dir %{_datadir}/libvirt/networks/

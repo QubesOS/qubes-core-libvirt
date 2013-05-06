@@ -3,6 +3,7 @@
 %if 0%{?qubes_builder}
 %define _sourcedir %(pwd)
 %endif
+%{!?version: %define version %(cat version)}
 
 # If neither fedora nor rhel was defined, try to guess them from %{dist}
 %if !0%{?rhel} && !0%{?fedora}
@@ -337,7 +338,7 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: 1.0.4
+Version: %{version}
 Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries

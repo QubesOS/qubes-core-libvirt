@@ -16,6 +16,7 @@
 # Default to skipping autoreconf.  Distros can change just this one line
 # (or provide a command-line override) if they backport any patches that
 # touch configure.ac or Makefile.am.
+%define enable_autotools 1
 %{!?enable_autotools:%define enable_autotools 0}
 
 # A client only build will create a libvirt.so only containing
@@ -299,6 +300,28 @@
 %endif
 %endif
 
+
+### Qubes settings ####
+# Disable some drivers not used by Qubes (like network storage)
+%define with_storage_fs 0
+%define with_storage_iscsi 0
+%define with_storage_mpath 0
+%define with_storage_rbd 0
+%define with_storage_sheepdog 0
+%define with_libssh2_transport 0
+%define with_sanlock 0
+%define with_firewalld 0
+%define with_avahi 0
+%define with_selinux 0
+%define with_xenapi 0
+
+# This isn't useful for Qubes OS (with xen provided network setup scripts
+# inside netvm), but perhaps would be enabled in the future for other VMM
+%define with_network 0
+
+### End of Qubes settings ####
+
+
 %if %{with_udev} || %{with_hal}
 %define with_nodedev 1
 %else
@@ -379,7 +402,9 @@ Requires: libvirt-daemon-driver-xen = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 %endif
@@ -1254,6 +1279,7 @@ of recent versions of Linux (and other OSes).
 %endif
 
 %if 0%{?enable_autotools}
+touch AUTHORS ChangeLog
 autoreconf -if
 %endif
 

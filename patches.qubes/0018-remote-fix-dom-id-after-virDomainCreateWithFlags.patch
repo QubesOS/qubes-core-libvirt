@@ -1,0 +1,90 @@
+From 06317e1aea461f106a2db10ca8f9be1c957cfa75 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Tue, 7 May 2013 16:51:11 +0200
+Subject: [PATCH 18/19] remote: fix dom->id after virDomainCreateWithFlags
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+
+The same issue as (already fixed) in virDomainCreate -
+REMOTE_PROC_DOMAIN_CREATE_WITH_FLAGS doesn't return new domain ID, only
+-1 on error or 0 on success.
+
+Besides this one fix it is more general problem - local domain object's
+ID can desynchronize with the real on, for example in case when another
+client creates/destroys in the meantime. Perhaps virDomainGetID should
+be called remotely (with all performance implications...)? Or some
+event-based notification added?
+
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+---
+ src/remote/remote_driver.c   | 40 ++++++++++++++++++++++++++++++++++++++++
+ src/remote/remote_protocol.x |  2 +-
+ 2 files changed, 41 insertions(+), 1 deletion(-)
+
+diff --git a/src/remote/remote_driver.c b/src/remote/remote_driver.c
+index f66304c..0bbfc22 100644
+--- a/src/remote/remote_driver.c
++++ b/src/remote/remote_driver.c
+@@ -2423,6 +2423,46 @@ done:
+     return rv;
+ }
+ 
++static int
++remoteDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
++{
++    int rv = -1;
++    struct private_data *priv = dom->conn->privateData;
++    remote_domain_create_with_flags_args args;
++    remote_domain_lookup_by_uuid_args args2;
++    remote_domain_lookup_by_uuid_ret ret2;
++
++    remoteDriverLock(priv);
++
++    make_nonnull_domain(&args.dom, dom);
++    args.flags = flags;
++
++    if (call(dom->conn, priv, 0, REMOTE_PROC_DOMAIN_CREATE_WITH_FLAGS,
++             (xdrproc_t)xdr_remote_domain_create_with_flags_args, (char *)&args,
++             (xdrproc_t)xdr_void, (char *)NULL) == -1) {
++        goto done;
++    }
++
++    /* Need to do a lookup figure out ID of newly started guest, because
++     * bug in design of REMOTE_PROC_DOMAIN_CREATE_WITH_FLAGS means we aren't getting
++     * it returned.
++     */
++    memcpy(args2.uuid, dom->uuid, VIR_UUID_BUFLEN);
++    memset(&ret2, 0, sizeof(ret2));
++    if (call(dom->conn, priv, 0, REMOTE_PROC_DOMAIN_LOOKUP_BY_UUID,
++             (xdrproc_t) xdr_remote_domain_lookup_by_uuid_args, (char *) &args2,
++             (xdrproc_t) xdr_remote_domain_lookup_by_uuid_ret, (char *) &ret2) == -1)
++        goto done;
++
++    dom->id = ret2.dom.id;
++    xdr_free((xdrproc_t) &xdr_remote_domain_lookup_by_uuid_ret, (char *) &ret2);
++    rv = 0;
++
++done:
++    remoteDriverUnlock(priv);
++    return rv;
++}
++
+ static char *
+ remoteDomainGetSchedulerType(virDomainPtr domain, int *nparams)
+ {
+diff --git a/src/remote/remote_protocol.x b/src/remote/remote_protocol.x
+index 512ba2e..d2e0175 100644
+--- a/src/remote/remote_protocol.x
++++ b/src/remote/remote_protocol.x
+@@ -3875,7 +3875,7 @@ enum remote_procedure {
+     REMOTE_PROC_DOMAIN_EVENT_IO_ERROR_REASON = 195,
+ 
+     /**
+-     * @generate: both
++     * @generate: server
+      */
+     REMOTE_PROC_DOMAIN_CREATE_WITH_FLAGS = 196,
+ 
+-- 
+1.8.1.4
+

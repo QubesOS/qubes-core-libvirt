@@ -18,9 +18,9 @@ Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
  src/Makefile.am           |   1 +
  src/libxl/libxl_conf.h    |   7 +
  src/libxl/libxl_driver.c  | 203 +++++++++++++++++++++
- src/libxl/libxl_hostdev.c | 452 ++++++++++++++++++++++++++++++++++++++++++++++
+ src/libxl/libxl_hostdev.c | 454 ++++++++++++++++++++++++++++++++++++++++++++++
  src/libxl/libxl_hostdev.h |  55 ++++++
- 6 files changed, 719 insertions(+)
+ 6 files changed, 721 insertions(+)
  create mode 100644 src/libxl/libxl_hostdev.c
  create mode 100644 src/libxl/libxl_hostdev.h
 
@@ -482,6 +482,8 @@ index 0000000..77085d7
 +            goto cleanup;
 +        }
 +    }
++
++    ret = 0;
 +
 +cleanup:
 +    virObjectUnlock(driver->activePciHostdevs);

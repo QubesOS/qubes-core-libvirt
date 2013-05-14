@@ -897,6 +897,7 @@ Xen
 Summary: Libxl driver plugin for the libvirtd daemon
 Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
+Requires: xen-libs >= 4.2.0
 
 %description daemon-driver-libxl
 The Libxl driver plugin for the libvirtd daemon, providing

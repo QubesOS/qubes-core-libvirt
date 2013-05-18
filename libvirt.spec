@@ -315,6 +315,21 @@
 %define with_selinux 0
 %define with_xenapi 0
 
+# Disabled by default to minimize dependencies, enable when adding support for
+# particular VMM, should be conditional on %{backend_vmm}
+%define with_openvz        0
+%define with_vbox          0
+%define with_vmware        0
+%define with_phyp          0
+%define with_esx           0
+%define with_hyperv        0
+%define with_xenapi        0
+%define with_parallels     0
+%define with_qemu 0
+%define with_lxc 0
+%define with_uml 0
+%define with_hal 0
+
 # This isn't useful for Qubes OS (with xen provided network setup scripts
 # inside netvm), but perhaps would be enabled in the future for other VMM
 %define with_network 0
@@ -1737,9 +1752,7 @@ fi
 
 %if %{with_qemu}
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
-%{_datadir}/augeas/lenses/libvirt_lockd.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
-%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
 %endif
 
 %if %{with_lxc}
@@ -1748,7 +1761,9 @@ fi
 %endif
 
 %{_datadir}/augeas/lenses/libvirtd.aug
+%{_datadir}/augeas/lenses/libvirt_lockd.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd.aug
+%{_datadir}/augeas/lenses/tests/test_libvirt_lockd.aug
 
 %if %{with_polkit}
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6

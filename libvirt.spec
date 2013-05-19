@@ -439,7 +439,7 @@ BuildRequires: python-devel
 %if %{with_systemd}
 BuildRequires: systemd-units
 %endif
-%if %{with_xen}
+%if %{with_xen} || %{with_libxl}
 BuildRequires: xen-devel
 %endif
 BuildRequires: libxml2-devel
@@ -1028,7 +1028,9 @@ Requires: libvirt-daemon-driver-xen = %{version}-%{release}
 Requires: libvirt-daemon-driver-libxl = %{version}-%{release}
 %endif
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}

@@ -1,7 +1,7 @@
-From fd0397d348d4cff4349ab8a4776b0202fd2658d3 Mon Sep 17 00:00:00 2001
+From aea17bd9baebeecc9b49968df6f920c86f1aa702 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 22 May 2013 04:21:02 +0200
-Subject: [PATCH 19/19] libxl: implement lifecycle actions from domain config
+Subject: [PATCH 19/20] libxl: implement lifecycle actions from domain config
 Organization: Invisible Things Lab
 Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
 
@@ -14,18 +14,20 @@ event but do not mark domain object as stopped. So effectively use of
 
 Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_driver.c | 52 +++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 43 insertions(+), 9 deletions(-)
+ src/libxl/libxl_driver.c | 54 +++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 44 insertions(+), 10 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 19cbfd8..243ac8f 100644
+index 19cbfd8..fc9e046 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -713,6 +713,7 @@ libxlEventHandler(void *data ATTRIBUTE_UNUSED, const libxl_event *event)
+@@ -712,7 +712,8 @@ libxlEventHandler(void *data ATTRIBUTE_UNUSED, const libxl_event *event)
+     libxl_shutdown_reason xl_reason = event->u.domain_shutdown.shutdown_reason;
  
      if (event->type == LIBXL_EVENT_TYPE_DOMAIN_SHUTDOWN) {
-         virDomainShutoffReason reason;
-+        int action;
+-        virDomainShutoffReason reason;
++        virDomainShutoffReason reason = VIR_DOMAIN_SHUTOFF_SHUTDOWN;
++        int action = VIR_DOMAIN_LIFECYCLE_DESTROY;
  
          /*
           * Similar to the xl implementation, ignore SUSPEND.  Any actions needed

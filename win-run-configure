@@ -1,0 +1,33 @@
+#!/bin/sh
+
+if [ ! -f configure.done ]
+then
+    #CFLAGS=-I/include\ -g\ -ggdb\ -O0\ -march=x86_64 \
+    #            --enable-debug=yes \
+    #            --host=x86_64-w64-mingw32 \
+    #            --build=x86_64-w64-mingw32 \
+    #CFLAGS=-I/c/deps/include \
+    #LDFLAGS=-L/c/deps/lib \
+    ./configure --prefix= \
+                --enable-shared \
+                --without-xen \
+                --without-libvirtd \
+                --without-openvz \
+                --without-lxc \
+                --without-phyp \
+                --with-python \
+                -C \
+                || exit 1
+    # Some settings are incorectly detected by configure and doesn't have
+    # option to override, so fix config.status directly:
+    # HAVE_PTHREAD_SIGMASK: mingw provides this as (dummy) #define, which isn't
+    #   handled correctly by gnulib
+    # \\\\Lib\\\\: there are problems with number of escapes, so use '/' as it
+    #   also works on windows
+    sed -e 's:\(HAVE_PTHREAD_SIGMASK.*\)1:\10:' \
+        -e 's:\\\\Lib\\\\:/Lib/:' \
+        -i config.status
+    ./config.status
+    echo done > configure.done
+fi
+

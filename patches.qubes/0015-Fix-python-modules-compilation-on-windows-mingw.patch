@@ -1,0 +1,75 @@
+From 691ad4d97ff79a448459a10f672c0e2279970dee Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 18 Jul 2013 03:38:12 +0200
+Subject: [PATCH 15/15] Fix python modules compilation on windows (mingw)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+"-no-undefined" flag is required, which already is set in
+MINGW_EXTRA_LDFLAGS. So just use this variable.
+
+Also add python to link flags. Use already existing
+CYGWIN_EXTRA_PYTHON_LIBADD var, which has the same purpose (although the
+name can be misleading now...).
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ configure.ac       | 6 ++++++
+ python/Makefile.am | 6 +++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 35a5d76..667711e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2100,6 +2100,12 @@ case "$host" in
+   *-*-mingw*)
+     MINGW_EXTRA_LDFLAGS="-no-undefined"
+     MSCOM_LIBS="-lole32 -loleaut32"
++
++    if test "x$PYTHON_CONFIG" != "x" && test -x "$PYTHON_CONFIG"; then
++      CYGWIN_EXTRA_PYTHON_LIBADD="`$PYTHON_CONFIG --libs`"
++    elif test "x$PYTHON_VERSION" != "x"; then
++      CYGWIN_EXTRA_PYTHON_LIBADD="-L$PYTHON_EXEC_PREFIX/libs -lpython${PYTHON_VERSION}"
++    fi
+     ;;
+   *-*-msvc*)
+     MSCOM_LIBS="-lole32 -loleaut32"
+diff --git a/python/Makefile.am b/python/Makefile.am
+index 7eb42c6..c6fdb5b 100644
+--- a/python/Makefile.am
++++ b/python/Makefile.am
+@@ -76,7 +76,7 @@ libvirtmod_la_CFLAGS = $(WARN_CFLAGS) $(WARN_PYTHON_CFLAGS)
+ 
+ libvirtmod_la_LDFLAGS = -module -avoid-version -shared \
+ 	-L$(top_builddir)/src/.libs \
+-	$(CYGWIN_EXTRA_LDFLAGS)
++	$(CYGWIN_EXTRA_LDFLAGS) $(MINGW_EXTRA_LDFLAGS)
+ libvirtmod_la_LIBADD = $(mylibs) \
+ 	$(CYGWIN_EXTRA_LIBADD) $(CYGWIN_EXTRA_PYTHON_LIBADD)
+ 
+@@ -88,7 +88,7 @@ libvirtmod_qemu_la_CFLAGS = $(WARN_PYTHON_CFLAGS)
+ 
+ libvirtmod_qemu_la_LDFLAGS = -module -avoid-version -shared \
+ 	-L$(top_builddir)/src/.libs \
+-	$(CYGWIN_EXTRA_LDFLAGS)
++	$(CYGWIN_EXTRA_LDFLAGS) $(MINGW_EXTRA_LDFLAGS)
+ libvirtmod_qemu_la_LIBADD = $(myqemulibs) \
+ 	$(CYGWIN_EXTRA_LIBADD) $(CYGWIN_EXTRA_PYTHON_LIBADD)
+ 
+@@ -100,7 +100,7 @@ libvirtmod_lxc_la_CFLAGS = $(WARN_PYTHON_CFLAGS)
+ 
+ libvirtmod_lxc_la_LDFLAGS = -module -avoid-version -shared \
+ 	-L$(top_builddir)/src/.libs \
+-	$(CYGWIN_EXTRA_LDFLAGS)
++	$(CYGWIN_EXTRA_LDFLAGS) $(MINGW_EXTRA_LDFLAGS)
+ libvirtmod_lxc_la_LIBADD = $(mylxclibs) \
+ 	$(CYGWIN_EXTRA_LIBADD) $(CYGWIN_EXTRA_PYTHON_LIBADD)
+ 
+-- 
+1.8.1.4
+

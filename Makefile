@@ -40,6 +40,8 @@ endif
 
 all:
 	tar xf $(SRC_FILE)
+	cd libvirt-$(VERSION) && ../apply-patches ../series-qubes.conf ../patches.qubes
+	cd libvirt-$(VERSION) && autoreconf
 	cd libvirt-$(VERSION) && ../win-run-configure
 	cd libvirt-$(VERSION) && make
 

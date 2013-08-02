@@ -1,24 +1,27 @@
-From ca71997e7a636d68eb9cc0662f23cb1e0cbb1937 Mon Sep 17 00:00:00 2001
+From e59a4409ef75e79afd542e551f22b4b8fd374808 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 3 Apr 2013 17:12:42 +0200
-Subject: [PATCH 02/17] libxl: PCI passthrough support
+Subject: [PATCH 01/15] libxl: PCI passthrough support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Organization: Invisible Things Lab
-Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Changes since v1:
  - rebase on 1.0.5
 
-Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/libxl/libxl_conf.c | 72 ++++++++++++++++++++++++++++++++++++++++++++++++++
  src/libxl/libxl_conf.h |  2 ++
  2 files changed, 74 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 648d399..1a567b3 100644
+index 5273a26..1dee5eb 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -755,6 +755,74 @@ error:
+@@ -767,6 +767,74 @@ error:
      return -1;
  }
  
@@ -93,7 +96,7 @@ index 648d399..1a567b3 100644
  virCapsPtr
  libxlMakeCapabilities(libxl_ctx *ctx)
  {
-@@ -813,6 +881,10 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
+@@ -828,6 +896,10 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
          return -1;
      }
  
@@ -105,10 +108,10 @@ index 648d399..1a567b3 100644
      d_config->on_poweroff = def->onPoweroff;
      d_config->on_crash = def->onCrash;
 diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
-index fed878d..4247930 100644
+index 942cdd5..45b9edb 100644
 --- a/src/libxl/libxl_conf.h
 +++ b/src/libxl/libxl_conf.h
-@@ -119,6 +119,8 @@ libxlMakeNic(virDomainNetDefPtr l_nic, libxl_device_nic *x_nic);
+@@ -123,6 +123,8 @@ libxlMakeNic(virDomainNetDefPtr l_nic, libxl_device_nic *x_nic);
  int
  libxlMakeVfb(libxlDriverPrivatePtr driver,
               virDomainGraphicsDefPtr l_vfb, libxl_device_vfb *x_vfb);

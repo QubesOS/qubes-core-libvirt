@@ -1,22 +1,25 @@
-From 94e9a345d36bcbcd6adff7251d18aed909db7588 Mon Sep 17 00:00:00 2001
+From 401c6361bd05a10be46e0b5736c179b2cb487303 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Tue, 16 Apr 2013 03:46:32 +0200
-Subject: [PATCH 16/17] libxl: support network device attach/detach
+Subject: [PATCH 12/15] libxl: support network device attach/detach
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Organization: Invisible Things Lab
-Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Both live and config.
 
-Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/libxl/libxl_driver.c | 162 ++++++++++++++++++++++++++++++++++++++++++++++-
  1 file changed, 159 insertions(+), 3 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 5fb8f5a..19cbfd8 100644
+index 9e8b526..94b36d7 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -3423,6 +3423,109 @@ cleanup:
+@@ -3642,6 +3642,109 @@ cleanup:
  }
  
  static int
@@ -124,9 +127,9 @@ index 5fb8f5a..19cbfd8 100644
 +
 +static int
  libxlDomainAttachDeviceLive(libxlDriverPrivatePtr driver,
-         libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
-         virDomainDeviceDefPtr dev)
-@@ -3436,6 +3539,12 @@ libxlDomainAttachDeviceLive(libxlDriverPrivatePtr driver,
+                             libxlDomainObjPrivatePtr priv, virDomainObjPtr vm,
+                             virDomainDeviceDefPtr dev)
+@@ -3655,6 +3758,12 @@ libxlDomainAttachDeviceLive(libxlDriverPrivatePtr driver,
                  dev->data.disk = NULL;
              break;
  
@@ -139,7 +142,7 @@ index 5fb8f5a..19cbfd8 100644
          default:
              virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                             _("device type '%s' cannot be attached"),
-@@ -3450,6 +3559,8 @@ static int
+@@ -3669,6 +3778,8 @@ static int
  libxlDomainAttachDeviceConfig(virDomainDefPtr vmdef, virDomainDeviceDefPtr dev)
  {
      virDomainDiskDefPtr disk;
@@ -148,7 +151,7 @@ index 5fb8f5a..19cbfd8 100644
  
      switch (dev->type) {
          case VIR_DOMAIN_DEVICE_DISK:
-@@ -3467,6 +3578,22 @@ libxlDomainAttachDeviceConfig(virDomainDefPtr vmdef, virDomainDeviceDefPtr dev)
+@@ -3684,6 +3795,22 @@ libxlDomainAttachDeviceConfig(virDomainDefPtr vmdef, virDomainDeviceDefPtr dev)
              dev->data.disk = NULL;
              break;
  
@@ -171,7 +174,7 @@ index 5fb8f5a..19cbfd8 100644
          default:
              virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                             _("persistent attach of device is not supported"));
-@@ -3487,6 +3614,10 @@ libxlDomainDetachDeviceLive(libxlDriverPrivatePtr driver,
+@@ -3705,6 +3832,10 @@ libxlDomainDetachDeviceLive(libxlDriverPrivatePtr driver,
              ret = libxlDomainDetachDeviceDiskLive(driver, priv, vm, dev);
              break;
  
@@ -182,7 +185,7 @@ index 5fb8f5a..19cbfd8 100644
          default:
              virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                             _("device type '%s' cannot be detached"),
-@@ -3500,20 +3631,45 @@ libxlDomainDetachDeviceLive(libxlDriverPrivatePtr driver,
+@@ -3718,20 +3849,45 @@ libxlDomainDetachDeviceLive(libxlDriverPrivatePtr driver,
  static int
  libxlDomainDetachDeviceConfig(virDomainDefPtr vmdef, virDomainDeviceDefPtr dev)
  {

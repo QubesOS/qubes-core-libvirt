@@ -1,9 +1,12 @@
-From aea17bd9baebeecc9b49968df6f920c86f1aa702 Mon Sep 17 00:00:00 2001
+From 1d1b0f61d2e7b8e5a0349904678f459bd231c675 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 22 May 2013 04:21:02 +0200
-Subject: [PATCH 19/20] libxl: implement lifecycle actions from domain config
+Subject: [PATCH 02/15] libxl: implement lifecycle actions from domain config
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Organization: Invisible Things Lab
-Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Instead of hardcoded actions for poweroff, reboot and crash.
 Known limitations:
@@ -12,16 +15,16 @@ Known limitations:
 event but do not mark domain object as stopped. So effectively use of
 'preserve' can cause Weird Effects (TM).
 
-Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/libxl/libxl_driver.c | 54 +++++++++++++++++++++++++++++++++++++++---------
  1 file changed, 44 insertions(+), 10 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 19cbfd8..fc9e046 100644
+index eb252d0..62d70c8 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -712,7 +712,8 @@ libxlEventHandler(void *data ATTRIBUTE_UNUSED, const libxl_event *event)
+@@ -729,7 +729,8 @@ libxlEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
      libxl_shutdown_reason xl_reason = event->u.domain_shutdown.shutdown_reason;
  
      if (event->type == LIBXL_EVENT_TYPE_DOMAIN_SHUTDOWN) {
@@ -31,7 +34,7 @@ index 19cbfd8..fc9e046 100644
  
          /*
           * Similar to the xl implementation, ignore SUSPEND.  Any actions needed
-@@ -730,27 +731,60 @@ libxlEventHandler(void *data ATTRIBUTE_UNUSED, const libxl_event *event)
+@@ -747,27 +748,60 @@ libxlEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
  
          switch (xl_reason) {
              case LIBXL_SHUTDOWN_REASON_POWEROFF:

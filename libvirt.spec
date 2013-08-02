@@ -1668,7 +1668,7 @@ fi
 %files daemon
 %defattr(-, root, root)
 
-%doc AUTHORS ChangeLog.gz NEWS README COPYING.LIB TODO
+%doc AUTHORS ChangeLog.gz NEWS README COPYING.LESSER TODO
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/
 
 %if %{with_network}
@@ -1770,6 +1770,7 @@ fi
 %if %{with_polkit}
 %if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
 %{_datadir}/polkit-1/actions/org.libvirt.unix.policy
+%{_datadir}/polkit-1/actions/org.libvirt.api.policy
 %else
 %{_datadir}/PolicyKit/policy/org.libvirt.unix.policy
 %endif
@@ -1913,7 +1914,7 @@ fi
 
 %files client -f %{name}.lang
 %defattr(-, root, root)
-%doc AUTHORS ChangeLog.gz NEWS README COPYING.LIB TODO
+%doc AUTHORS ChangeLog.gz NEWS README COPYING.LESSER TODO
 
 %config(noreplace) %{_sysconfdir}/libvirt/libvirt.conf
 %{_mandir}/man1/virsh.1*
@@ -1947,6 +1948,7 @@ fi
 %{_datadir}/libvirt/schemas/nwfilter.rng
 %{_datadir}/libvirt/schemas/secret.rng
 %{_datadir}/libvirt/schemas/storageencryption.rng
+%{_datadir}/libvirt/schemas/storagefilefeatures.rng
 %{_datadir}/libvirt/schemas/storagepool.rng
 %{_datadir}/libvirt/schemas/storagevol.rng
 
@@ -1992,13 +1994,12 @@ fi
 %files python
 %defattr(-, root, root)
 
-%doc AUTHORS NEWS README COPYING.LIB
+%doc AUTHORS NEWS README COPYING.LESSER
 %{_libdir}/python*/site-packages/libvirt.py*
 %{_libdir}/python*/site-packages/libvirt_qemu.py*
 %{_libdir}/python*/site-packages/libvirt_lxc.py*
 %{_libdir}/python*/site-packages/libvirtmod*
 %doc python/tests/*.py
-%doc python/TODO
 %doc examples/python
 %doc examples/domain-events/events-python
 %endif

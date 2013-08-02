@@ -1,10 +1,13 @@
-From 3d2b7d560300eef17bc0b3fa0f23871f41606fe6 Mon Sep 17 00:00:00 2001
+From a00c9836eee65653bec1e68ced1b587ec8942320 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:03 +0200
-Subject: [PATCH 09/17] libxl: fill HVM SDL and VNC settings based on
+Subject: [PATCH 08/15] libxl: fill HVM SDL and VNC settings based on
  <graphics/> entries
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Organization: Invisible Things Lab
-Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Vfb entries in domain config are used only by PV drivers. Qemu
 parameters are build based on b_info struct. So fill it with the same
@@ -12,23 +15,23 @@ data as vfb entries (actually the first one).
 This will additionally allow graphic-less domain, when no <graphics/>
 entries are present in domain XML (previously VNC was always enabled).
 
-Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_conf.c | 131 +++++++++++++++++++++++++++++++++----------------
- 1 file changed, 90 insertions(+), 41 deletions(-)
+ src/libxl/libxl_conf.c | 114 +++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 82 insertions(+), 32 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index c9a005c..7db76ec 100644
+index 5718241..ada9ada 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -334,7 +334,64 @@ error:
+@@ -331,7 +331,56 @@ error:
  }
  
  static int
--libxlMakeDomBuildInfo(virDomainDefPtr def, libxl_domain_config *d_config)
+-libxlMakeDomBuildInfo(virDomainObjPtr vm, libxl_domain_config *d_config)
 +libxlMakeVNCInfo(libxlDriverPrivatePtr driver,
-+        virDomainGraphicsDefPtr l_vfb,
-+        libxl_vnc_info *x_vnc)
++                 virDomainGraphicsDefPtr l_vfb,
++                 libxl_vnc_info *x_vnc)
 +{
 +    unsigned short port;
 +    const char *listenAddr;
@@ -53,8 +56,7 @@ index c9a005c..7db76ec 100644
 +    if (listenAddr) {
 +        /* libxl_device_vfb_init() does strdup("127.0.0.1") */
 +        VIR_FREE(x_vnc->listen);
-+        if ((x_vnc->listen = strdup(listenAddr)) == NULL) {
-+            virReportOOMError();
++        if (VIR_STRDUP(x_vnc->listen, listenAddr) < 0) {
 +            return -1;
 +        }
 +    }
@@ -63,33 +65,26 @@ index c9a005c..7db76ec 100644
 +
 +static int
 +libxlMakeSDLInfo(virDomainGraphicsDefPtr l_vfb,
-+                        libxl_sdl_info *x_sdl)
++                 libxl_sdl_info *x_sdl)
 +{
 +    libxl_defbool_set(&x_sdl->enable, 1);
-+    if (l_vfb->data.sdl.display &&
-+            (x_sdl->display = strdup(l_vfb->data.sdl.display)) == NULL) {
-+        virReportOOMError();
++    if (VIR_STRDUP(x_sdl->display, l_vfb->data.sdl.display) < 0)
 +        return -1;
-+    }
-+    if (l_vfb->data.sdl.xauth &&
-+            (x_sdl->xauthority =
-+             strdup(l_vfb->data.sdl.xauth)) == NULL) {
-+        virReportOOMError();
++    if (VIR_STRDUP(x_sdl->xauthority, l_vfb->data.sdl.xauth) < 0)
 +        return -1;
-+    }
 +    return 0;
 +}
 +
 +static int
 +libxlMakeDomBuildInfo(libxlDriverPrivatePtr driver,
-+        virDomainDefPtr def,
-+        libxl_domain_config *d_config)
++                      virDomainObjPtr vm,
++                      libxl_domain_config *d_config)
  {
-     libxl_domain_build_info *b_info = &d_config->b_info;
-     int hvm = STREQ(def->os.type, "hvm");
-@@ -408,6 +465,34 @@ libxlMakeDomBuildInfo(virDomainDefPtr def, libxl_domain_config *d_config)
+     virDomainDefPtr def = vm->def;
+     libxlDomainObjPrivatePtr priv = vm->privateData;
+@@ -411,6 +460,34 @@ libxlMakeDomBuildInfo(virDomainObjPtr vm, libxl_domain_config *d_config)
+         if (VIR_STRDUP(b_info->u.hvm.boot, bootorder) < 0)
              goto error;
-         }
  
 +        /* Disable VNC and SDL until explicitly enabled */
 +        libxl_defbool_set(&b_info->u.hvm.vnc.enable, 0);
@@ -122,28 +117,23 @@ index c9a005c..7db76ec 100644
          /*
           * The following comment and calculation were taken directly from
           * libxenlight's internal function libxl_get_required_shadow_memory():
-@@ -702,50 +787,14 @@ libxlMakeVfb(libxlDriverPrivatePtr driver,
+@@ -743,43 +820,16 @@ libxlMakeVfb(libxlDriverPrivatePtr driver,
               virDomainGraphicsDefPtr l_vfb,
               libxl_device_vfb *x_vfb)
  {
 -    unsigned short port;
 -    const char *listenAddr;
 -
+     libxl_device_vfb_init(x_vfb);
+ 
      switch (l_vfb->type) {
          case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
 -            libxl_defbool_set(&x_vfb->sdl.enable, 1);
--            if (l_vfb->data.sdl.display &&
--                (x_vfb->sdl.display = strdup(l_vfb->data.sdl.display)) == NULL) {
--                virReportOOMError();
+-            if (VIR_STRDUP(x_vfb->sdl.display, l_vfb->data.sdl.display) < 0)
 -                return -1;
--            }
--            if (l_vfb->data.sdl.xauth &&
--                (x_vfb->sdl.xauthority =
--                    strdup(l_vfb->data.sdl.xauth)) == NULL) {
--                virReportOOMError();
+-            if (VIR_STRDUP(x_vfb->sdl.xauthority, l_vfb->data.sdl.xauth) < 0)
 +            if (libxlMakeSDLInfo(l_vfb, &x_vfb->sdl) < 0)
                  return -1;
--            }
              break;
          case  VIR_DOMAIN_GRAPHICS_TYPE_VNC:
 -            libxl_defbool_set(&x_vfb->vnc.enable, 1);
@@ -164,24 +154,22 @@ index c9a005c..7db76ec 100644
 -
 -            listenAddr = virDomainGraphicsListenGetAddress(l_vfb, 0);
 -            if (listenAddr) {
--                /* libxl_device_vfb_init() does strdup("127.0.0.1") */
+-                /* libxl_device_vfb_init() does VIR_STRDUP("127.0.0.1") */
 -                VIR_FREE(x_vfb->vnc.listen);
--                if ((x_vfb->vnc.listen = strdup(listenAddr)) == NULL) {
--                    virReportOOMError();
+-                if (VIR_STRDUP(x_vfb->vnc.listen, listenAddr) < 0)
 -                    return -1;
--                }
 -            }
 +            if (libxlMakeVNCInfo(driver, l_vfb, &x_vfb->vnc) < 0)
 +                return -1;
-             if (l_vfb->data.vnc.keymap &&
-                 (x_vfb->keymap =
-                     strdup(l_vfb->data.vnc.keymap)) == NULL) {
-@@ -916,7 +965,7 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
+             if (VIR_STRDUP(x_vfb->keymap, l_vfb->data.vnc.keymap) < 0)
+                 return -1;
+             break;
+@@ -945,7 +995,7 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
      if (libxlMakeDomCreateInfo(driver, def, &d_config->c_info) < 0)
          return -1;
  
--    if (libxlMakeDomBuildInfo(def, d_config) < 0) {
-+    if (libxlMakeDomBuildInfo(driver, def, d_config) < 0) {
+-    if (libxlMakeDomBuildInfo(vm, d_config) < 0) {
++    if (libxlMakeDomBuildInfo(driver, vm, d_config) < 0) {
          return -1;
      }
  

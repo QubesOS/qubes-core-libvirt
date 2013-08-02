@@ -1,9 +1,12 @@
-From 589e5b6276345d67a7f33619d6c71180e875d8f4 Mon Sep 17 00:00:00 2001
+From 2351658dd3a5e4bf18688862868411ea2edb3a43 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 3 Apr 2013 17:13:46 +0200
-Subject: [PATCH 03/17] libxl: nodeDevice* support for PCI devices
+Subject: [PATCH 03/15] libxl: nodeDevice* support for PCI devices
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Organization: Invisible Things Lab
-Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 For now only for PCI devices. Mostly copy-paste from old xen driver.
 
@@ -12,7 +15,10 @@ Changes since v1:
  - keep activePciHostdevs and inactivePciHostdevs lists to track device
    usage. Based on qemu driver code.
 
-Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Changes since v2:
+ - rebase on 1.1.1
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  po/POTFILES.in            |   1 +
  src/Makefile.am           |   1 +
@@ -25,10 +31,10 @@ Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
  create mode 100644 src/libxl/libxl_hostdev.h
 
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index bf5a864..0e9e0aa 100644
+index 1fd84af..1a3e6d9 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
-@@ -66,6 +66,7 @@ src/lxc/lxc_driver.c
+@@ -69,6 +69,7 @@ src/lxc/lxc_driver.c
  src/lxc/lxc_process.c
  src/libxl/libxl_driver.c
  src/libxl/libxl_conf.c
@@ -37,10 +43,10 @@ index bf5a864..0e9e0aa 100644
  src/node_device/node_device_driver.c
  src/node_device/node_device_hal.c
 diff --git a/src/Makefile.am b/src/Makefile.am
-index cd098db..78277bc 100644
+index 62e427e..18278e8 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -626,6 +626,7 @@ XENAPI_DRIVER_SOURCES =						\
+@@ -652,6 +652,7 @@ XENAPI_DRIVER_SOURCES =						\
  
  LIBXL_DRIVER_SOURCES =						\
  		libxl/libxl_conf.c libxl/libxl_conf.h		\
@@ -49,10 +55,10 @@ index cd098db..78277bc 100644
  
  UML_DRIVER_SOURCES =						\
 diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
-index 4247930..4e7813e 100644
+index 45b9edb..d504b7e 100644
 --- a/src/libxl/libxl_conf.h
 +++ b/src/libxl/libxl_conf.h
-@@ -36,6 +36,7 @@
+@@ -34,6 +34,7 @@
  # include "configmake.h"
  # include "virportallocator.h"
  # include "virobject.h"
@@ -60,7 +66,7 @@ index 4247930..4e7813e 100644
  
  
  # define LIBXL_VNC_PORT_MIN  5900
-@@ -70,6 +71,12 @@ struct _libxlDriverPrivate {
+@@ -73,6 +74,12 @@ struct _libxlDriverPrivate {
  
      virDomainObjListPtr domains;
  
@@ -71,13 +77,13 @@ index 4247930..4e7813e 100644
 +    virPCIDeviceListPtr inactivePciHostdevs;
 +
      virDomainEventStatePtr domainEventState;
+     virSysinfoDefPtr hostsysinfo;
  
-     char *configDir;
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 212d0fc..a67cea3 100644
+index 62d70c8..b09b4d4 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -41,6 +41,8 @@
+@@ -43,6 +43,8 @@
  #include "vircommand.h"
  #include "libxl_driver.h"
  #include "libxl_conf.h"
@@ -86,7 +92,7 @@ index 212d0fc..a67cea3 100644
  #include "xen_xm.h"
  #include "virtypedparam.h"
  #include "viruri.h"
-@@ -632,6 +634,8 @@ libxlVmCleanup(libxlDriverPrivatePtr driver,
+@@ -642,6 +644,8 @@ libxlVmCleanup(libxlDriverPrivatePtr driver,
          virDomainObjSetState(vm, VIR_DOMAIN_SHUTOFF, reason);
      }
  
@@ -95,17 +101,17 @@ index 212d0fc..a67cea3 100644
      driver->nactive--;
      if (!driver->nactive && driver->inhibitCallback)
          driver->inhibitCallback(false, driver->inhibitOpaque);
-@@ -948,6 +952,9 @@ libxlVmStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
-     if (libxlBuildDomainConfig(driver, vm->def, &d_config) < 0)
+@@ -1005,6 +1009,9 @@ libxlVmStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+     if (libxlBuildDomainConfig(driver, vm, &d_config) < 0)
          goto error;
  
 +    if (libxlDomainPrepareHostDevices(driver, vm->def, restore_fd < 0) < 0)
 +        goto error;
 +
-     if (libxlFreeMem(priv, &d_config) < 0) {
+     if (driver->autoballoon && libxlFreeMem(priv, &d_config) < 0) {
          virReportError(VIR_ERR_INTERNAL_ERROR,
                         _("libxenlight failed to get free memory for domain '%s'"),
-@@ -1076,6 +1083,10 @@ libxlReconnectDomain(virDomainObjPtr vm,
+@@ -1133,6 +1140,10 @@ libxlReconnectDomain(virDomainObjPtr vm,
          driver->inhibitCallback(true, driver->inhibitOpaque);
      driver->nactive++;
  
@@ -116,7 +122,7 @@ index 212d0fc..a67cea3 100644
      /* Recreate domain death et. al. events */
      libxlCreateDomEvents(vm);
      virObjectUnlock(vm);
-@@ -1107,6 +1118,8 @@ libxlStateCleanup(void)
+@@ -1164,6 +1175,8 @@ libxlStateCleanup(void)
      virObjectUnref(libxl_driver->caps);
      virObjectUnref(libxl_driver->xmlopt);
      virObjectUnref(libxl_driver->domains);
@@ -125,9 +131,9 @@ index 212d0fc..a67cea3 100644
      libxl_ctx_free(libxl_driver->ctx);
      xtl_logger_destroy(libxl_driver->logger);
      if (libxl_driver->logger_file)
-@@ -1269,6 +1282,15 @@ libxlStateInitialize(bool privileged,
-                                                        NULL)))
-         goto error;
+@@ -1358,6 +1371,15 @@ libxlStateInitialize(bool privileged,
+     /* setup autoballoon */
+     libxl_driver->autoballoon = libxlGetAutoballoon(libxl_driver);
  
 +    if ((libxl_driver->activePciHostdevs = virPCIDeviceListNew()) == NULL)
 +        goto error;
@@ -141,7 +147,7 @@ index 212d0fc..a67cea3 100644
      /* Load running domains first. */
      if (virDomainObjListLoadAllConfigs(libxl_driver->domains,
                                         libxl_driver->stateDir,
-@@ -1299,6 +1321,8 @@ libxlStateInitialize(bool privileged,
+@@ -1385,6 +1407,8 @@ libxlStateInitialize(bool privileged,
      virDomainObjListForEach(libxl_driver->domains, libxlDomainManagedSaveLoad,
                              libxl_driver);
  
@@ -150,8 +156,8 @@ index 212d0fc..a67cea3 100644
      libxlDriverUnlock(libxl_driver);
  
      return 0;
-@@ -3695,6 +3719,181 @@ libxlDomainUpdateDeviceFlags(virDomainPtr dom, const char *xml,
-     return libxlDomainModifyDeviceFlags(dom, xml, flags, LIBXL_DEVICE_UPDATE);
+@@ -4098,6 +4122,181 @@ cleanup:
+     return ret;
  }
  
 +static int
@@ -233,7 +239,7 @@ index 212d0fc..a67cea3 100644
 +    virObjectLock(driver->inactivePciHostdevs);
 +
 +    if (virPCIDeviceDetach(pci, driver->activePciHostdevs,
-+                driver->inactivePciHostdevs, NULL) < 0)
++                driver->inactivePciHostdevs) < 0)
 +        goto out;
 +
 +    ret = 0;
@@ -332,8 +338,8 @@ index 212d0fc..a67cea3 100644
  static unsigned long long
  libxlNodeGetFreeMemory(virConnectPtr conn)
  {
-@@ -4262,6 +4461,10 @@ static virDriver libxlDriver = {
-     .nodeGetFreeMemory = libxlNodeGetFreeMemory, /* 0.9.0 */
+@@ -4915,6 +5114,10 @@ static virDriver libxlDriver = {
+     .nodeGetCellsFreeMemory = libxlNodeGetCellsFreeMemory, /* 1.1.1 */
      .connectDomainEventRegister = libxlConnectDomainEventRegister, /* 0.9.0 */
      .connectDomainEventDeregister = libxlConnectDomainEventDeregister, /* 0.9.0 */
 +    .nodeDeviceDettach = libxlNodeDeviceDettach, /* 1.0.6 */
@@ -345,7 +351,7 @@ index 212d0fc..a67cea3 100644
      .domainManagedSaveRemove = libxlDomainManagedSaveRemove, /* 0.9.2 */
 diff --git a/src/libxl/libxl_hostdev.c b/src/libxl/libxl_hostdev.c
 new file mode 100644
-index 0000000..9cc88fb
+index 0000000..b25e8e1
 --- /dev/null
 +++ b/src/libxl/libxl_hostdev.c
 @@ -0,0 +1,454 @@
@@ -581,7 +587,7 @@ index 0000000..9cc88fb
 +    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
 +        virPCIDevicePtr dev = virPCIDeviceListGet(pcidevs, i);
 +        if (virPCIDeviceGetManaged(dev) &&
-+                virPCIDeviceDetach(dev, driver->activePciHostdevs, NULL, NULL) < 0)
++                virPCIDeviceDetach(dev, driver->activePciHostdevs, NULL) < 0)
 +            goto reattachdevs;
 +    }
 +

@@ -43,6 +43,6 @@ all:
 	cd libvirt-$(VERSION) && ../apply-patches ../series-qubes.conf ../patches.qubes
 	cd libvirt-$(VERSION) && autoreconf
 	cd libvirt-$(VERSION) && ../win-run-configure
-	cd libvirt-$(VERSION) && make
+	cd libvirt-$(VERSION) && make -j$(NUMBER_OF_PROCESSORS)
 
 endif

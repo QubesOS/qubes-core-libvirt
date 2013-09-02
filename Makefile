@@ -1,4 +1,4 @@
-ifneq ($(DISTRIBUTION),windows)
+ifneq ($(OS),Windows_NT)
 default: help
 
 NAME := libvirt

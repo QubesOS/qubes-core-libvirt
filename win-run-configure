@@ -1,12 +1,13 @@
 #!/bin/sh
 
+# This script uses MINGW_DIR variable passed from core-libvirt Makefile and initialized in root Makefile.windows
 if [ ! -f configure.done ]
 then
     #CFLAGS=-I/include\ -g\ -ggdb\ -O0\ -march=x86_64 \
     #            --enable-debug=yes \
     #LDFLAGS=-L/usr/lib \
-    CFLAGS=-I/usr/include \
-    ./configure --prefix=/usr \
+    CFLAGS=-I$MINGW_DIR/include \
+    ./configure --prefix=$MINGW_DIR \
                 --host=x86_64-w64-mingw32 \
                 --build=x86_64-w64-mingw32 \
                 --enable-shared \

@@ -1,0 +1,59 @@
+diff --git a/daemon/libvirtd.c b/daemon/libvirtd.c
+index 9f7fd8a..bde74ce 100644
+--- a/daemon/libvirtd.c
++++ b/daemon/libvirtd.c
+@@ -77,6 +77,7 @@
+ # ifdef WITH_VBOX
+ #  include "vbox/vbox_driver.h"
+ # endif
++#include "../../../core-libvirt-@DRIVER_NAME@/@DRIVER_NAME@/@DRIVER_NAME@_driver.h"
+ # ifdef WITH_NETWORK
+ #  include "network/bridge_driver.h"
+ # endif
+@@ -403,6 +404,7 @@ static void daemonInitialize(void)
+ # ifdef WITH_VBOX
+     virDriverLoadModule("vbox");
+ # endif
++    virDriverLoadModule("@DRIVER_NAME@");
+ #else
+ # ifdef WITH_NETWORK
+     networkRegister();
+@@ -440,6 +442,7 @@ static void daemonInitialize(void)
+ # ifdef WITH_VBOX
+     vboxRegister();
+ # endif
++    @DRIVER_NAME@Register();
+ #endif
+ }
+ 
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 6256a25..1b396e4 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -2416,3 +2416,5 @@
+ CLEANFILES += *.gcov .libs/*.gcda .libs/*.gcno *.gcno *.gcda *.i *.s
+ DISTCLEANFILES += $(GENERATED_SYM_FILES)
+ MAINTAINERCLEANFILES += $(REMOTE_DRIVER_GENERATED) $(VIR_NET_RPC_GENERATED)
++
++include $(top_srcdir)/../../core-libvirt-@DRIVER_NAME@/@DRIVER_NAME@/Makefile.am
+diff --git a/src/libvirt.c b/src/libvirt.c
+index 8157488..d6b5222 100644
+--- a/src/libvirt.c
++++ b/src/libvirt.c
+@@ -67,6 +67,7 @@
+ #include "virutil.h"
+ #include "virtypedparam.h"
+ 
++#include "../../../core-libvirt-@DRIVER_NAME@/@DRIVER_NAME@/@DRIVER_NAME@_driver.h"
+ #ifdef WITH_TEST
+ # include "test/test_driver.h"
+ #endif
+@@ -447,6 +448,8 @@ virGlobalInit(void)
+      * Note that the order is important: the first ones have a higher
+      * priority when calling virConnectOpen.
+      */
++    if (@DRIVER_NAME@Register() == -1)
++        goto error;
+ #ifdef WITH_TEST
+     if (testRegister() == -1)
+         goto error;

@@ -46,6 +46,8 @@ endif
 all:
 	tar xf $(SRC_FILE)
 	cd libvirt-$(VERSION) && ../apply-patches ../series-qubes.conf ../patches.qubes
+	if test -r libvirt-external-driver.patch; then \
+		patch -d libvirt-$(VERSION) -p1 < libvirt-external-driver.patch; fi
 	cd libvirt-$(VERSION) && autoreconf
 	# exported variables below should be initialized by the script that prepares windows build environment
 	export PATH='$(WIN_PATH)'; export MINGW_DIR='$(MINGW_DIR)'; export PYTHON_DIR='$(PYTHON_DIR)'; cd libvirt-$(VERSION) && ../win-run-configure

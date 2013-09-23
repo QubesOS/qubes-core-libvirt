@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Module
+        Id='libvirt'
+        Language='1033'
+        Codepage='1252'
+        Version='$(var.version)'>
+        <Package
+            Id='{D342628D-A302-4078-811F-C73CBAE78913}'
+            Description='core-libvirt'
+            Manufacturer='Invisible Things Lab'
+            InstallerVersion='200'
+            Languages='1033'
+            SummaryCodepage='1252'/>
+        <Property Id='PYTHONDIR'>
+            <RegistrySearch Id='PythonDirRegistry' Type='raw' Root='HKLM' Key='Software\Python\PythonCode\2.7\InstallPath'/>
+        </Property>
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='PYTHONDIR' Name='python27'>
+                <Directory Id='PYTHONLIBDIR' Name='lib'>
+                    <Directory Id='PYTHONSITELIBDIR' Name='site-packages'/>
+                </Directory>
+                <Directory Id='PYTHONDLLSDIR' Name='DLLs'/>
+            </Directory>
+            <Directory Id='System64Folder' Name='SysWOW64'/>
+        </Directory>
+
+        <Component Id="cmp169FD6B6314D1B91729D461B4AFC0F85" Directory="PYTHONDLLSDIR" Guid="{36F1CC9B-4179-44B9-9D1C-4750DAAEE15F}">
+            <File Id="fil2E3EC74792031E0989A23D100767E999" KeyPath="yes" Source="src\.libs\libvirt-0.dll" />
+        </Component>
+        <Component Id="cmpC531993D742641EB1946DD3D8CDBD3CA" Directory="PYTHONDLLSDIR" Guid="{3C3C5DF6-99E3-474B-A922-F1B0161D64DC}">
+            <File Id="fil98E708110CC2969B2B81284B407FE125" KeyPath="yes" Source="src\.libs\libvirt-lxc-0.dll" />
+        </Component>
+        <Component Id="cmp618848B1EFBAD25B9373C98F690AE3FF" Directory="PYTHONDLLSDIR" Guid="{725456A2-FF39-4896-8F12-B24ABA32881E}">
+            <File Id="fil7D54C17F40A44019637AB4C92858DD30" KeyPath="yes" Source="src\.libs\libvirt-qemu-0.dll" />
+        </Component>
+        <Component Id="cmp393C6D2A024600144BCABAE0E0AEE3F8" Directory="PYTHONDLLSDIR" Guid="{DD5C103C-A35A-4031-97E3-D595C2DC77D9}">
+            <File Id="fil779628925831697B98FDF53838F68A4B" KeyPath="yes" Source="tools\.libs\virsh.exe" />
+        </Component>
+        <Component Id="cmp70BD94F35C114EC33A55DF0E1E6A325C" Directory="PYTHONDLLSDIR" Guid="{DEDE2FB2-0F02-4C2B-BE5B-282C12817A33}">
+            <File Id="fil2E78BC1651A7FC50305DA12B74602080" KeyPath="yes" Source="tools\.libs\virt-host-validate.exe" />
+        </Component>
+        <Component Id="cmp1DAD3E33CDAF601055295D05F79D6D0D" Directory="PYTHONDLLSDIR" Guid="{D97AE813-AEDA-4917-BBF6-3E02F7A96BC8}">
+            <File Id="fil5D668ACD952B82C99946DF36E44F7B5E" KeyPath="yes" Source="tools\virt-pki-validate" />
+        </Component>
+        <Component Id="cmp7E02691446D033338166DE34C173E5F7" Directory="PYTHONDLLSDIR" Guid="{8F2456F1-8400-4136-971E-C3C4C8449279}">
+            <File Id="filF6AC74EF24A07EAFF46889296CF9D990" KeyPath="yes" Source="tools\virt-xml-validate" />
+        </Component>
+
+        <Component Id="cmp265FBF29103E42FE111922F487A74DAE" Directory="PYTHONSITELIBDIR" Guid="{BF87459A-E968-4967-9B90-9B392ACD86C9}">
+            <File Id="fil68ECBCFE91A36BB989F511B6E3896F0B" KeyPath="yes" Source="python\libvirt.py" />
+        </Component>
+        <Component Id="cmp596DE4A26DD39FEA5D248A682A2B8C43" Directory="PYTHONSITELIBDIR" Guid="{245B5D8E-0243-48B8-BC41-CAC2DA1647C9}">
+            <File Id="filB225B3E457C95946B969667906296EA1" KeyPath="yes" Source="python\.libs\libvirtmod.dll" Name='libvirtmod.pyd'/>
+        </Component>
+        <Component Id="cmp5B495155380160D75906492B18A95AB3" Directory="PYTHONSITELIBDIR" Guid="{445B8D03-22CE-4832-8925-975317AA3F68}">
+            <File Id="fil198128260377122E03F6940E4501BEF2" KeyPath="yes" Source="python\.libs\libvirtmod_lxc.dll" Name='libvirtmod_lxc.pyd'/>
+        </Component>
+        <Component Id="cmpC1A607B6F90199C0E9D260A4DC1903D6" Directory="PYTHONSITELIBDIR" Guid="{1F4D9F7E-D568-4327-B89F-C6DA8E7F6A7C}">
+            <File Id="fil39113729514231EB3933DB19ED1E3CCC" KeyPath="yes" Source="python\.libs\libvirtmod_qemu.dll" Name='libvirtmod_qemu.pyd'/>
+        </Component>
+        <Component Id="cmp6515C4E49DC93DF80CD7A3A4C5162F3C" Directory="PYTHONSITELIBDIR" Guid="{BFE3C77D-DE10-4D21-AAC9-65C3FA300018}">
+            <File Id="filA8B3776078BEE44CD7F5382691DB8C5B" KeyPath="yes" Source="python\libvirt_lxc.py" />
+        </Component>
+        <Component Id="cmpFB88E791AD3DB6E3B4248E78134C9974" Directory="PYTHONSITELIBDIR" Guid="{6042760A-329D-4348-B4F6-5D73342DCAF1}">
+            <File Id="filDFAFB903D7DC8053068B8B4818206EDD" KeyPath="yes" Source="python\libvirt_qemu.py" />
+        </Component>
+    </Module>
+</Wix>
+
+

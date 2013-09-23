@@ -53,4 +53,8 @@ all:
 	export PATH='$(WIN_PATH)'; export MINGW_DIR='$(MINGW_DIR)'; export PYTHON_DIR='$(PYTHON_DIR)'; cd libvirt-$(VERSION) && ../win-run-configure
 	export PATH='$(WIN_PATH)'; cd libvirt-$(VERSION) && make -j$(NUMBER_OF_PROCESSORS)
 
+msi:
+	candle -arch x64 -dversion=$(VERSION) installer.wxs
+	light -b libvirt-$(VERSION) -o core-libvirt.msm installer.wixobj
+
 endif

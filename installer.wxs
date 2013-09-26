@@ -25,13 +25,13 @@
             <Directory Id='System64Folder' Name='SysWOW64'/>
         </Directory>
 
-        <Component Id="cmp169FD6B6314D1B91729D461B4AFC0F85" Directory="PYTHONDLLSDIR" Guid="{36F1CC9B-4179-44B9-9D1C-4750DAAEE15F}">
+        <Component Id="cmp169FD6B6314D1B91729D461B4AFC0F85" Directory="System64Folder" Guid="{36F1CC9B-4179-44B9-9D1C-4750DAAEE15F}">
             <File Id="fil2E3EC74792031E0989A23D100767E999" KeyPath="yes" Source="src\.libs\libvirt-0.dll" />
         </Component>
-        <Component Id="cmpC531993D742641EB1946DD3D8CDBD3CA" Directory="PYTHONDLLSDIR" Guid="{3C3C5DF6-99E3-474B-A922-F1B0161D64DC}">
+        <Component Id="cmpC531993D742641EB1946DD3D8CDBD3CA" Directory="System64Folder" Guid="{3C3C5DF6-99E3-474B-A922-F1B0161D64DC}">
             <File Id="fil98E708110CC2969B2B81284B407FE125" KeyPath="yes" Source="src\.libs\libvirt-lxc-0.dll" />
         </Component>
-        <Component Id="cmp618848B1EFBAD25B9373C98F690AE3FF" Directory="PYTHONDLLSDIR" Guid="{725456A2-FF39-4896-8F12-B24ABA32881E}">
+        <Component Id="cmp618848B1EFBAD25B9373C98F690AE3FF" Directory="System64Folder" Guid="{725456A2-FF39-4896-8F12-B24ABA32881E}">
             <File Id="fil7D54C17F40A44019637AB4C92858DD30" KeyPath="yes" Source="src\.libs\libvirt-qemu-0.dll" />
         </Component>
         <Component Id="cmp393C6D2A024600144BCABAE0E0AEE3F8" Directory="PYTHONDLLSDIR" Guid="{DD5C103C-A35A-4031-97E3-D595C2DC77D9}">

@@ -2,7 +2,7 @@ ifneq ($(OS),Windows_NT)
 default: help
 
 NAME := libvirt
-SPECFILE := libvirt.spec
+SPECFILE := libvirt.spec libvirt-python.spec
 include Makefile.common
 
 .PHONY: verify-sources get-sources clean-sources clean
@@ -43,6 +43,7 @@ ifneq ($(SRC_FILE), None)
 	@md5sum -c sources-$(VERSION)
 endif
 
+# TODO: compile libvirt-python, apply patches.python
 all:
 	tar xf $(SRC_FILE)
 	cd libvirt-$(VERSION) && ../apply-patches ../series-qubes.conf ../patches.qubes

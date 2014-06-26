@@ -1,7 +1,7 @@
-From e4fcc7ffc328b8347aa3ec8ec6a067a4e135718d Mon Sep 17 00:00:00 2001
+From 126d1fc43696391ff27a83cbb52aea71f52bd80e Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
-Subject: [PATCH 09/15] RFC: libxl: special 'stubdom-dm' emulator to use qemu
+Subject: [PATCH 06/11] RFC: libxl: special 'stubdom-dm' emulator to use qemu
  in stub domain
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,12 +26,12 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index ada9ada..d903870 100644
+index 570c6ff..71f5851 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -460,6 +460,18 @@ libxlMakeDomBuildInfo(libxlDriverPrivatePtr driver,
-         if (VIR_STRDUP(b_info->u.hvm.boot, bootorder) < 0)
+@@ -710,6 +710,18 @@ libxlMakeDomBuildInfo(libxlDriverPrivatePtr driver,
              goto error;
+         }
  
 +        if (def->emulator && STREQ(def->emulator, "stubdom-dm")) {
 +            libxl_defbool_set(&b_info->device_model_stubdomain, 1);
@@ -49,5 +49,5 @@ index ada9ada..d903870 100644
          libxl_defbool_set(&b_info->u.hvm.vnc.enable, 0);
          libxl_defbool_set(&b_info->u.hvm.sdl.enable, 0);
 -- 
-1.8.1.4
+1.8.3.1
 

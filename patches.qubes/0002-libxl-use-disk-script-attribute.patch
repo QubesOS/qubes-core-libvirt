@@ -1,7 +1,7 @@
-From 640aaea0f5f3001ab689334e9269fb32e05f912f Mon Sep 17 00:00:00 2001
+From 8a1bf5aca099970c5e3107420c9064ef2cd1f976 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:04 +0200
-Subject: [PATCH 05/15] libxl: use disk 'script' attribute
+Subject: [PATCH 02/11] libxl: use disk 'script' attribute
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -16,25 +16,23 @@ patch).
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_conf.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ src/libxl/libxl_conf.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 1dee5eb..118ebb3 100644
+index b7fed7f..22d8756 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -467,6 +467,11 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
+@@ -727,6 +727,9 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
      if (VIR_STRDUP(x_disk->vdev, l_disk->dst) < 0)
          return -1;
  
-+    if (l_disk->script && (x_disk->script = strdup(l_disk->script)) == NULL) {
-+        virReportOOMError();
++    if (VIR_STRDUP(x_disk->script, l_disk->script) < 0)
 +        return -1;
-+    }
 +
-     if (l_disk->driverName) {
-         if (STREQ(l_disk->driverName, "tap") ||
-             STREQ(l_disk->driverName, "tap2")) {
+     driver = virDomainDiskGetDriver(l_disk);
+     format = virDomainDiskGetFormat(l_disk);
+     if (driver) {
 -- 
-1.8.1.4
+1.8.3.1
 

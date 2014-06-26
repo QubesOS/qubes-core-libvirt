@@ -20,7 +20,7 @@ RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "epoch $(EPOCH)" \
 		--define "_default_patch_fuzz 3"
 
-VER_REL := $(shell rpm $(RPM_DEFINES) --define "dist .$(DIST_DOM0)" -q --qf "%{VERSION} %{RELEASE}\n" --specfile $(SPECFILE)| head -1)
+VER_REL := $(shell rpm $(RPM_DEFINES) --define "dist .$(DIST_DOM0)" -q --qf "%{VERSION} %{RELEASE}\n" --specfile $(firstword $(SPECFILE))| head -1)
 
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
@@ -30,7 +30,7 @@ REL := $(word 2, $(VER_REL))
 
 all: help
 
-URL := $(shell spectool $(RPM_DEFINES) --list-files --source 0 $(SPECFILE) 2> /dev/null| cut -d ' ' -f 2- )
+URL := $(foreach spec,$(SPECFILE),$(shell spectool $(RPM_DEFINES) --list-files --source 0 $(spec) 2> /dev/null| cut -d ' ' -f 2- ))
 ifndef SRC_FILE
 ifdef URL
 	SRC_FILE := $(notdir $(URL))

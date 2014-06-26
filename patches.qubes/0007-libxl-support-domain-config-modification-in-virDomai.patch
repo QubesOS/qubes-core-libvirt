@@ -1,7 +1,7 @@
-From 491dd305551240d6b4b9dcfd7b67e209fc30d416 Mon Sep 17 00:00:00 2001
+From 7a8b4902ac9b90f6b89b568d231d20d26cd2b96e Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
-Subject: [PATCH 11/15] libxl: support domain config modification in
+Subject: [PATCH 07/11] libxl: support domain config modification in
  virDomainRestoreFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 6ffd88d..9e8b526 100644
+index df7d510..397fb6a 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -2485,11 +2485,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+@@ -1434,11 +1434,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
      int ret = -1;
  
      virCheckFlags(VIR_DOMAIN_SAVE_PAUSED, -1);
@@ -28,16 +28,16 @@ index 6ffd88d..9e8b526 100644
 -        return -1;
 -    }
  
-     libxlDriverLock(driver);
- 
-@@ -2500,6 +2495,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+     fd = libxlDomainSaveImageOpen(driver, cfg, from, &def, &hdr);
+     if (fd < 0)
+@@ -1447,6 +1442,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
      if (virDomainRestoreFlagsEnsureACL(conn, def) < 0)
-         goto cleanup;
+         goto cleanup_unlock;
  
 +    if (dxml) {
 +        virDomainDefPtr def2 = NULL;
 +
-+        if (!(def2 = virDomainDefParseString(dxml, driver->caps, driver->xmlopt,
++        if (!(def2 = virDomainDefParseString(dxml, cfg->caps, driver->xmlopt,
 +                                        1 << VIR_DOMAIN_VIRT_XEN,
 +                                        VIR_DOMAIN_XML_INACTIVE))) {
 +            goto cleanup;
@@ -50,5 +50,5 @@ index 6ffd88d..9e8b526 100644
                                     driver->xmlopt,
                                     VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
 -- 
-1.8.1.4
+1.8.3.1
 

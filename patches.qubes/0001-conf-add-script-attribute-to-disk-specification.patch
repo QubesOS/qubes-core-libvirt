@@ -1,7 +1,7 @@
-From 61520c0d9bb9a5aece1bae14d15fb62b398b0d21 Mon Sep 17 00:00:00 2001
+From 7421f667cd54bea656539b193f0d7a17201d9cff Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:37:29 +0200
-Subject: [PATCH 04/15] conf: add 'script' attribute to disk specification
+Subject: [PATCH 01/11] conf: add 'script' attribute to disk specification
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -20,23 +20,23 @@ XML configuration would be:
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/conf/domain_conf.c | 11 +++++++++++
+ src/conf/domain_conf.c | 10 ++++++++++
  src/conf/domain_conf.h |  1 +
- 2 files changed, 12 insertions(+)
+ 2 files changed, 11 insertions(+)
 
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 783df96..9286100 100644
+index f1df092..fd427e0 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1194,6 +1194,7 @@ void virDomainDiskDefFree(virDomainDiskDefPtr def)
+@@ -1194,6 +1194,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
      VIR_FREE(def->wwn);
      VIR_FREE(def->vendor);
      VIR_FREE(def->product);
 +    VIR_FREE(def->script);
-     if (def->auth.secretType == VIR_DOMAIN_DISK_SECRET_TYPE_USAGE)
-         VIR_FREE(def->auth.secret.usage);
-     virStorageEncryptionFree(def->encryption);
-@@ -4752,6 +4753,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     virDomainDeviceInfoClear(&def->info);
+ 
+     VIR_FREE(def);
+@@ -5229,6 +5230,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      char *vendor = NULL;
      char *product = NULL;
      char *discard = NULL;
@@ -44,7 +44,7 @@ index 783df96..9286100 100644
      int expected_secret_usage = -1;
      int auth_secret_usage = -1;
  
-@@ -4908,6 +4910,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -5293,6 +5295,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                  if (target &&
                      STRPREFIX(target, "ioemu:"))
                      memmove(target, target+6, strlen(target)-5);
@@ -54,16 +54,16 @@ index 783df96..9286100 100644
              } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
                  if (virXPathUInt("string(./geometry/@cyls)",
                                   ctxt, &def->geometry.cylinders) < 0) {
-@@ -5477,6 +5482,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     source = NULL;
-     def->dst = target;
-     target = NULL;
+@@ -5893,6 +5898,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     authUsername = NULL;
+     def->src.driverName = driverName;
+     driverName = NULL;
 +    def->script = script;
 +    script = NULL;
-     def->hosts = hosts;
-     hosts = NULL;
-     def->nhosts = nhosts;
-@@ -5566,6 +5573,7 @@ cleanup:
+     def->mirror = mirror;
+     mirror = NULL;
+     def->mirroring = mirroring;
+@@ -5970,6 +5977,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      VIR_FREE(wwn);
      VIR_FREE(vendor);
      VIR_FREE(product);
@@ -71,28 +71,27 @@ index 783df96..9286100 100644
  
      ctxt->node = save_ctxt;
      return def;
-@@ -14327,6 +14335,9 @@ virDomainDiskDefFormat(virBufferPtr buf,
- 
-     if (virDomainDiskSourceDefFormat(buf, def) < 0)
+@@ -15140,6 +15148,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
+                                         def->src.backingStoreRaw, 1) < 0)
          return -1;
-+
-+    virBufferEscapeString(buf, "      <script path='%s'/>\n", def->script);
+ 
++    virBufferEscapeString(buf, "<script path='%s'/>\n", def->script);
 +
      virDomainDiskGeometryDefFormat(buf, def);
      virDomainDiskBlockIoDefFormat(buf, def);
  
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index abf024c..234c46c 100644
+index 8f17c74..1fa3fc9 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -746,6 +746,7 @@ struct _virDomainDiskDef {
+@@ -645,6 +645,7 @@ struct _virDomainDiskDef {
      int rawio; /* no = 0, yes = 1 */
      int sgio; /* enum virDomainDeviceSGIO */
      int discard; /* enum virDomainDiskDiscard */
 +    char *script;
+ };
  
-     size_t nseclabels;
-     virSecurityDeviceLabelDefPtr *seclabels;
+ 
 -- 
-1.8.1.4
+1.8.3.1
 

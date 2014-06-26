@@ -1,7 +1,7 @@
-From 74c4064b1dbebec5a1481d886b8fdcf63791b471 Mon Sep 17 00:00:00 2001
+From 0079875d92169c01c028a8c371b49e3ce39f5854 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:40 +0200
-Subject: [PATCH 06/15] conf: support backend domain name in disk and network
+Subject: [PATCH 03/11] conf: support backend domain name in disk and network
  devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -30,10 +30,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  4 files changed, 74 insertions(+)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index 78e132e..f8c6642 100644
+index 691a451..8d9597f 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
-@@ -1804,6 +1804,13 @@
+@@ -2047,6 +2047,13 @@
            </li>
          </ul>
        </dd>
@@ -47,7 +47,7 @@ index 78e132e..f8c6642 100644
        <dt><code>boot</code></dt>
        <dd>Specifies that the disk is bootable. The <code>order</code>
          attribute determines the order in which devices will be tried during
-@@ -3625,6 +3632,28 @@ qemu-kvm -net nic,model=? /dev/null
+@@ -3910,6 +3917,28 @@ qemu-kvm -net nic,model=? /dev/null
        element is unspecified is to have the link state <code>up</code>.
        <span class="since">Since 0.9.5</span>
      </p>
@@ -77,10 +77,10 @@ index 78e132e..f8c6642 100644
      <h4><a name="elementsInput">Input devices</a></h4>
  
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 745b959..59aa3a7 100644
+index af67123..672abd5 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -939,6 +939,14 @@
+@@ -1046,6 +1046,14 @@
        </optional>
        <ref name="target"/>
        <optional>
@@ -95,7 +95,7 @@ index 745b959..59aa3a7 100644
          <ref name="deviceBoot"/>
        </optional>
        <optional>
-@@ -2020,6 +2028,14 @@
+@@ -2189,6 +2197,14 @@
          </element>
        </optional>
        <optional>
@@ -111,18 +111,18 @@ index 745b959..59aa3a7 100644
            <attribute name="type">
              <data type="string">
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 9286100..12f7d36 100644
+index fd427e0..3162bec 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1195,6 +1195,7 @@ void virDomainDiskDefFree(virDomainDiskDefPtr def)
+@@ -1195,6 +1195,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
      VIR_FREE(def->vendor);
      VIR_FREE(def->product);
      VIR_FREE(def->script);
 +    VIR_FREE(def->domain_name);
-     if (def->auth.secretType == VIR_DOMAIN_DISK_SECRET_TYPE_USAGE)
-         VIR_FREE(def->auth.secret.usage);
-     virStorageEncryptionFree(def->encryption);
-@@ -1320,6 +1321,7 @@ void virDomainNetDefFree(virDomainNetDefPtr def)
+     virDomainDeviceInfoClear(&def->info);
+ 
+     VIR_FREE(def);
+@@ -1370,6 +1371,7 @@ void virDomainNetDefFree(virDomainNetDefPtr def)
  
      VIR_FREE(def->virtPortProfile);
      VIR_FREE(def->script);
@@ -130,7 +130,7 @@ index 9286100..12f7d36 100644
      VIR_FREE(def->ifname);
  
      virDomainDeviceInfoClear(&def->info);
-@@ -4754,6 +4756,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -5231,6 +5233,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      char *product = NULL;
      char *discard = NULL;
      char *script = NULL;
@@ -138,7 +138,7 @@ index 9286100..12f7d36 100644
      int expected_secret_usage = -1;
      int auth_secret_usage = -1;
  
-@@ -4913,6 +4916,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -5298,6 +5301,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
              } else if (!script &&
                         xmlStrEqual(cur->name, BAD_CAST "script")) {
                  script = virXMLPropString(cur, "path");
@@ -148,7 +148,7 @@ index 9286100..12f7d36 100644
              } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
                  if (virXPathUInt("string(./geometry/@cyls)",
                                   ctxt, &def->geometry.cylinders) < 0) {
-@@ -5216,6 +5222,11 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -5604,6 +5610,11 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
          ctxt->node = saved_node;
      }
  
@@ -158,9 +158,9 @@ index 9286100..12f7d36 100644
 +    }
 +
      if (target == NULL) {
-         if (def->srcpool) {
+         if (def->src.srcpool) {
              char *tmp;
-@@ -5574,6 +5585,7 @@ cleanup:
+@@ -5978,6 +5989,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      VIR_FREE(vendor);
      VIR_FREE(product);
      VIR_FREE(script);
@@ -168,7 +168,7 @@ index 9286100..12f7d36 100644
  
      ctxt->node = save_ctxt;
      return def;
-@@ -6177,6 +6189,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -6599,6 +6611,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
      char *mode = NULL;
      char *linkstate = NULL;
      char *addrtype = NULL;
@@ -176,7 +176,7 @@ index 9286100..12f7d36 100644
      virNWFilterHashTablePtr filterparams = NULL;
      virDomainActualNetDefPtr actual = NULL;
      xmlNodePtr oldnode = ctxt->node;
-@@ -6273,6 +6286,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -6695,6 +6708,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
              } else if (!script &&
                         xmlStrEqual(cur->name, BAD_CAST "script")) {
                  script = virXMLPropString(cur, "path");
@@ -186,7 +186,7 @@ index 9286100..12f7d36 100644
              } else if (xmlStrEqual(cur->name, BAD_CAST "model")) {
                  model = virXMLPropString(cur, "type");
              } else if (xmlStrEqual(cur->name, BAD_CAST "driver")) {
-@@ -6503,6 +6519,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -6926,6 +6942,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
          def->script = script;
          script = NULL;
      }
@@ -197,7 +197,7 @@ index 9286100..12f7d36 100644
      if (ifname != NULL) {
          def->ifname = ifname;
          ifname = NULL;
-@@ -6640,6 +6660,7 @@ cleanup:
+@@ -7064,6 +7084,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
      VIR_FREE(mode);
      VIR_FREE(linkstate);
      VIR_FREE(addrtype);
@@ -205,9 +205,9 @@ index 9286100..12f7d36 100644
      virNWFilterHashTableFree(filterparams);
  
      return def;
-@@ -14338,6 +14359,10 @@ virDomainDiskDefFormat(virBufferPtr buf,
+@@ -15150,6 +15171,10 @@ virDomainDiskDefFormat(virBufferPtr buf,
  
-     virBufferEscapeString(buf, "      <script path='%s'/>\n", def->script);
+     virBufferEscapeString(buf, "<script path='%s'/>\n", def->script);
  
 +    if (def->domain_name) {
 +        virBufferEscapeString(buf, "      <domain name='%s'/>\n", def->domain_name);
@@ -216,8 +216,8 @@ index 9286100..12f7d36 100644
      virDomainDiskGeometryDefFormat(buf, def);
      virDomainDiskBlockIoDefFormat(buf, def);
  
-@@ -14921,6 +14946,8 @@ virDomainNetDefFormat(virBufferPtr buf,
-         return -1;
+@@ -15830,6 +15855,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+ 
      virBufferEscapeString(buf, "<script path='%s'/>\n",
                            def->script);
 +    if (def->domain_name)
@@ -226,18 +226,18 @@ index 9286100..12f7d36 100644
          !((flags & VIR_DOMAIN_XML_INACTIVE) &&
            (STRPREFIX(def->ifname, VIR_NET_GENERATED_PREFIX)))) {
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 234c46c..bfa99fa 100644
+index 1fa3fc9..981aa60 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -747,6 +747,7 @@ struct _virDomainDiskDef {
+@@ -646,6 +646,7 @@ struct _virDomainDiskDef {
      int sgio; /* enum virDomainDeviceSGIO */
      int discard; /* enum virDomainDiskDiscard */
      char *script;
 +    char *domain_name; /* backend domain name */
+ };
  
-     size_t nseclabels;
-     virSecurityDeviceLabelDefPtr *seclabels;
-@@ -1010,6 +1011,7 @@ struct _virDomainNetDef {
+ 
+@@ -916,6 +917,7 @@ struct _virDomainNetDef {
          unsigned long sndbuf;
      } tune;
      char *script;
@@ -246,5 +246,5 @@ index 234c46c..bfa99fa 100644
      virDomainDeviceInfo info;
      char *filter;
 -- 
-1.8.1.4
+1.8.3.1
 

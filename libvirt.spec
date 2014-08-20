@@ -1630,11 +1630,13 @@ rm -fr %{buildroot}
 cd tests
 make
 # These tests don't current work in a mock build root
-for i in nodeinfotest seclabeltest
+# vircgrouptest fails without systemd which is missing inside chroot
+for i in nodeinfotest seclabeltest vircgrouptest
 do
   rm -f $i
-  printf 'int main(void) { return 0; }' > $i.c
-  printf '#!/bin/sh\nexit 0\n' > $i
+  # 77 = EXIT_AM_SKIP
+  printf 'int main(void) { return 77; }' > $i.c
+  printf '#!/bin/sh\n\nexit 77\n' > $i
   chmod +x $i
 done
 if ! make check VIR_TEST_DEBUG=1

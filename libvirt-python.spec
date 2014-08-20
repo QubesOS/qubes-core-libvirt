@@ -28,7 +28,8 @@ BuildRequires: python3-nose
 BuildRequires: python3-lxml
 #%%endif
 
-Source1: patches.python
+# looks like directory with patches is missing in git
+#Source1: patches.python
 
 #%%if %{with_python3}
 %package -n libvirt-python3
@@ -59,9 +60,9 @@ of recent versions of Linux (and other OSes).
 %prep
 %setup -q
 
-for p in %{SOURCE1}/*; do
-  patch -s -F0 -E -p1 --no-backup-if-mismatch -i $p
-done
+#for p in %{SOURCE1}/*; do
+#  patch -s -F0 -E -p1 --no-backup-if-mismatch -i $p
+#done
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build

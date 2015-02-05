@@ -1,8 +1,8 @@
-From 1286a5511976055b138fef43864e63c9e0a1ff36 Mon Sep 17 00:00:00 2001
+From 701b2d765f47b21c507c06cc818a8dd4f71650a9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 31 Jan 2014 21:41:34 +0100
-Subject: [PATCH 11/11] libxl: update dom->id in libxlDomainCreateWithFlags
+Subject: [PATCH 07/13] libxl: update dom->id in libxlDomainCreateWithFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -17,10 +17,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 5cb3be0..6d1694a 100644
+index c95b387..ce3a99b 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -2348,6 +2348,9 @@ libxlDomainCreateWithFlags(virDomainPtr dom,
+@@ -2375,6 +2375,9 @@ libxlDomainCreateWithFlags(virDomainPtr dom,
      }
  
      ret = libxlDomainStart(driver, vm, (flags & VIR_DOMAIN_START_PAUSED) != 0, -1);

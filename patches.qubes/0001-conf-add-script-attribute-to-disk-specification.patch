@@ -1,7 +1,7 @@
-From 7421f667cd54bea656539b193f0d7a17201d9cff Mon Sep 17 00:00:00 2001
+From 01806bd22dc6183c4a2813a8f5dc19f8dbc28e9f Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:37:29 +0200
-Subject: [PATCH 01/11] conf: add 'script' attribute to disk specification
+Subject: [PATCH 01/13] conf: add 'script' attribute to disk specification
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,10 +25,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  2 files changed, 11 insertions(+)
 
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index f1df092..fd427e0 100644
+index 706e5d2..b00f009 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1194,6 +1194,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
+@@ -1260,6 +1260,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
      VIR_FREE(def->wwn);
      VIR_FREE(def->vendor);
      VIR_FREE(def->product);
@@ -36,15 +36,15 @@ index f1df092..fd427e0 100644
      virDomainDeviceInfoClear(&def->info);
  
      VIR_FREE(def);
-@@ -5229,6 +5230,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     char *vendor = NULL;
-     char *product = NULL;
+@@ -5725,6 +5726,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      char *discard = NULL;
+     char *mirrorFormat = NULL;
+     char *mirrorType = NULL;
 +    char *script = NULL;
      int expected_secret_usage = -1;
      int auth_secret_usage = -1;
- 
-@@ -5293,6 +5295,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     int ret = 0;
+@@ -5790,6 +5792,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                  if (target &&
                      STRPREFIX(target, "ioemu:"))
                      memmove(target, target+6, strlen(target)-5);
@@ -54,25 +54,25 @@ index f1df092..fd427e0 100644
              } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
                  if (virXPathUInt("string(./geometry/@cyls)",
                                   ctxt, &def->geometry.cylinders) < 0) {
-@@ -5893,6 +5898,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     authUsername = NULL;
-     def->src.driverName = driverName;
+@@ -6514,6 +6519,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      driverName = NULL;
+     def->src->encryption = encryption;
+     encryption = NULL;
 +    def->script = script;
 +    script = NULL;
-     def->mirror = mirror;
-     mirror = NULL;
-     def->mirroring = mirroring;
-@@ -5970,6 +5977,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     VIR_FREE(wwn);
-     VIR_FREE(vendor);
+     def->serial = serial;
+     serial = NULL;
+     def->wwn = wwn;
+@@ -6576,6 +6583,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      VIR_FREE(product);
+     VIR_FREE(mirrorType);
+     VIR_FREE(mirrorFormat);
 +    VIR_FREE(script);
  
      ctxt->node = save_ctxt;
      return def;
-@@ -15140,6 +15148,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
-                                         def->src.backingStoreRaw, 1) < 0)
+@@ -16818,6 +16826,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
+                                         def->src->backingStoreRaw, 1) < 0)
          return -1;
  
 +    virBufferEscapeString(buf, "<script path='%s'/>\n", def->script);
@@ -81,13 +81,13 @@ index f1df092..fd427e0 100644
      virDomainDiskBlockIoDefFormat(buf, def);
  
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 8f17c74..1fa3fc9 100644
+index 93f2314..19e7dd9 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -645,6 +645,7 @@ struct _virDomainDiskDef {
-     int rawio; /* no = 0, yes = 1 */
+@@ -700,6 +700,7 @@ struct _virDomainDiskDef {
      int sgio; /* enum virDomainDeviceSGIO */
      int discard; /* enum virDomainDiskDiscard */
+     unsigned int iothread; /* unused = 0, > 0 specific thread # */
 +    char *script;
  };
  

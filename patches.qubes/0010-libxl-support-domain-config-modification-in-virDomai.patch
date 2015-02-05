@@ -1,7 +1,7 @@
-From 7a8b4902ac9b90f6b89b568d231d20d26cd2b96e Mon Sep 17 00:00:00 2001
+From 4a93128a5e9bbd5c048a16404891cdd68aab6be6 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
-Subject: [PATCH 07/11] libxl: support domain config modification in
+Subject: [PATCH 10/13] libxl: support domain config modification in
  virDomainRestoreFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -15,11 +15,11 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index df7d510..397fb6a 100644
+index ce3a99b..19ccfe5 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1434,11 +1434,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
-     int ret = -1;
+@@ -1456,11 +1456,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+ #endif
  
      virCheckFlags(VIR_DOMAIN_SAVE_PAUSED, -1);
 -    if (dxml) {
@@ -30,7 +30,7 @@ index df7d510..397fb6a 100644
  
      fd = libxlDomainSaveImageOpen(driver, cfg, from, &def, &hdr);
      if (fd < 0)
-@@ -1447,6 +1442,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+@@ -1469,6 +1464,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
      if (virDomainRestoreFlagsEnsureACL(conn, def) < 0)
          goto cleanup_unlock;
  

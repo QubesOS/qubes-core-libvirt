@@ -1,0 +1,60 @@
+From 9fc2c8c8fdbb97e896b27cbbb97f431ca8c48f66 Mon Sep 17 00:00:00 2001
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Wed, 17 Apr 2013 01:40:55 +0200
+Subject: [PATCH 12/13] libxl: pass ipaddr to libxl toolstack
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Do not silently ignore its value. LibXL support only one address, so
+refuse multiple IPs.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c   |  5 +++++
+ src/libxl/libxl_domain.c | 11 +++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 5e9df8e..d48dcab 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -1153,6 +1153,11 @@ libxlMakeNic(virDomainDefPtr def,
+         case VIR_DOMAIN_NET_TYPE_ETHERNET:
+             if (VIR_STRDUP(x_nic->script, l_nic->script) < 0)
+                 return -1;
++            if (l_nic->nips > 0) {
++                x_nic->ip = virSocketAddrFormat(&l_nic->ips[0]->address);
++                if (!x_nic->ip)
++                    return -1;
++            }
+             break;
+         case VIR_DOMAIN_NET_TYPE_NETWORK:
+         {
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index 856cfb4..afb0b15 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -482,6 +482,17 @@ libxlDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
+         STRNEQ(def->os.type, "hvm"))
+         dev->data.chr->targetType = VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_XEN;
+ 
++    if (dev->type == VIR_DOMAIN_DEVICE_NET &&
++            (dev->data.net->type == VIR_DOMAIN_NET_TYPE_BRIDGE ||
++             dev->data.net->type == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
++        if (dev->data.net->nips > 1) {
++            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
++                    _("multiple IP addresses not supported on device type %s"),
++                    virDomainNetTypeToString(dev->data.net->type));
++            return -1;
++        }
++    }
++
+     if (dev->type == VIR_DOMAIN_DEVICE_HOSTDEV ||
+         (dev->type == VIR_DOMAIN_DEVICE_NET &&
+          dev->data.net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV)) {
+-- 
+1.8.3.1
+

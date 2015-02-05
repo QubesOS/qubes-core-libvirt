@@ -427,7 +427,7 @@
 Summary: Library providing a simple virtualization API
 Name: libvirt
 Version: %{version}
-Release: 1.2%{?dist}%{?extra_release}
+Release: 1%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -1900,6 +1900,7 @@ exit 0
 
     %if %{with_systemd}
 %{_unitdir}/libvirtd.service
+%{_unitdir}/libvirtd.socket
 %{_unitdir}/virtlockd.service
 %{_unitdir}/virtlockd.socket
     %else
@@ -2216,6 +2217,7 @@ exit 0
 %{_datadir}/libvirt/schemas/basictypes.rng
 %{_datadir}/libvirt/schemas/capability.rng
 %{_datadir}/libvirt/schemas/domain.rng
+%{_datadir}/libvirt/schemas/domaincaps.rng
 %{_datadir}/libvirt/schemas/domaincommon.rng
 %{_datadir}/libvirt/schemas/domainsnapshot.rng
 %{_datadir}/libvirt/schemas/interface.rng
@@ -2263,6 +2265,8 @@ exit 0
 %dir %{_includedir}/libvirt
 %{_includedir}/libvirt/*.h
 %{_libdir}/pkgconfig/libvirt.pc
+%{_libdir}/pkgconfig/libvirt-lxc.pc
+%{_libdir}/pkgconfig/libvirt-qemu.pc
 
 %dir %{_datadir}/libvirt/api/
 %{_datadir}/libvirt/api/libvirt-api.xml

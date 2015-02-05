@@ -1,7 +1,7 @@
-From 1f7ba621e7eb8f0fdecac62112b075cbe1294483 Mon Sep 17 00:00:00 2001
+From 6276cf6e0526f538e55ad59f8e146b3fc8f7ccbf Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:03 +0200
-Subject: [PATCH 05/11] libxl: fill HVM SDL and VNC settings based on
+Subject: [PATCH 06/13] libxl: fill HVM SDL and VNC settings based on
  <graphics/> entries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -15,16 +15,19 @@ data as vfb entries (actually the first one).
 This will additionally allow graphic-less domain, when no <graphics/>
 entries are present in domain XML (previously VNC was always enabled).
 
+Changes in v2:
+ - rebased on 1.2.12
+
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_conf.c | 103 ++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 76 insertions(+), 27 deletions(-)
+ src/libxl/libxl_conf.c | 100 ++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 74 insertions(+), 26 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index fbf82ab..570c6ff 100644
+index 0e26130..d93f05a 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -562,12 +562,54 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
+@@ -618,12 +618,53 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
                         _("unsupported chardev '%s'"), type);
          return -1;
      }
@@ -49,7 +52,7 @@ index fbf82ab..570c6ff 100644
 +        l_vfb->data.vnc.port = port;
 +    }
 +    x_vnc->display = l_vfb->data.vnc.port - LIBXL_VNC_PORT_MIN;
-+
+ 
 +    listenAddr = virDomainGraphicsListenGetAddress(l_vfb, 0);
 +    if (listenAddr) {
 +        /* libxl_device_vfb_init() does VIR_STRDUP("127.0.0.1") */
@@ -59,7 +62,7 @@ index fbf82ab..570c6ff 100644
 +    }
 +    return 0;
 +}
- 
++
 +static int
 +libxlMakeSDLInfo(virDomainGraphicsDefPtr l_vfb,
 +                 libxl_sdl_info *x_sdl)
@@ -73,15 +76,13 @@ index fbf82ab..570c6ff 100644
  }
  
  static int
--libxlMakeDomBuildInfo(virDomainObjPtr vm, libxl_domain_config *d_config)
-+libxlMakeDomBuildInfo(libxlDriverPrivatePtr driver,
-+                      virDomainObjPtr vm,
-+                      libxl_domain_config *d_config)
+ libxlMakeDomBuildInfo(virDomainDefPtr def,
++                      virPortAllocatorPtr graphicsports,
+                       libxl_ctx *ctx,
+                       libxl_domain_config *d_config)
  {
-     virDomainDefPtr def = vm->def;
-     libxlDomainObjPrivatePtr priv = vm->privateData;
-@@ -668,6 +710,35 @@ libxlMakeDomBuildInfo(virDomainObjPtr vm, libxl_domain_config *d_config)
-             goto error;
+@@ -745,6 +786,35 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+             return -1;
          }
  
 +        /* Disable VNC and SDL until explicitly enabled */
@@ -93,22 +94,22 @@ index fbf82ab..570c6ff 100644
 +                case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
 +                    if (libxl_defbool_val(b_info->u.hvm.vnc.enable))
 +                        continue;
-+                    if (libxlMakeVNCInfo(driver->reservedVNCPorts,
++                    if (libxlMakeVNCInfo(graphicsports,
 +                                def->graphics[i],
 +                                &b_info->u.hvm.vnc) < 0)
-+                        goto error;
++                        return -1;
 +                    if (def->graphics[i]->data.vnc.keymap &&
-+                            (b_info->u.hvm.keymap =
-+                             strdup(def->graphics[i]->data.vnc.keymap)) == NULL) {
++                            VIR_STRDUP(b_info->u.hvm.keymap,
++                                       def->graphics[i]->data.vnc.keymap) < 0) {
 +                        virReportOOMError();
-+                        goto error;
++                        return -1;
 +                    }
 +                    break;
 +                case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
 +                    if (libxl_defbool_val(b_info->u.hvm.sdl.enable))
 +                        continue;
 +                    if (libxlMakeSDLInfo(def->graphics[i], &b_info->u.hvm.sdl) < 0)
-+                        goto error;
++                        return -1;
 +                    break;
 +            }
 +        }
@@ -116,7 +117,7 @@ index fbf82ab..570c6ff 100644
          /*
           * The following comment and calculation were taken directly from
           * libxenlight's internal function libxl_get_required_shadow_memory():
-@@ -990,38 +1061,16 @@ libxlMakeVfb(libxlDriverPrivatePtr driver,
+@@ -1174,38 +1244,16 @@ libxlMakeVfb(virPortAllocatorPtr graphicsports,
               virDomainGraphicsDefPtr l_vfb,
               libxl_device_vfb *x_vfb)
  {
@@ -140,7 +141,7 @@ index fbf82ab..570c6ff 100644
 -            libxl_defbool_set(&x_vfb->vnc.findunused, 0);
 -            if (l_vfb->data.vnc.autoport) {
 -
--                if (virPortAllocatorAcquire(driver->reservedVNCPorts, &port) < 0)
+-                if (virPortAllocatorAcquire(graphicsports, &port) < 0)
 -                    return -1;
 -                l_vfb->data.vnc.port = port;
 -            }
@@ -153,17 +154,17 @@ index fbf82ab..570c6ff 100644
 -                if (VIR_STRDUP(x_vfb->vnc.listen, listenAddr) < 0)
 -                    return -1;
 -            }
-+            if (libxlMakeVNCInfo(driver->reservedVNCPorts, l_vfb, &x_vfb->vnc) < 0)
++            if (libxlMakeVNCInfo(graphicsports, l_vfb, &x_vfb->vnc) < 0)
 +                return -1;
              if (VIR_STRDUP(x_vfb->keymap, l_vfb->data.vnc.keymap) < 0)
                  return -1;
              break;
-@@ -1343,7 +1392,7 @@ libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
-     if (libxlMakeDomCreateInfo(priv->ctx, def, &d_config->c_info) < 0)
+@@ -1614,7 +1662,7 @@ libxlBuildDomainConfig(virPortAllocatorPtr graphicsports,
+     if (libxlMakeDomCreateInfo(ctx, def, &d_config->c_info) < 0)
          return -1;
  
--    if (libxlMakeDomBuildInfo(vm, d_config) < 0)
-+    if (libxlMakeDomBuildInfo(driver, vm, d_config) < 0)
+-    if (libxlMakeDomBuildInfo(def, ctx, d_config) < 0)
++    if (libxlMakeDomBuildInfo(def, graphicsports, ctx, d_config) < 0)
          return -1;
  
      if (libxlMakeDiskList(def, d_config) < 0)

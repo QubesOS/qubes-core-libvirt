@@ -1,4 +1,4 @@
-From 9fc2c8c8fdbb97e896b27cbbb97f431ca8c48f66 Mon Sep 17 00:00:00 2001
+From 4b5f5c4af2b600d4c0c504406b048971a50f41ea Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 17 Apr 2013 01:40:55 +0200
 Subject: [PATCH 12/13] libxl: pass ipaddr to libxl toolstack

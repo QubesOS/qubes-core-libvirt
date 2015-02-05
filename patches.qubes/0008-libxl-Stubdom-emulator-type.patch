@@ -1,8 +1,7 @@
-From a8768cb2d185d2028918469dbeb6b350ac9feee2 Mon Sep 17 00:00:00 2001
+From 8c69a5010ba30c2e172c0bc967b90a40e01ca2b4 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
-Subject: [PATCH 08/13] RFC: libxl: special 'stubdom-dm' emulator to use qemu
- in stub domain
+Subject: [PATCH 08/13] libxl: Stubdom emulator type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -10,28 +9,44 @@ Organization: Invisible Things Lab
 Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Xen have feature of having device model in separate domain (called stub
-domain). It used to be enabled by special 'stubdom-dm' device model
-path.  Recent xl have separate config option for this feature
-(device_model_stubdomain_override), but I'm not sure if it worth
-introducing another xen-specific option in general domain XML syntax.
-
-Also use os->cmdline as extra arguments for qemu (for HVM only). This
-use of os->cmdline is rather dirty hack, but I haven't idea what better
-attribute use for it. Perhaps worth new attribute (in <emulator/>
-element?). Anyway os->cmdline was unused for HVM domains.
-
-Changes in v3:
- - change special 'stubdom-dm' to <emulator type='stubdom'/>
- - TODO: update commit message
+domain). Add 'type' attribute to 'emulator' element to allow selecting
+such configuration. Emulator path is still used for qemu running in dom0
+(if any). Libxl currently do not allow to select stubdomain path.
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
+ docs/formatdomain.html.in     | 14 ++++++++++++++
  docs/schemas/domaincommon.rng | 23 ++++++++++++++++++++++-
  src/conf/domain_conf.c        | 36 ++++++++++++++++++++++++++++++++++--
  src/conf/domain_conf.h        |  9 +++++++++
  src/libxl/libxl_conf.c        | 17 +++++++++++++++++
- 4 files changed, 82 insertions(+), 3 deletions(-)
+ 5 files changed, 96 insertions(+), 3 deletions(-)
 
+diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
+index 38c42d5..4f539e2 100644
+--- a/docs/formatdomain.html.in
++++ b/docs/formatdomain.html.in
+@@ -1652,6 +1652,20 @@
+         The <a href="formatcaps.html">capabilities XML</a> specifies
+         the recommended default emulator to use for each particular
+         domain type / architecture combination.
++
++        <span class="since">Since 1.2.13</span>, the <code>emulator</code>
++        element may contain <code>type</code> attribute. Possible values are:
++        <dl>
++          <dt><code>type='default'</code></dt>
++          <dd>Equivalent to not setting <code>type</code> attribute at all.
++          </dd>
++
++          <dt><code>type='stubdom'</code></dt>
++          <dd>Launch emulator in stub domain (Xen only). The emulator path
++          still indicate which binary is used in dom0 - there is no control
++          which binary is used as a stub domain.
++          </dd>
++        </dl>
+       </dd>
+     </dl>
+ 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
 index a4321f1..2a12073 100644
 --- a/docs/schemas/domaincommon.rng

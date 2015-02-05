@@ -1,4 +1,4 @@
-From 14cbfb8d488a10026f676a6adf0749e7e4dd9a01 Mon Sep 17 00:00:00 2001
+From bd9be5e7d3a71e029186454af01526bcfba94621 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 22 May 2013 06:13:13 +0200
 Subject: [PATCH 13/13] libxl: add tablet/mouse input device support

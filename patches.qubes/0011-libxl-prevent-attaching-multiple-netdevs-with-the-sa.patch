@@ -1,4 +1,4 @@
-From f29d49861adf32768eea27eb3cdb01bbe573ff10 Mon Sep 17 00:00:00 2001
+From 7927eb928e09e45b02fff3505bb602a780cdd7a8 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Tue, 16 Apr 2013 03:46:32 +0200
 Subject: [PATCH 11/13] libxl: prevent attaching multiple netdevs with the same

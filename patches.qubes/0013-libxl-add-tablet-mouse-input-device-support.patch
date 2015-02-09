@@ -1,4 +1,4 @@
-From bd9be5e7d3a71e029186454af01526bcfba94621 Mon Sep 17 00:00:00 2001
+From 9e56af4ff98b4571bb7af7fd6b484f1e272a61db Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 22 May 2013 06:13:13 +0200
 Subject: [PATCH 13/13] libxl: add tablet/mouse input device support
@@ -18,12 +18,12 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 48 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index d48dcab..bcd63ad 100644
+index a8324ef..c97c354 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -832,6 +832,54 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
-             }
-         }
+@@ -766,6 +766,54 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+         libxl_defbool_set(&b_info->u.hvm.vnc.enable, 0);
+         libxl_defbool_set(&b_info->u.hvm.sdl.enable, 0);
  
 +        if (def->ninputs) {
 +#ifdef LIBXL_HAVE_BUILDINFO_USBDEVICE_LIST

@@ -1,4 +1,4 @@
-From 25370166fa281a036650c219694798bc087b416c Mon Sep 17 00:00:00 2001
+From 445919d46b656af0c539bede0e76158438c4c54f Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
 Subject: [PATCH 10/13] libxl: support domain config modification in

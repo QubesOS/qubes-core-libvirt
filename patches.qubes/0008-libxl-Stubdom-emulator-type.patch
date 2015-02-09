@@ -1,4 +1,4 @@
-From 8c69a5010ba30c2e172c0bc967b90a40e01ca2b4 Mon Sep 17 00:00:00 2001
+From e2d9722685ba6339a30817739314ac8b80528c8b Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
 Subject: [PATCH 08/13] libxl: Stubdom emulator type
@@ -184,10 +184,10 @@ index 60e583c..8c24f80 100644
  VIR_ENUM_DECL(virDomainRNGBackend)
  VIR_ENUM_DECL(virDomainTPMModel)
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index d93f05a..5e9df8e 100644
+index dfdf07b..6d3c443 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -768,6 +768,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -727,6 +727,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
              b_info->device_model_version = libxlDomainGetEmulatorType(def);
          }
  

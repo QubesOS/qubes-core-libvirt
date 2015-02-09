@@ -1539,6 +1539,12 @@ rm -f po/stamp-po
 make %{?_smp_mflags}
 gzip -9 ChangeLog
 
+cat >> daemon/libvirtd.conf <<__EOF__
+
+# Qubes tools do not send keepalives, although advertises so
+keepalive_interval = -1
+__EOF__
+
 %install
 rm -fr %{buildroot}
 

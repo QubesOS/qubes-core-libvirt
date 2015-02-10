@@ -2,7 +2,7 @@ From ac080e5bdc7f1bb074ad09f7d57ca3ca35f3ed37 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 4 Feb 2015 06:09:57 +0100
-Subject: [PATCH 09/13] tests: add some simple libxl XML->XML tests
+Subject: [PATCH 09/16] tests: add some simple libxl XML->XML tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -1,7 +1,7 @@
 From 3fc8ab0c28765f4ac42dc6fa4a669387708ab0f1 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:42:17 +0200
-Subject: [PATCH 05/13] libxl: support backend domain setting for disk and net
+Subject: [PATCH 05/16] libxl: support backend domain setting for disk and net
  devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

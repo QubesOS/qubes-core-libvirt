@@ -1,7 +1,7 @@
 From 8990d990e4396a3f5d6cc774c53db0d05505ae04 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:03 +0200
-Subject: [PATCH 06/13] libxl: disable VNC and SDL until explicitly enabled
+Subject: [PATCH 06/16] libxl: disable VNC and SDL until explicitly enabled
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

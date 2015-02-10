@@ -1,7 +1,7 @@
 From 36bfeeb93888ddfe3b485de1782a129fd7695c56 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Tue, 16 Apr 2013 03:46:32 +0200
-Subject: [PATCH 11/13] libxl: prevent attaching multiple netdevs with the same
+Subject: [PATCH 11/16] libxl: prevent attaching multiple netdevs with the same
  MAC
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

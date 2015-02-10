@@ -1,0 +1,61 @@
+From fb5beb9802d9f7a8304d04f22b0a721d49f58d15 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Tue, 10 Feb 2015 03:56:08 +0100
+Subject: [PATCH 14/16] libxl: send lifecycle event on suspend
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_domain.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index f0eaf6c..d29ef02 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -659,6 +659,15 @@ libxlDomainShutdownThread(void *opaque)
+         case VIR_DOMAIN_LIFECYCLE_LAST:
+             goto cleanup;
+         }
++    } else if (xl_reason == LIBXL_SHUTDOWN_REASON_SUSPEND) {
++        dom_event = virDomainEventLifecycleNewFromObj(vm,
++                                           VIR_DOMAIN_EVENT_PMSUSPENDED,
++                                           VIR_DOMAIN_EVENT_PMSUSPENDED_MEMORY);
++        /*
++         * Similar to the xl implementation, ignore SUSPEND.  Any actions needed
++         * after calling libxl_domain_suspend() are handled by it's callers.
++         */
++        goto cleanup;
+     } else {
+         VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
+         goto cleanup;
+@@ -714,7 +723,6 @@ libxlEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
+ {
+     virDomainObjPtr vm = data;
+     libxlDomainObjPrivatePtr priv = vm->privateData;
+-    libxl_shutdown_reason xl_reason = event->u.domain_shutdown.shutdown_reason;
+     struct libxlShutdownThreadInfo *shutdown_info;
+     virThread thread;
+ 
+@@ -724,13 +732,6 @@ libxlEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
+     }
+ 
+     /*
+-     * Similar to the xl implementation, ignore SUSPEND.  Any actions needed
+-     * after calling libxl_domain_suspend() are handled by it's callers.
+-     */
+-    if (xl_reason == LIBXL_SHUTDOWN_REASON_SUSPEND)
+-        goto error;
+-
+-    /*
+      * Start a thread to handle shutdown.  We don't want to be tying up
+      * libxl's event machinery by doing a potentially lengthy shutdown.
+      */
+-- 
+1.8.3.1
+

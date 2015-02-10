@@ -2,7 +2,7 @@ From 2ead71ed578e2c48cca43b2bafa017d0960d86a3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 31 Jan 2014 21:41:34 +0100
-Subject: [PATCH 07/13] libxl: update dom->id in libxlDomainCreateWithFlags
+Subject: [PATCH 07/16] libxl: update dom->id in libxlDomainCreateWithFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

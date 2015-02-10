@@ -2,7 +2,7 @@ From b48b28075f38c4a040333cfb8355a43e333da555 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
-Subject: [PATCH 04/13] xenconfig: parse vif/backend attribute, tests
+Subject: [PATCH 04/16] xenconfig: parse vif/backend attribute, tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

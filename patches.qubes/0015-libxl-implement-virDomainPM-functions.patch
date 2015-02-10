@@ -1,0 +1,158 @@
+From ee98fccfdaa7d2bd2fafb0401e7bb6dbb91d6b36 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Tue, 10 Feb 2015 05:24:04 +0100
+Subject: [PATCH 15/16] libxl: implement virDomainPM* functions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_domain.c |   6 +--
+ src/libxl/libxl_driver.c | 103 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 105 insertions(+), 4 deletions(-)
+
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index d29ef02..1d686cf 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -663,10 +663,8 @@ libxlDomainShutdownThread(void *opaque)
+         dom_event = virDomainEventLifecycleNewFromObj(vm,
+                                            VIR_DOMAIN_EVENT_PMSUSPENDED,
+                                            VIR_DOMAIN_EVENT_PMSUSPENDED_MEMORY);
+-        /*
+-         * Similar to the xl implementation, ignore SUSPEND.  Any actions needed
+-         * after calling libxl_domain_suspend() are handled by it's callers.
+-         */
++        virDomainObjSetState(vm, VIR_DOMAIN_PMSUSPENDED,
++                VIR_DOMAIN_PMSUSPENDED_UNKNOWN);
+         goto cleanup;
+     } else {
+         VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 7539d33..e08829c 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -1042,6 +1042,107 @@ libxlDomainDestroy(virDomainPtr dom)
+     return libxlDomainDestroyFlags(dom, 0);
+ }
+ 
++static int
++libxlDomainPMSuspendForDuration(virDomainPtr dom,
++                                unsigned int target,
++                                unsigned long long duration,
++                                unsigned int flags)
++{
++    virDomainObjPtr vm;
++    int ret = -1;
++    libxlDomainObjPrivatePtr priv;
++
++    virCheckFlags(0, -1);
++    if (target != VIR_NODE_SUSPEND_TARGET_MEM) {
++        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
++                _("PMSuspend type %d not supported by libxenlight driver"),
++                target);
++        return -1;
++    }
++
++    if (duration != 0) {
++        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
++                _("libxenlight driver support only duration=0"));
++        return -1;
++    }
++
++    if (!(vm = libxlDomObjFromDomain(dom)))
++        goto cleanup;
++
++    if (virDomainPMSuspendForDurationEnsureACL(dom->conn, vm->def) < 0)
++        goto cleanup;
++
++    if (!virDomainObjIsActive(vm)) {
++        virReportError(VIR_ERR_OPERATION_INVALID,
++                       "%s", _("Domain is not running"));
++        goto cleanup;
++    }
++
++    priv = vm->privateData;
++    if (libxl_domain_suspend(priv->ctx, vm->def->id, -1, 0, NULL) < 0) {
++        virReportError(VIR_ERR_INTERNAL_ERROR,
++                       _("Failed to suspend domain '%d'"), vm->def->id);
++        goto cleanup;
++    }
++
++    ret = 0;
++
++ cleanup:
++    if (vm)
++        virObjectUnlock(vm);
++    return ret;
++}
++
++static int
++libxlDomainPMWakeup(virDomainPtr dom,
++                        unsigned int flags)
++{
++    libxlDriverPrivatePtr driver = dom->conn->privateData;
++    virDomainObjPtr vm;
++    int ret = -1;
++    virObjectEventPtr event = NULL;
++    libxlDomainObjPrivatePtr priv;
++
++    virCheckFlags(0, -1);
++
++    if (!(vm = libxlDomObjFromDomain(dom)))
++        goto cleanup;
++
++    if (virDomainPMWakeupEnsureACL(dom->conn, vm->def) < 0)
++        goto cleanup;
++
++    if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PMSUSPENDED) {
++        virReportError(VIR_ERR_OPERATION_INVALID,
++                       "%s", _("Domain is not suspended"));
++        goto cleanup;
++    }
++
++    event = virDomainEventLifecycleNewFromObj(vm, VIR_DOMAIN_EVENT_STARTED,
++                                     VIR_DOMAIN_EVENT_STARTED_WAKEUP);
++
++    priv = vm->privateData;
++    if (libxl_domain_resume(priv->ctx, vm->def->id, 1, NULL) < 0) {
++        virReportError(VIR_ERR_INTERNAL_ERROR,
++                       _("Failed to resume domain '%d'"), vm->def->id);
++        goto cleanup;
++    }
++    virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_WAKEUP);
++    /* reenable death event - libxl reports it only once */
++    if (priv->deathW)
++        libxl_evdisable_domain_death(priv->ctx, priv->deathW);
++    if (libxl_evenable_domain_death(priv->ctx, vm->def->id, 0, &priv->deathW))
++        goto cleanup;
++
++    ret = 0;
++
++ cleanup:
++    if (vm)
++        virObjectUnlock(vm);
++    if (event)
++        libxlDomainEventQueue(driver, event);
++    return ret;
++}
++
+ static char *
+ libxlDomainGetOSType(virDomainPtr dom)
+ {
+@@ -4821,6 +4922,8 @@ static virHypervisorDriver libxlHypervisorDriver = {
+     .domainReboot = libxlDomainReboot, /* 0.9.0 */
+     .domainDestroy = libxlDomainDestroy, /* 0.9.0 */
+     .domainDestroyFlags = libxlDomainDestroyFlags, /* 0.9.4 */
++    .domainPMSuspendForDuration = libxlDomainPMSuspendForDuration, /* 1.2.13 */
++    .domainPMWakeup = libxlDomainPMWakeup, /* 1.2.13 */
+     .domainGetOSType = libxlDomainGetOSType, /* 0.9.0 */
+     .domainGetMaxMemory = libxlDomainGetMaxMemory, /* 0.9.0 */
+     .domainSetMaxMemory = libxlDomainSetMaxMemory, /* 0.9.2 */
+-- 
+1.8.3.1
+

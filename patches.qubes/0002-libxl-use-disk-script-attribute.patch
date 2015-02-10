@@ -1,7 +1,7 @@
 From 32244e7caea52bea88ec4d652a573609aeb9c797 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:04 +0200
-Subject: [PATCH 02/13] libxl: use disk 'script' attribute
+Subject: [PATCH 02/16] libxl: use disk 'script' attribute
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

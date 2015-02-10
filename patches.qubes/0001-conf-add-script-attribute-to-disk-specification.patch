@@ -1,7 +1,7 @@
 From 01806bd22dc6183c4a2813a8f5dc19f8dbc28e9f Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:37:29 +0200
-Subject: [PATCH 01/13] conf: add 'script' attribute to disk specification
+Subject: [PATCH 01/16] conf: add 'script' attribute to disk specification
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -355,6 +355,7 @@
 %define with_avahi 0
 %define with_selinux 0
 %define with_xenapi 0
+%define with_polkit 0
 
 # Disabled by default to minimize dependencies, enable when adding support for
 # particular VMM, should be conditional on %{backend_vmm}
@@ -1543,6 +1544,11 @@ cat >> daemon/libvirtd.conf <<__EOF__
 
 # Qubes tools do not send keepalives, although advertises so
 keepalive_interval = -1
+
+# Allow any user in 'qubes' group to access libvirt
+unix_sock_group = "qubes"
+unix_sock_rw_perms = "0770"
+auth_unix_rw = "none"
 __EOF__
 
 %install

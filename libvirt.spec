@@ -1549,6 +1549,7 @@ keepalive_interval = -1
 unix_sock_group = "qubes"
 unix_sock_rw_perms = "0770"
 auth_unix_rw = "none"
+auth_unix_ro = "none"
 __EOF__
 
 %install

@@ -1,7 +1,7 @@
-From ad81fe955a1a1b1ea3857c093e511f6e3d86e56b Mon Sep 17 00:00:00 2001
+From 2f6b852056396a09ac546c98d481795c8c04351c Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Wed, 22 May 2013 06:13:13 +0200
-Subject: [PATCH 13/16] libxl: add tablet/mouse input device support
+Subject: [PATCH 13/19] libxl: add tablet/mouse input device support
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -11,21 +11,30 @@ Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 Changes in v2:
  - rebase on 1.2.12+
  - multiple devices support
+Changes in v3:
+ - reduce code duplication
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_conf.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ src/libxl/libxl_conf.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index f08b1b8..21e907c 100644
+index dc87e56..2fff05a 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -766,6 +766,54 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -766,6 +766,50 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
          libxl_defbool_set(&b_info->u.hvm.vnc.enable, 0);
          libxl_defbool_set(&b_info->u.hvm.sdl.enable, 0);
  
 +        if (def->ninputs) {
++            for (i = 0; i < def->ninputs; i++) {
++                if (def->inputs[i]->bus != VIR_DOMAIN_INPUT_BUS_USB) {
++                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
++                            _("libxenlight supports only USB input"));
++                    return -1;
++                }
++            }
 +#ifdef LIBXL_HAVE_BUILDINFO_USBDEVICE_LIST
 +            if (VIR_ALLOC_N(b_info->u.hvm.usbdevice_list, def->ninputs+1) < 0)
 +                return -1;
@@ -37,33 +46,22 @@ index f08b1b8..21e907c 100644
 +            }
 +#endif
 +            for (i = 0; i < def->ninputs; i++) {
-+                if (def->inputs[i]->bus != VIR_DOMAIN_INPUT_BUS_USB) {
-+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-+                            _("libxenlight supports only USB input"));
-+                    return -1;
-+                }
-+            }
-+            for (i = 0; i < def->ninputs; i++) {
++                char **usbdevice;
++#ifdef LIBXL_HAVE_BUILDINFO_USBDEVICE_LIST
++                usbdevice = &b_info->u.hvm.usbdevice_list[i];
++#else
++                usbdevice = &b_info->u.hvm.usbdevice;
++#endif
 +                switch (def->inputs[i]->type) {
 +                    case VIR_DOMAIN_INPUT_TYPE_MOUSE:
-+#ifdef LIBXL_HAVE_BUILDINFO_USBDEVICE_LIST
-+                        if (VIR_STRDUP(b_info->u.hvm.usbdevice_list[i], "mouse") < 0)
++                        VIR_FREE(*usbdevice);
++                        if (VIR_STRDUP(*usbdevice, "mouse") < 0)
 +                            return -1;
-+#else
-+                        VIR_FREE(b_info->u.hvm.usbdevice);
-+                        if (VIR_STRDUP(b_info->u.hvm.usbdevice, "mouse") < 0)
-+                            return -1;
-+#endif
 +                        break;
 +                    case VIR_DOMAIN_INPUT_TYPE_TABLET:
-+#ifdef LIBXL_HAVE_BUILDINFO_USBDEVICE_LIST
-+                        if (VIR_STRDUP(b_info->u.hvm.usbdevice_list[i], "tablet") < 0)
++                        VIR_FREE(*usbdevice);
++                        if (VIR_STRDUP(*usbdevice, "tablet") < 0)
 +                            return -1;
-+#else
-+                        VIR_FREE(b_info->u.hvm.usbdevice);
-+                        if (VIR_STRDUP(b_info->u.hvm.usbdevice, "tablet") < 0)
-+                            return -1;
-+#endif
 +                        break;
 +                    default:
 +                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -77,5 +75,5 @@ index f08b1b8..21e907c 100644
           * The following comment and calculation were taken directly from
           * libxenlight's internal function libxl_get_required_shadow_memory():
 -- 
-1.8.3.1
+2.1.0
 

@@ -1,8 +1,8 @@
-From ac080e5bdc7f1bb074ad09f7d57ca3ca35f3ed37 Mon Sep 17 00:00:00 2001
+From 39e5371125c21c98a9dde4ce36ddc791442210d4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 4 Feb 2015 06:09:57 +0100
-Subject: [PATCH 09/16] tests: add some simple libxl XML->XML tests
+Subject: [PATCH 09/19] tests: add some simple libxl XML->XML tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -19,11 +19,11 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  tests/xlxml2xmldata/xlxml2xml-hvm-stubdom.xml      |  41 +++++
  tests/xlxml2xmldata/xlxml2xml-hvm.xml              |  40 +++++
  tests/xlxml2xmldata/xlxml2xml-network-bridged.xml  |  38 +++++
- .../xlxml2xml-network-driver-domain.xml            |  38 +++++
+ .../xlxml2xml-network-driver-domain.xml            |  39 +++++
  tests/xlxml2xmldata/xlxml2xml-network-routed.xml   |  39 +++++
  tests/xlxml2xmldata/xlxml2xml-pv.xml               |  38 +++++
  tests/xlxml2xmltest.c                              | 189 +++++++++++++++++++++
- 9 files changed, 431 insertions(+), 3 deletions(-)
+ 9 files changed, 432 insertions(+), 3 deletions(-)
  create mode 100644 tests/xlxml2xmldata/xlxml2xml-hvm-stubdom.xml
  create mode 100644 tests/xlxml2xmldata/xlxml2xml-hvm.xml
  create mode 100644 tests/xlxml2xmldata/xlxml2xml-network-bridged.xml
@@ -219,10 +219,10 @@ index 0000000..a6b8f59
 +</domain>
 diff --git a/tests/xlxml2xmldata/xlxml2xml-network-driver-domain.xml b/tests/xlxml2xmldata/xlxml2xml-network-driver-domain.xml
 new file mode 100644
-index 0000000..31c0437
+index 0000000..ef0e06c
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-network-driver-domain.xml
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,39 @@
 +<domain type='xen'>
 +  <name>testvm</name>
 +  <uuid>900e3685-4998-41ad-a2c9-e496a5ed40a4</uuid>
@@ -254,7 +254,8 @@ index 0000000..31c0437
 +    </disk>
 +    <interface type='bridge'>
 +      <mac address='00:16:3e:5e:6c:09'/>
-+      <source bridge='xenbr0' domain='netvm'/>
++      <source bridge='xenbr0'/>
++      <backenddomain name='netvm'/>
 +    </interface>
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
@@ -546,5 +547,5 @@ index 0000000..131e43b
 +
 +#endif /* WITH_QEMU */
 -- 
-1.8.3.1
+2.1.0
 

@@ -1,0 +1,46 @@
+From 1c624ed78c6b6ddf7dfb09bd9737be41bc2aa27e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sat, 21 Mar 2015 01:49:26 +0100
+Subject: [PATCH 19/19] pci: do not fail if the stub module handle
+ new_id/remove_id internally
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+If new_id reports EEXISTS, then the ID is already present (so not a
+fail). The same for remove_id - on ENODEV it means that the ID isn't on
+the list.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/util/virpci.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/util/virpci.c b/src/util/virpci.c
+index 512e839..eefcb4a 100644
+--- a/src/util/virpci.c
++++ b/src/util/virpci.c
+@@ -1216,7 +1216,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev,
+     if (virPCIDriverFile(&path, stubDriverName, "new_id") < 0)
+         goto cleanup;
+ 
+-    if (virFileWriteStr(path, dev->id, 0) < 0) {
++    if (virFileWriteStr(path, dev->id, 0) < 0 && errno != EEXIST) {
+         virReportSystemError(errno,
+                              _("Failed to add PCI device ID '%s' to %s"),
+                              dev->id, stubDriverName);
+@@ -1283,7 +1283,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev,
+         goto cleanup;
+     }
+ 
+-    if (virFileExists(path) && virFileWriteStr(path, dev->id, 0) < 0) {
++    if (virFileExists(path) && virFileWriteStr(path, dev->id, 0) < 0 && errno != ENODEV) {
+         virReportSystemError(errno,
+                              _("Failed to remove PCI ID '%s' from %s"),
+                              dev->id, stubDriverName);
+-- 
+2.1.0
+

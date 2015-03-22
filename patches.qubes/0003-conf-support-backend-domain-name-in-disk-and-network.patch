@@ -1,7 +1,7 @@
-From 0515d81bf910c4ae2d1be8fa6c617bb85ba4e000 Mon Sep 17 00:00:00 2001
+From eb2259c7e080aa1ec19984e8a02d3efb8e7eb595 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:40 +0200
-Subject: [PATCH 03/16] conf: support backend domain name in disk and network
+Subject: [PATCH 03/19] conf: support backend domain name in disk and network
  devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,43 +26,38 @@ Changes in v3:
    element - this is more logical place
  - grammar of docs
 
+Changes in v4:
+ - revert back to separate element, named <backenddomain name='xx'/>
+
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- docs/formatdomain.html.in     | 29 +++++++++++++++++++++++++++--
- docs/schemas/domaincommon.rng | 20 ++++++++++++++++++++
- src/conf/domain_conf.c        | 33 +++++++++++++++++++++++++++++----
- src/conf/domain_conf.h        |  1 +
- src/util/virstoragefile.c     |  4 +++-
- src/util/virstoragefile.h     |  1 +
- 6 files changed, 81 insertions(+), 7 deletions(-)
+ docs/formatdomain.html.in     | 29 +++++++++++++++++++++++++++++
+ docs/schemas/domaincommon.rng | 16 ++++++++++++++++
+ src/conf/domain_conf.c        | 21 +++++++++++++++++++++
+ src/conf/domain_conf.h        |  2 ++
+ 4 files changed, 68 insertions(+)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index c5ad6f4..38c42d5 100644
+index c5ad6f4..16d8b5c 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
-@@ -1907,13 +1907,17 @@
-             <span class="since">since 0.0.3</span></dt>
-               <dd>
-               The <code>file</code> attribute specifies the fully-qualified
--              path to the file holding the disk.
-+              path to the file holding the disk. The optional
-+              <code>domain</code> attribute allows specifying a backend domain
-+              (aka driver domain) where the file is stored.
-               </dd>
-             <dt><code>type='block'</code>
-             <span class="since">since 0.0.3</span></dt>
-               <dd>
-               The <code>dev</code> attribute specifies the path to the
--              host device to serve as the disk.
-+              host device to serve as the disk. The optional
-+              <code>domain</code> attribute allows specifying a backend domain
-+              (aka driver domain) for the device.
-               </dd>
-             <dt><code>type='dir'</code>
-             <span class="since">since 0.7.5</span></dt>
-@@ -4336,6 +4340,27 @@ qemu-kvm -net nic,model=? /dev/null
-       element is unspecified is to have the link state <code>up</code>.
-       <span class="since">Since 0.9.5</span>
+@@ -2357,6 +2357,13 @@
+           </li>
+         </ul>
+       </dd>
++      <dt><code>backenddomain</code></dt>
++      <dd>The optional <code>backenddomain</code> element allows specifying a backend
++        domain (aka driver domain) for the device. If the real device/file resides
++        in some other domain on the same host, use the <code>name</code>
++        attribute to specify its name.
++        <span class="since">Since 1.2.13 (Xen only)</span>
++      </dd>
+       <dt><code>boot</code></dt>
+       <dd>Specifies that the disk is bootable. The <code>order</code>
+         attribute determines the order in which devices will be tried during
+@@ -4235,6 +4242,28 @@ qemu-kvm -net nic,model=? /dev/null
+       network device.
+       <span class="since">Since 0.9.10 (QEMU and KVM only)</span>.
      </p>
 +    <h5><a name="elementDomain">Setting up a network backend in a driver domain</a></h5>
 +<pre>
@@ -70,81 +65,72 @@ index c5ad6f4..38c42d5 100644
 +  &lt;devices&gt;
 +    ...
 +    &lt;interface type='bridge'&gt;
-+      &lt;source bridge='br0' <b>domain='netvm'</b>/&gt;
++      &lt;source bridge='br0'/&gt;
++      <b>&lt;backenddomain name='netvm'/&gt;</b>
 +    &lt;/interface&gt;
 +    ...
 +  &lt;/devices&gt;
 +  ...</pre>
 +
 +    <p>
-+      The optional <code>domain</code> attribute allows specifying a backend
++      The optional <code>backenddomain</code> element allows specifying a backend
 +      domain (aka driver domain) for the device. Use the <code>name</code> attribute
 +      to specify its name. You can use it to create a direct network link between
 +      domains (so data will not go through host system). Use with type 'ethernet'
 +      to create plain network link, or with 'bridge' to connect to some bridge
 +      inside the driver domain.
-+      <span class="since">Since 1.0.7 (Xen only)</span>
++      <span class="since">Since 1.2.13 (Xen only)</span>
 +    </p>
  
-     <h5><a name="ipconfig">IP configuration</a></h5>
- <pre>
+     <h5><a name="elementQoS">Quality of service</a></h5>
+ 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index d467dce..a4321f1 100644
+index d467dce..6721431 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -1340,6 +1340,11 @@
-             <attribute name="file">
-               <ref name="absFilePath"/>
-             </attribute>
-+                <optional>
-+                  <attribute name="domain">
-+                    <ref name="domainName"/>
-+                  </attribute>
-+                </optional>
-           </optional>
-           <optional>
-             <ref name="storageStartupPolicy"/>
-@@ -1365,6 +1370,11 @@
-             </attribute>
-           </optional>
-           <optional>
-+            <attribute name="domain">
-+              <ref name="domainName"/>
-+            </attribute>
-+          </optional>
-+          <optional>
-             <ref name="storageStartupPolicy"/>
-           </optional>
-           <optional>
-@@ -2040,6 +2050,11 @@
-                 <attribute name="bridge">
-                   <ref name="deviceName"/>
-                 </attribute>
-+                <optional>
-+                  <attribute name="domain">
-+                    <ref name="domainName"/>
-+                  </attribute>
-+                </optional>
-                 <empty/>
-               </element>
-             </optional>
-@@ -2059,6 +2074,11 @@
-                 <attribute name="dev">
-                   <ref name="deviceName"/>
-                 </attribute>
-+                <optional>
-+                  <attribute name="domain">
-+                    <ref name="domainName"/>
-+                  </attribute>
-+                </optional>
-                 <empty/>
-               </element>
-             </optional>
+@@ -1127,6 +1127,14 @@
+       </optional>
+       <ref name="target"/>
+       <optional>
++        <element name="backenddomain">
++          <attribute name="name">
++            <ref name="domainName"/>
++          </attribute>
++          <empty/>
++        </element>
++      </optional>
++      <optional>
+         <ref name="deviceBoot"/>
+       </optional>
+       <optional>
+@@ -2328,6 +2336,14 @@
+         </element>
+       </optional>
+       <optional>
++        <element name="backenddomain">
++          <attribute name="name">
++            <ref name="domainName"/>
++          </attribute>
++          <empty/>
++        </element>
++      </optional>
++      <optional>
+         <element name="model">
+           <attribute name="type">
+             <data type="string">
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index b00f009..92a8d2e 100644
+index b00f009..1315b70 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1443,6 +1443,7 @@ void virDomainNetDefFree(virDomainNetDefPtr def)
+@@ -1261,6 +1261,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
+     VIR_FREE(def->vendor);
+     VIR_FREE(def->product);
+     VIR_FREE(def->script);
++    VIR_FREE(def->domain_name);
+     virDomainDeviceInfoClear(&def->info);
+ 
+     VIR_FREE(def);
+@@ -1443,6 +1444,7 @@ void virDomainNetDefFree(virDomainNetDefPtr def)
      VIR_FREE(def->backend.vhost);
      VIR_FREE(def->virtPortProfile);
      VIR_FREE(def->script);
@@ -152,42 +138,60 @@ index b00f009..92a8d2e 100644
      VIR_FREE(def->ifname);
      VIR_FREE(def->ifname_guest);
      VIR_FREE(def->ifname_guest_actual);
-@@ -5521,9 +5522,11 @@ virDomainDiskSourceParse(xmlNodePtr node,
-     switch ((virStorageType)src->type) {
-     case VIR_STORAGE_TYPE_FILE:
-         src->path = virXMLPropString(node, "file");
-+        src->domain_name = virXMLPropString(node, "domain");
-         break;
-     case VIR_STORAGE_TYPE_BLOCK:
-         src->path = virXMLPropString(node, "dev");
-+        src->domain_name = virXMLPropString(node, "domain");
-         break;
-     case VIR_STORAGE_TYPE_DIR:
-         src->path = virXMLPropString(node, "dir");
-@@ -7377,6 +7380,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -5727,6 +5729,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     char *mirrorFormat = NULL;
+     char *mirrorType = NULL;
+     char *script = NULL;
++    char *domain_name = NULL;
+     int expected_secret_usage = -1;
+     int auth_secret_usage = -1;
+     int ret = 0;
+@@ -5795,6 +5798,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+             } else if (!script &&
+                        xmlStrEqual(cur->name, BAD_CAST "script")) {
+                 script = virXMLPropString(cur, "path");
++            } else if (!domain_name &&
++                       xmlStrEqual(cur->name, BAD_CAST "backenddomain")) {
++                domain_name = virXMLPropString(cur, "name");
+             } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
+                 if (virXPathUInt("string(./geometry/@cyls)",
+                                  ctxt, &def->geometry.cylinders) < 0) {
+@@ -6521,6 +6527,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     encryption = NULL;
+     def->script = script;
+     script = NULL;
++    def->domain_name = domain_name;
++    domain_name = NULL;
+     def->serial = serial;
+     serial = NULL;
+     def->wwn = wwn;
+@@ -6584,6 +6592,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+     VIR_FREE(mirrorType);
+     VIR_FREE(mirrorFormat);
+     VIR_FREE(script);
++    VIR_FREE(domain_name);
+ 
+     ctxt->node = save_ctxt;
+     return def;
+@@ -7373,6 +7382,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+     char *mode = NULL;
+     char *linkstate = NULL;
+     char *addrtype = NULL;
++    char *domain_name = NULL;
+     char *vhostuser_mode = NULL;
      char *vhostuser_path = NULL;
      char *vhostuser_type = NULL;
-     char *trustGuestRxFilters = NULL;
-+    char *domain_name = NULL;
-     virNWFilterHashTablePtr filterparams = NULL;
-     virDomainActualNetDefPtr actual = NULL;
-     xmlNodePtr oldnode = ctxt->node;
-@@ -7431,12 +7435,14 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
-                        def->type == VIR_DOMAIN_NET_TYPE_BRIDGE &&
-                        xmlStrEqual(cur->name, BAD_CAST "source")) {
-                 bridge = virXMLPropString(cur, "bridge");
-+                domain_name = virXMLPropString(cur, "domain");
-             } else if (!dev &&
-                        (def->type == VIR_DOMAIN_NET_TYPE_ETHERNET ||
-                         def->type == VIR_DOMAIN_NET_TYPE_DIRECT) &&
-                        xmlStrEqual(cur->name, BAD_CAST "source")) {
-                 dev  = virXMLPropString(cur, "dev");
-                 mode = virXMLPropString(cur, "mode");
-+                domain_name = virXMLPropString(cur, "domain");
-             } else if (!vhostuser_path && !vhostuser_mode && !vhostuser_type
-                        && def->type == VIR_DOMAIN_NET_TYPE_VHOSTUSER &&
-                        xmlStrEqual(cur->name, BAD_CAST "source")) {
-@@ -7810,6 +7816,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -7511,6 +7521,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+             } else if (!script &&
+                        xmlStrEqual(cur->name, BAD_CAST "script")) {
+                 script = virXMLPropString(cur, "path");
++            } else if (!domain_name &&
++                       xmlStrEqual(cur->name, BAD_CAST "backenddomain")) {
++                domain_name = virXMLPropString(cur, "name");
+             } else if (xmlStrEqual(cur->name, BAD_CAST "model")) {
+                 model = virXMLPropString(cur, "type");
+             } else if (xmlStrEqual(cur->name, BAD_CAST "driver")) {
+@@ -7810,6 +7823,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
          def->script = script;
          script = NULL;
      }
@@ -198,69 +202,44 @@ index b00f009..92a8d2e 100644
      if (ifname != NULL) {
          def->ifname = ifname;
          ifname = NULL;
-@@ -8069,6 +8079,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -8067,6 +8084,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+     VIR_FREE(mode);
+     VIR_FREE(linkstate);
      VIR_FREE(addrtype);
++    VIR_FREE(domain_name);
      VIR_FREE(trustGuestRxFilters);
      VIR_FREE(ips);
-+    VIR_FREE(domain_name);
      virNWFilterHashTableFree(filterparams);
+@@ -16828,6 +16846,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
  
-     return def;
-@@ -16550,6 +16561,7 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
-             virBufferAddLit(buf, "<source");
-             virBufferEscapeString(buf, " file='%s'", src->path);
-             virBufferEscapeString(buf, " startupPolicy='%s'", startupPolicy);
-+            virBufferEscapeString(buf, " domain='%s'", src->domain_name);
+     virBufferEscapeString(buf, "<script path='%s'/>\n", def->script);
  
-             virDomainDiskSourceDefFormatSeclabel(buf, src->nseclabels,
-                                                  src->seclabels, flags,
-@@ -16560,6 +16572,7 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
-             virBufferAddLit(buf, "<source");
-             virBufferEscapeString(buf, " dev='%s'", src->path);
-             virBufferEscapeString(buf, " startupPolicy='%s'", startupPolicy);
-+            virBufferEscapeString(buf, " domain='%s'", src->domain_name);
++    virBufferEscapeString(buf, "<backenddomain name='%s'/>\n", def->domain_name);
++
+     virDomainDiskGeometryDefFormat(buf, def);
+     virDomainDiskBlockIoDefFormat(buf, def);
  
-             virDomainDiskSourceDefFormatSeclabel(buf, src->nseclabels,
-                                                  src->seclabels, flags,
-@@ -17721,8 +17734,14 @@ virDomainNetDefFormat(virBufferPtr buf,
-             break;
+@@ -17794,6 +17814,7 @@ virDomainNetDefFormat(virBufferPtr buf,
  
-         case VIR_DOMAIN_NET_TYPE_ETHERNET:
--            virBufferEscapeString(buf, "<source dev='%s'/>\n",
--                                  def->data.ethernet.dev);
-+            if (def->data.ethernet.dev || def->domain_name) {
-+                virBufferAddLit(buf, "<source");
-+                virBufferEscapeString(buf, " dev='%s'",
-+                                      def->data.ethernet.dev);
-+                virBufferEscapeString(buf, " domain='%s'",
-+                                      def->domain_name);
-+                virBufferAddLit(buf, "/>\n");
-+            }
-             break;
- 
-         case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
-@@ -17738,8 +17757,14 @@ virDomainNetDefFormat(virBufferPtr buf,
-             break;
- 
-         case VIR_DOMAIN_NET_TYPE_BRIDGE:
--            virBufferEscapeString(buf, "<source bridge='%s'/>\n",
--                                  def->data.bridge.brname);
-+            if (def->data.bridge.brname || def->domain_name) {
-+                virBufferAddLit(buf, "<source");
-+                virBufferEscapeString(buf, " bridge='%s'",
-+                                      def->data.bridge.brname);
-+                virBufferEscapeString(buf, " domain='%s'",
-+                                      def->domain_name);
-+                virBufferAddLit(buf, "/>\n");
-+            }
-             break;
- 
-         case VIR_DOMAIN_NET_TYPE_SERVER:
+     virBufferEscapeString(buf, "<script path='%s'/>\n",
+                           def->script);
++    virBufferEscapeString(buf, "<backenddomain name='%s'/>\n", def->domain_name);
+     if (def->ifname &&
+         !((flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE) &&
+           (STRPREFIX(def->ifname, VIR_NET_GENERATED_PREFIX)))) {
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 19e7dd9..60e583c 100644
+index 19e7dd9..35e463e 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -996,6 +996,7 @@ struct _virDomainNetDef {
+@@ -701,6 +701,7 @@ struct _virDomainDiskDef {
+     int discard; /* enum virDomainDiskDiscard */
+     unsigned int iothread; /* unused = 0, > 0 specific thread # */
+     char *script;
++    char *domain_name; /* backend domain name */
+ };
+ 
+ 
+@@ -996,6 +997,7 @@ struct _virDomainNetDef {
          unsigned long sndbuf;
      } tune;
      char *script;
@@ -268,40 +247,6 @@ index 19e7dd9..60e583c 100644
      char *ifname;
      char *ifname_guest;
      char *ifname_guest_actual;
-diff --git a/src/util/virstoragefile.c b/src/util/virstoragefile.c
-index 8568ebb..ffca099 100644
---- a/src/util/virstoragefile.c
-+++ b/src/util/virstoragefile.c
-@@ -1835,7 +1835,8 @@ virStorageSourceCopy(const virStorageSource *src,
-         VIR_STRDUP(ret->backingStoreRaw, src->backingStoreRaw) < 0 ||
-         VIR_STRDUP(ret->snapshot, src->snapshot) < 0 ||
-         VIR_STRDUP(ret->configFile, src->configFile) < 0 ||
--        VIR_STRDUP(ret->compat, src->compat) < 0)
-+        VIR_STRDUP(ret->compat, src->compat) < 0 ||
-+        VIR_STRDUP(ret->domain_name, src->domain_name))
-         goto error;
- 
-     if (src->nhosts) {
-@@ -2023,6 +2024,7 @@ virStorageSourceClear(virStorageSourcePtr def)
- 
-     VIR_FREE(def->path);
-     VIR_FREE(def->volume);
-+    VIR_FREE(def->domain_name);
-     virStorageSourcePoolDefFree(def->srcpool);
-     VIR_FREE(def->driverName);
-     virBitmapFree(def->features);
-diff --git a/src/util/virstoragefile.h b/src/util/virstoragefile.h
-index b4c3808..a3c7e1e 100644
---- a/src/util/virstoragefile.h
-+++ b/src/util/virstoragefile.h
-@@ -241,6 +241,7 @@ struct _virStorageSource {
-     char *snapshot; /* for storage systems supporting internal snapshots */
-     char *configFile; /* some storage systems use config file as part of
-                          the source definition */
-+    char *domain_name; /* name of domain holding backing storage file/dev */
-     size_t nhosts;
-     virStorageNetHostDefPtr hosts;
-     virStorageSourcePoolDefPtr srcpool;
 -- 
-1.8.3.1
+2.1.0
 

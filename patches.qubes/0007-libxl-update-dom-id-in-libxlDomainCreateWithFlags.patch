@@ -1,8 +1,8 @@
-From 2ead71ed578e2c48cca43b2bafa017d0960d86a3 Mon Sep 17 00:00:00 2001
+From e75e9cc011614dadf8838dfaf3e42a4056a7637f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 31 Jan 2014 21:41:34 +0100
-Subject: [PATCH 07/16] libxl: update dom->id in libxlDomainCreateWithFlags
+Subject: [PATCH 07/19] libxl: update dom->id in libxlDomainCreateWithFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,5 +31,5 @@ index c95b387..ce3a99b 100644
   cleanup:
      if (vm)
 -- 
-1.8.3.1
+2.1.0
 

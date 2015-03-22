@@ -1,8 +1,8 @@
-From d09cb3bb713433f74066d8dce7b38932c206c139 Mon Sep 17 00:00:00 2001
+From 0bf88ce6b115565bf01faf6036bbddd97ac258aa Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 5 Feb 2015 05:59:30 +0100
-Subject: [PATCH 12/16] libxl: pass ipaddr to libxl toolstack
+Subject: [PATCH 12/19] libxl: pass ipaddr to libxl toolstack
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -19,7 +19,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  2 files changed, 23 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 6d3c443..f08b1b8 100644
+index 9495134..dc87e56 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -1087,6 +1087,11 @@ libxlMakeNic(virDomainDefPtr def,
@@ -71,5 +71,5 @@ index 856cfb4..f0eaf6c 100644
          (dev->type == VIR_DOMAIN_DEVICE_NET &&
           dev->data.net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV)) {
 -- 
-1.8.3.1
+2.1.0
 

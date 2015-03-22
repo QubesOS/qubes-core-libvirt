@@ -1,7 +1,7 @@
-From 3fc8ab0c28765f4ac42dc6fa4a669387708ab0f1 Mon Sep 17 00:00:00 2001
+From e4f497f9b8c4d2aa12b24bd008c7cc9273ef033f Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:42:17 +0200
-Subject: [PATCH 05/16] libxl: support backend domain setting for disk and net
+Subject: [PATCH 05/19] libxl: support backend domain setting for disk and net
  devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,22 +26,25 @@ Changes in v3:
  - leave name->XID resolution to libxl itself, which greatly simplify
    the code (but requires Xen at least 4.3)
 
+Changes in v4:
+ - change back to def->domain_name in disk handling code
+
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/libxl/libxl_conf.c | 24 ++++++++++++++++++++++++
  1 file changed, 24 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index cfd0bc8..0e26130 100644
+index cfd0bc8..95821ba 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -974,6 +974,18 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
          return -1;
      }
  
-+    if (l_disk->src->domain_name) {
++    if (l_disk->domain_name) {
 +#ifdef LIBXL_HAVE_DEVICE_BACKEND_DOMNAME
-+        if (VIR_STRDUP(x_disk->backend_domname, l_disk->src->domain_name) < 0)
++        if (VIR_STRDUP(x_disk->backend_domname, l_disk->domain_name) < 0)
 +            return -1;
 +#else
 +        virReportError(VIR_ERR_XML_DETAIL, "%s",
@@ -74,5 +77,5 @@ index cfd0bc8..0e26130 100644
  }
  
 -- 
-1.8.3.1
+2.1.0
 

@@ -1,8 +1,8 @@
-From 8e35f6c418945a19f6118e6f5053f9a018f19bb3 Mon Sep 17 00:00:00 2001
+From 9a1d13a04b08574785be38ea37751f91ee9b04c9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 06:35:52 +0100
-Subject: [PATCH 16/16] libxl: initialize domain state with real data
+Subject: [PATCH 18/19] libxl: initialize domain state with real data
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -40,5 +40,5 @@ index e08829c..00d99f7 100644
      if (virAtomicIntInc(&driver->nactive) == 1 && driver->inhibitCallback)
          driver->inhibitCallback(true, driver->inhibitOpaque);
 -- 
-1.8.3.1
+2.1.0
 

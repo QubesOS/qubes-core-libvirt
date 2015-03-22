@@ -1,7 +1,7 @@
-From e2d9722685ba6339a30817739314ac8b80528c8b Mon Sep 17 00:00:00 2001
+From b13de0d78a6c4cf869ac60a5c4dadcf037088862 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
-Subject: [PATCH 08/16] libxl: Stubdom emulator type
+Subject: [PATCH 08/19] libxl: Stubdom emulator type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,7 +23,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  5 files changed, 96 insertions(+), 3 deletions(-)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index 38c42d5..4f539e2 100644
+index 16d8b5c..0f9d40f 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
 @@ -1652,6 +1652,20 @@
@@ -48,10 +48,10 @@ index 38c42d5..4f539e2 100644
      </dl>
  
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index a4321f1..2a12073 100644
+index 6721431..390e92f 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -2519,7 +2519,28 @@
+@@ -2515,7 +2515,28 @@
      -->
    <define name="emulator">
      <element name="emulator">
@@ -82,7 +82,7 @@ index a4321f1..2a12073 100644
    </define>
    <!--
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 92a8d2e..41f5aa8 100644
+index 1315b70..4d649be 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
 @@ -741,6 +741,10 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
@@ -96,7 +96,7 @@ index 92a8d2e..41f5aa8 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
                "virtio");
-@@ -13718,6 +13722,14 @@ virDomainDefParseXML(xmlDocPtr xml,
+@@ -13725,6 +13729,14 @@ virDomainDefParseXML(xmlDocPtr xml,
      }
  
      def->emulator = virXPathString("string(./devices/emulator[1])", ctxt);
@@ -111,7 +111,7 @@ index 92a8d2e..41f5aa8 100644
  
      /* analysis of the disk devices */
      if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
-@@ -15696,6 +15708,14 @@ virDomainDefCheckABIStability(virDomainDefPtr src,
+@@ -15703,6 +15715,14 @@ virDomainDefCheckABIStability(virDomainDefPtr src,
          goto error;
      }
  
@@ -126,7 +126,7 @@ index 92a8d2e..41f5aa8 100644
      if (!virDomainDefFeaturesCheckABIStability(src, dst))
          goto error;
  
-@@ -19901,8 +19921,20 @@ virDomainDefFormatInternal(virDomainDefPtr def,
+@@ -19897,8 +19917,20 @@ virDomainDefFormatInternal(virDomainDefPtr def,
      virBufferAddLit(buf, "<devices>\n");
      virBufferAdjustIndent(buf, 2);
  
@@ -150,10 +150,10 @@ index 92a8d2e..41f5aa8 100644
      for (n = 0; n < def->ndisks; n++)
          if (virDomainDiskDefFormat(buf, def->disks[n], flags) < 0)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 60e583c..8c24f80 100644
+index 35e463e..fbf4552 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -1919,6 +1919,13 @@ struct _virBlkioDevice {
+@@ -1920,6 +1920,13 @@ struct _virBlkioDevice {
  };
  
  typedef enum {
@@ -167,7 +167,7 @@ index 60e583c..8c24f80 100644
      VIR_DOMAIN_RNG_MODEL_VIRTIO,
  
      VIR_DOMAIN_RNG_MODEL_LAST
-@@ -2084,6 +2091,7 @@ struct _virDomainDef {
+@@ -2085,6 +2092,7 @@ struct _virDomainDef {
  
      virDomainOSDef os;
      char *emulator;
@@ -175,7 +175,7 @@ index 60e583c..8c24f80 100644
      /* These three options are of type virTristateSwitch,
       * except VIR_DOMAIN_FEATURE_CAPABILITIES that is of type
       * virDomainCapabilitiesPolicy */
-@@ -2842,6 +2850,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
+@@ -2843,6 +2851,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
  VIR_ENUM_DECL(virDomainGraphicsVNCSharePolicy)
  VIR_ENUM_DECL(virDomainHyperv)
  VIR_ENUM_DECL(virDomainKVM)
@@ -184,7 +184,7 @@ index 60e583c..8c24f80 100644
  VIR_ENUM_DECL(virDomainRNGBackend)
  VIR_ENUM_DECL(virDomainTPMModel)
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index dfdf07b..6d3c443 100644
+index 53977f6..9495134 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -727,6 +727,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
@@ -212,5 +212,5 @@ index dfdf07b..6d3c443 100644
              if (def->nserials > 1) {
                  virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
 -- 
-1.8.3.1
+2.1.0
 

@@ -1,7 +1,7 @@
-From 445919d46b656af0c539bede0e76158438c4c54f Mon Sep 17 00:00:00 2001
+From 24426482f66d97ab02e3f63d03cd9cd3c4a4cf58 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
-Subject: [PATCH 10/16] libxl: support domain config modification in
+Subject: [PATCH 10/19] libxl: support domain config modification in
  virDomainRestoreFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -50,5 +50,5 @@ index ce3a99b..19ccfe5 100644
                                     driver->xmlopt,
                                     VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
 -- 
-1.8.3.1
+2.1.0
 

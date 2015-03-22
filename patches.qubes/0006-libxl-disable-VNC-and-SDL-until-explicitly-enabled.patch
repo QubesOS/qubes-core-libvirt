@@ -1,7 +1,7 @@
-From 8990d990e4396a3f5d6cc774c53db0d05505ae04 Mon Sep 17 00:00:00 2001
+From 0d68d588ce956fbfef5b9a3aeccde1eba006e117 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:03 +0200
-Subject: [PATCH 06/16] libxl: disable VNC and SDL until explicitly enabled
+Subject: [PATCH 06/19] libxl: disable VNC and SDL until explicitly enabled
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -17,7 +17,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 0e26130..dfdf07b 100644
+index 95821ba..53977f6 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -745,6 +745,10 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
@@ -32,5 +32,5 @@ index 0e26130..dfdf07b 100644
           * The following comment and calculation were taken directly from
           * libxenlight's internal function libxl_get_required_shadow_memory():
 -- 
-1.8.3.1
+2.1.0
 

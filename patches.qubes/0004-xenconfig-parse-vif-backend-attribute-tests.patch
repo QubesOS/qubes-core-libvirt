@@ -1,8 +1,8 @@
-From b48b28075f38c4a040333cfb8355a43e333da555 Mon Sep 17 00:00:00 2001
+From 5e382a1b58746c3cce544a657983b469ad27a077 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
-Subject: [PATCH 04/16] xenconfig: parse vif/backend attribute, tests
+Subject: [PATCH 04/19] xenconfig: parse vif/backend attribute, tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -16,9 +16,9 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/xenconfig/xen_sxpr.c                           |  4 +++
  .../sexpr2xml-bridge-driver-domain.sexpr           |  9 ++++++
- .../sexpr2xml-bridge-driver-domain.xml             | 34 ++++++++++++++++++++++
+ .../sexpr2xml-bridge-driver-domain.xml             | 35 ++++++++++++++++++++++
  tests/sexpr2xmltest.c                              |  1 +
- 4 files changed, 48 insertions(+)
+ 4 files changed, 49 insertions(+)
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.sexpr
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 
@@ -54,10 +54,10 @@ index 0000000..b44876a
 +(device (vif (mac '00:11:22:33:44:55')(bridge 'xenbr2')(script 'vif-bridge')(backend 'netvm'))))
 diff --git a/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 new file mode 100644
-index 0000000..9a1626f
+index 0000000..3b16872
 --- /dev/null
 +++ b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,35 @@
 +<domain type='xen' id='6'>
 +  <name>pvtest</name>
 +  <uuid>596a5d21-71f4-8fb2-e068-e2386a5c413e</uuid>
@@ -83,8 +83,9 @@ index 0000000..9a1626f
 +    </disk>
 +    <interface type='bridge'>
 +      <mac address='00:11:22:33:44:55'/>
-+      <source bridge='xenbr2' domain='netvm'/>
++      <source bridge='xenbr2'/>
 +      <script path='vif-bridge'/>
++      <backenddomain name='netvm'/>
 +      <target dev='vif6.0'/>
 +    </interface>
 +    <console type='pty'>
@@ -105,5 +106,5 @@ index 7247414..af99143 100644
      DO_TEST("pv-localtime", "pv-localtime", 2);
      DO_TEST("pci-devs", "pci-devs", 2);
 -- 
-1.8.3.1
+2.1.0
 

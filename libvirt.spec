@@ -1652,7 +1652,7 @@ do
   printf '#!/bin/sh\n\nexit 77\n' > $i
   chmod +x $i
 done
-if ! make check VIR_TEST_DEBUG=1
+if ! make %{?_smp_mflags} check VIR_TEST_DEBUG=1
 then
   cat test-suite.log || true
   exit 1

@@ -1,8 +1,8 @@
-From 75748dcfc596293ed08cb8c8ac11833f5ee1cef8 Mon Sep 17 00:00:00 2001
+From d924610944260dde8e61d2e1c00a4227c7cc79b2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 05:24:04 +0100
-Subject: [PATCH 17/19] libxl: implement virDomainPM* functions
+Subject: [PATCH 08/11] libxl: implement virDomainPM* functions
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -12,14 +12,14 @@ Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/libxl/libxl_domain.c |   6 +--
- src/libxl/libxl_driver.c | 103 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 105 insertions(+), 4 deletions(-)
+ src/libxl/libxl_driver.c | 104 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 106 insertions(+), 4 deletions(-)
 
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index d29ef02..1d686cf 100644
+index b769d33..6fc4c5c 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
-@@ -663,10 +663,8 @@ libxlDomainShutdownThread(void *opaque)
+@@ -469,10 +469,8 @@ libxlDomainShutdownThread(void *opaque)
          dom_event = virDomainEventLifecycleNewFromObj(vm,
                                             VIR_DOMAIN_EVENT_PMSUSPENDED,
                                             VIR_DOMAIN_EVENT_PMSUSPENDED_MEMORY);
@@ -33,10 +33,10 @@ index d29ef02..1d686cf 100644
      } else {
          VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 7539d33..e08829c 100644
+index 780c2d6..b7d3588 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1042,6 +1042,107 @@ libxlDomainDestroy(virDomainPtr dom)
+@@ -1386,6 +1386,108 @@ libxlDomainDestroy(virDomainPtr dom)
      return libxlDomainDestroyFlags(dom, 0);
  }
  
@@ -48,7 +48,8 @@ index 7539d33..e08829c 100644
 +{
 +    virDomainObjPtr vm;
 +    int ret = -1;
-+    libxlDomainObjPrivatePtr priv;
++    libxlDriverPrivatePtr driver = dom->conn->privateData;
++    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
 +
 +    virCheckFlags(0, -1);
 +    if (target != VIR_NODE_SUSPEND_TARGET_MEM) {
@@ -76,8 +77,7 @@ index 7539d33..e08829c 100644
 +        goto cleanup;
 +    }
 +
-+    priv = vm->privateData;
-+    if (libxl_domain_suspend(priv->ctx, vm->def->id, -1, 0, NULL) < 0) {
++    if (libxl_domain_suspend(cfg->ctx, vm->def->id, -1, 0, NULL) < 0) {
 +        virReportError(VIR_ERR_INTERNAL_ERROR,
 +                       _("Failed to suspend domain '%d'"), vm->def->id);
 +        goto cleanup;
@@ -100,6 +100,7 @@ index 7539d33..e08829c 100644
 +    int ret = -1;
 +    virObjectEventPtr event = NULL;
 +    libxlDomainObjPrivatePtr priv;
++    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
 +
 +    virCheckFlags(0, -1);
 +
@@ -119,7 +120,7 @@ index 7539d33..e08829c 100644
 +                                     VIR_DOMAIN_EVENT_STARTED_WAKEUP);
 +
 +    priv = vm->privateData;
-+    if (libxl_domain_resume(priv->ctx, vm->def->id, 1, NULL) < 0) {
++    if (libxl_domain_resume(cfg->ctx, vm->def->id, 1, NULL) < 0) {
 +        virReportError(VIR_ERR_INTERNAL_ERROR,
 +                       _("Failed to resume domain '%d'"), vm->def->id);
 +        goto cleanup;
@@ -127,8 +128,8 @@ index 7539d33..e08829c 100644
 +    virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_WAKEUP);
 +    /* reenable death event - libxl reports it only once */
 +    if (priv->deathW)
-+        libxl_evdisable_domain_death(priv->ctx, priv->deathW);
-+    if (libxl_evenable_domain_death(priv->ctx, vm->def->id, 0, &priv->deathW))
++        libxl_evdisable_domain_death(cfg->ctx, priv->deathW);
++    if (libxl_evenable_domain_death(cfg->ctx, vm->def->id, 0, &priv->deathW))
 +        goto cleanup;
 +
 +    ret = 0;
@@ -144,7 +145,7 @@ index 7539d33..e08829c 100644
  static char *
  libxlDomainGetOSType(virDomainPtr dom)
  {
-@@ -4821,6 +4922,8 @@ static virHypervisorDriver libxlHypervisorDriver = {
+@@ -5192,6 +5294,8 @@ static virHypervisorDriver libxlHypervisorDriver = {
      .domainReboot = libxlDomainReboot, /* 0.9.0 */
      .domainDestroy = libxlDomainDestroy, /* 0.9.0 */
      .domainDestroyFlags = libxlDomainDestroyFlags, /* 0.9.4 */

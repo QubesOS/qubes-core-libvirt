@@ -1,8 +1,8 @@
-From 39e5371125c21c98a9dde4ce36ddc791442210d4 Mon Sep 17 00:00:00 2001
+From d7dafd6a9b5f9cb85ec8dca6fda64cc9cb0c2f02 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 4 Feb 2015 06:09:57 +0100
-Subject: [PATCH 09/19] tests: add some simple libxl XML->XML tests
+Subject: [PATCH 05/11] tests: add some simple libxl XML->XML tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -33,10 +33,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  create mode 100644 tests/xlxml2xmltest.c
 
 diff --git a/tests/Makefile.am b/tests/Makefile.am
-index 938270c..48648b9 100644
+index 4af38fe..0a69ccd 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
-@@ -85,6 +85,7 @@ EXTRA_DIST =		\
+@@ -90,6 +90,7 @@ EXTRA_DIST =		\
  	domainsnapshotxml2xmlout \
  	fchostdata \
  	interfaceschemadata \
@@ -44,7 +44,7 @@ index 938270c..48648b9 100644
  	lxcconf2xmldata \
  	lxcxml2xmldata \
  	lxcxml2xmloutdata \
-@@ -230,7 +231,7 @@ test_programs += xml2sexprtest sexpr2xmltest \
+@@ -240,7 +241,7 @@ test_programs += xml2sexprtest sexpr2xmltest \
  endif WITH_XEN
  
  if WITH_LIBXL
@@ -53,7 +53,7 @@ index 938270c..48648b9 100644
  endif WITH_LIBXL
  
  if WITH_QEMU
-@@ -515,8 +516,12 @@ xlconfigtest_SOURCES = \
+@@ -528,8 +529,12 @@ xlconfigtest_SOURCES = \
  	xlconfigtest.c testutilsxen.c testutilsxen.h \
  	testutils.c testutils.h
  xlconfigtest_LDADD =$(libxl_LDADDS)
@@ -353,7 +353,7 @@ index 0000000..b937b8b
 +</domain>
 diff --git a/tests/xlxml2xmltest.c b/tests/xlxml2xmltest.c
 new file mode 100644
-index 0000000..131e43b
+index 0000000..ca70400
 --- /dev/null
 +++ b/tests/xlxml2xmltest.c
 @@ -0,0 +1,189 @@
@@ -401,7 +401,7 @@ index 0000000..131e43b
 +        goto fail;
 +
 +    if (!(def = virDomainDefParseString(inXmlData, caps, xmlopt,
-+                                        1 << VIR_DOMAIN_VIRT_XEN, parse_flags)))
++                                        parse_flags)))
 +        goto fail;
 +
 +    if (!virDomainDefCheckABIStability(def, def)) {

@@ -1,8 +1,8 @@
-From 9a1d13a04b08574785be38ea37751f91ee9b04c9 Mon Sep 17 00:00:00 2001
+From 4b83e8cc3dac2d9c0f904580423884e769f1f2b4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 06:35:52 +0100
-Subject: [PATCH 18/19] libxl: initialize domain state with real data
+Subject: [PATCH 09/11] libxl: initialize domain state with real data
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -14,18 +14,17 @@ state, not only RUNNING/SHUTOFF.
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_driver.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ src/libxl/libxl_driver.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index e08829c..00d99f7 100644
+index b7d3588..b5426ae 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -176,7 +176,16 @@ libxlReconnectDomain(virDomainObjPtr vm,
+@@ -381,6 +381,17 @@ libxlReconnectDomain(virDomainObjPtr vm,
                                              vm->def, VIR_HOSTDEV_SP_PCI) < 0)
          goto out;
  
--    virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_UNKNOWN);
 +    if (d_info.shutdown &&
 +            d_info.shutdown_reason == LIBXL_SHUTDOWN_REASON_SUSPEND)
 +        virDomainObjSetState(vm, VIR_DOMAIN_PMSUSPENDED,
@@ -36,9 +35,10 @@ index e08829c..00d99f7 100644
 +    else
 +        virDomainObjSetState(vm, VIR_DOMAIN_RUNNING,
 +                             VIR_DOMAIN_RUNNING_UNKNOWN);
- 
++
      if (virAtomicIntInc(&driver->nactive) == 1 && driver->inhibitCallback)
          driver->inhibitCallback(true, driver->inhibitOpaque);
+ 
 -- 
 2.1.0
 

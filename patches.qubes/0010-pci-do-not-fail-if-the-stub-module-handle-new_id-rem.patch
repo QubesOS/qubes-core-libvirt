@@ -1,8 +1,8 @@
-From 1c624ed78c6b6ddf7dfb09bd9737be41bc2aa27e Mon Sep 17 00:00:00 2001
+From a16ca8c1048a2b610acec0fbbea8078743d6debe Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 21 Mar 2015 01:49:26 +0100
-Subject: [PATCH 19/19] pci: do not fail if the stub module handle
+Subject: [PATCH 10/11] pci: do not fail if the stub module handle
  new_id/remove_id internally
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -20,11 +20,11 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/util/virpci.c b/src/util/virpci.c
-index 512e839..eefcb4a 100644
+index 35b1459..2110a32 100644
 --- a/src/util/virpci.c
 +++ b/src/util/virpci.c
-@@ -1216,7 +1216,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev,
-     if (virPCIDriverFile(&path, stubDriverName, "new_id") < 0)
+@@ -1214,7 +1214,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev,
+     if (!(path = virPCIDriverFile(stubDriverName, "new_id")))
          goto cleanup;
  
 -    if (virFileWriteStr(path, dev->id, 0) < 0) {
@@ -32,7 +32,7 @@ index 512e839..eefcb4a 100644
          virReportSystemError(errno,
                               _("Failed to add PCI device ID '%s' to %s"),
                               dev->id, stubDriverName);
-@@ -1283,7 +1283,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev,
+@@ -1284,7 +1284,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev,
          goto cleanup;
      }
  

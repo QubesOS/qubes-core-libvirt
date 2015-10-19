@@ -1,8 +1,8 @@
-From 5e382a1b58746c3cce544a657983b469ad27a077 Mon Sep 17 00:00:00 2001
+From cf293223677d517c9e955c9f7d00ed98efdf874b Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
-Subject: [PATCH 04/19] xenconfig: parse vif/backend attribute, tests
+Subject: [PATCH 03/11] xenconfig: parse vif/backend attribute, tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,7 +23,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 
 diff --git a/src/xenconfig/xen_sxpr.c b/src/xenconfig/xen_sxpr.c
-index 554d28f..6de1aa2 100644
+index 033b0eb..86aad37 100644
 --- a/src/xenconfig/xen_sxpr.c
 +++ b/src/xenconfig/xen_sxpr.c
 @@ -576,6 +576,10 @@ xenParseSxprNets(virDomainDefPtr def,
@@ -94,10 +94,10 @@ index 0000000..3b16872
 +  </devices>
 +</domain>
 diff --git a/tests/sexpr2xmltest.c b/tests/sexpr2xmltest.c
-index 7247414..af99143 100644
+index 99999f1..85ba645 100644
 --- a/tests/sexpr2xmltest.c
 +++ b/tests/sexpr2xmltest.c
-@@ -157,6 +157,7 @@ mymain(void)
+@@ -150,6 +150,7 @@ mymain(void)
      DO_TEST("net-bridged", "net-bridged", 2);
      DO_TEST("net-e1000", "net-e1000", 2);
      DO_TEST("bridge-ipaddr", "bridge-ipaddr", 3);

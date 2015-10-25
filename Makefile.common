@@ -42,14 +42,22 @@ get-sources: $(SRC_FILE)
 $(SRC_FILE):
 ifneq ($(SRC_FILE), None)
 	@wget -q $(URL)
+	@wget -q $(addsuffix .asc,$(URL))
 endif
+
+.PHONY: import-keys
+import-keys:
+	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/core-libvirt-trustedkeys.gpg"; fi
+	@gpg --no-auto-check-trustdb --no-default-keyring --keyring core-libvirt-trustedkeys.gpg -q --import *-key.asc
 
 .PHONY: verify-sources
 
-verify-sources:
-# This is a temporary hack, until libvirt project starts properly signing their tarballs...
+verify-sources: import-keys
 ifneq ($(SRC_FILE), None)
-	@md5sum --quiet -c sources-$(VERSION)
+	@for f in $(SRC_FILE); do \
+		gpgv --keyring core-libvirt-trustedkeys.gpg $$f.asc $$f 2>/dev/null || \
+		{ echo "Wrong signature on $$f!"; exit 1; }; \
+	done
 endif
 
 .PHONY: clean-sources

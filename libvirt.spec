@@ -5,7 +5,7 @@
 %endif
 %{!?version: %define version %(cat version)}
 
-# If neither fedora nor rhel was defined, try to guess them from %{dist}
+# If neither fedora nor rhel was defined, try to guess them from %%{dist}
 %if !0%{?rhel} && !0%{?fedora}
 %{expand:%(echo "%{?dist}" | \
   sed -ne 's/^\.el\([0-9]\+\).*/%%define rhel \1/p')}

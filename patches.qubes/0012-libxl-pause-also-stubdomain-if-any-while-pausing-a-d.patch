@@ -1,0 +1,84 @@
+From 54e239a6c8460b9035f92483ac2b6ba0d3e21e9c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Wed, 25 Nov 2015 00:48:56 +0100
+Subject: [PATCH 12/12] libxl: pause also stubdomain (if any) while pausing a
+ domain
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Otherwise stubdomain would crash, if host suspend was in effect in the
+meantime.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_driver.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index b5426ae..61b7deb 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -1128,6 +1128,15 @@ libxlDomainSuspend(virDomainPtr dom)
+     priv = vm->privateData;
+ 
+     if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PAUSED) {
++        int stubdom_domid = libxl_get_stubdom_id(cfg->ctx, vm->def->id);
++        if (stubdom_domid) {
++            if (libxl_domain_pause(cfg->ctx, stubdom_domid) != 0) {
++                virReportError(VIR_ERR_INTERNAL_ERROR,
++                               _("Failed to suspend domain '%d' with libxenlight"),
++                               stubdom_domid);
++                goto endjob;
++            }
++        }
+         if (libxl_domain_pause(priv->ctx, vm->def->id) != 0) {
+             virReportError(VIR_ERR_INTERNAL_ERROR,
+                            _("Failed to suspend domain '%d' with libxenlight"),
+@@ -1167,6 +1176,8 @@ libxlDomainResume(virDomainPtr dom)
+     virDomainObjPtr vm;
+     libxlDomainObjPrivatePtr priv;
+     virObjectEventPtr event = NULL;
++    libxl_dominfo d_info;
++    int stubdom_domid;
+     int ret = -1;
+ 
+     if (!(vm = libxlDomObjFromDomain(dom)))
+@@ -1186,12 +1197,31 @@ libxlDomainResume(virDomainPtr dom)
+     priv = vm->privateData;
+ 
+     if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {
++        stubdom_domid = libxl_get_stubdom_id(cfg->ctx, vm->def->id);
+         if (libxl_domain_unpause(priv->ctx, vm->def->id) != 0) {
+             virReportError(VIR_ERR_INTERNAL_ERROR,
+                            _("Failed to resume domain '%d' with libxenlight"),
+                            vm->def->id);
+             goto endjob;
+         }
++        if (stubdom_domid) {
++            /* stubdomain may not be paused, for example in case of
++             * virCreateWithFlags(..., VIR_DOMAIN_START_PAUSED), so first check
++             * for that
++             */
++            if (libxl_domain_info(cfg->ctx, &d_info, stubdom_domid) != 0) {
++                virReportError(VIR_ERR_INTERNAL_ERROR,
++                               _("Failed to get '%d' stubdomain state with libxenlight"),
++                               stubdom_domid);
++                goto endjob;
++            }
++            if (d_info.paused && libxl_domain_unpause(cfg->ctx, stubdom_domid) != 0) {
++                virReportError(VIR_ERR_INTERNAL_ERROR,
++                               _("Failed to resume domain '%d' with libxenlight"),
++                               stubdom_domid);
++                goto endjob;
++            }
++        }
+ 
+         virDomainObjSetState(vm, VIR_DOMAIN_RUNNING,
+                              VIR_DOMAIN_RUNNING_UNPAUSED);
+-- 
+2.1.0
+

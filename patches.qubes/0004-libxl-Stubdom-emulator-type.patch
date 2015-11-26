@@ -1,7 +1,7 @@
-From 0708e8063e571531d0cad6083a5b5f2af0359972 Mon Sep 17 00:00:00 2001
+From 03d2477c564935ec338d8540402eca608f49bfc2 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
-Subject: [PATCH 04/11] libxl: Stubdom emulator type
+Subject: [PATCH 04/12] libxl: Stubdom emulator type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -15,18 +15,18 @@ such configuration. Emulator path is still used for qemu running in dom0
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- docs/formatdomain.html.in     | 14 ++++++++++++++
- docs/schemas/domaincommon.rng | 23 ++++++++++++++++++++++-
- src/conf/domain_conf.c        | 37 +++++++++++++++++++++++++++++++++++--
- src/conf/domain_conf.h        |  9 +++++++++
+ docs/formatdomain.html.in     | 17 +++++++++++++++++
+ docs/schemas/domaincommon.rng | 28 +++++++++++++++++++++++++++-
+ src/conf/domain_conf.c        | 39 +++++++++++++++++++++++++++++++++++++--
+ src/conf/domain_conf.h        | 10 ++++++++++
  src/libxl/libxl_conf.c        | 17 +++++++++++++++++
- 5 files changed, 97 insertions(+), 3 deletions(-)
+ 5 files changed, 108 insertions(+), 3 deletions(-)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index efa485c..58cd3a4 100644
+index efa485c..45f83af 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
-@@ -1775,6 +1775,20 @@
+@@ -1775,6 +1775,23 @@
          The <a href="formatcaps.html">capabilities XML</a> specifies
          the recommended default emulator to use for each particular
          domain type / architecture combination.
@@ -44,14 +44,17 @@ index efa485c..58cd3a4 100644
 +          which binary is used as a stub domain.
 +          </dd>
 +        </dl>
++        <span class="since">Since 1.2.20</span>, the <code>emulator</code>
++        element may contain <code>cmdline</code> attribute with custom command
++        line arguments.
        </dd>
      </dl>
  
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index f196177..d381869 100644
+index 91414b9..2b9e6b3 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -2554,7 +2554,28 @@
+@@ -2562,7 +2562,33 @@
      -->
    <define name="emulator">
      <element name="emulator">
@@ -64,6 +67,11 @@ index f196177..d381869 100644
 +                <value>qemu</value>
 +                <value>stubdom</value>
 +              </choice>
++            </attribute>
++          </optional>
++          <optional>
++            <attribute name="cmdline">
++              <text/>
 +            </attribute>
 +          </optional>
 +          <ref name="absFilePath"/>
@@ -82,7 +90,7 @@ index f196177..d381869 100644
    </define>
    <!--
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 40474a0..a40d53d 100644
+index 40474a0..36a8c73 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
 @@ -777,6 +777,10 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
@@ -96,7 +104,7 @@ index 40474a0..a40d53d 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
                "virtio");
-@@ -15751,6 +15755,15 @@ virDomainDefParseXML(xmlDocPtr xml,
+@@ -15751,6 +15755,16 @@ virDomainDefParseXML(xmlDocPtr xml,
              goto error;
      }
  
@@ -109,10 +117,11 @@ index 40474a0..a40d53d 100644
 +                           _("Unknown emulator type '%s'"), tmp);
 +        }
 +    }
++    def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
  
      /* analysis of the disk devices */
      if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
-@@ -17787,6 +17800,14 @@ virDomainDefCheckABIStability(virDomainDefPtr src,
+@@ -17787,6 +17801,14 @@ virDomainDefCheckABIStability(virDomainDefPtr src,
          goto error;
      }
  
@@ -127,7 +136,7 @@ index 40474a0..a40d53d 100644
      if (!virDomainDefFeaturesCheckABIStability(src, dst))
          goto error;
  
-@@ -22214,8 +22235,20 @@ virDomainDefFormatInternal(virDomainDefPtr def,
+@@ -22214,8 +22236,21 @@ virDomainDefFormatInternal(virDomainDefPtr def,
      virBufferAddLit(buf, "<devices>\n");
      virBufferAdjustIndent(buf, 2);
  
@@ -140,6 +149,7 @@ index 40474a0..a40d53d 100644
 +            virBufferAsprintf(buf, " type='%s'",
 +                              virDomainEmulatorTypeTypeToString(def->emulator_type));
 +        }
++        virBufferEscapeString(buf, " cmdline='%s'", def->emulator_cmdline);
 +        if (!def->emulator) {
 +            virBufferAddLit(buf, "/>\n");
 +        } else {
@@ -151,7 +161,7 @@ index 40474a0..a40d53d 100644
      for (n = 0; n < def->ndisks; n++)
          if (virDomainDiskDefFormat(buf, def->disks[n], flags) < 0)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index b8e79f9..b1b7f19 100644
+index b8e79f9..5a24ebe 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
 @@ -1981,6 +1981,13 @@ struct _virBlkioDevice {
@@ -168,15 +178,16 @@ index b8e79f9..b1b7f19 100644
      VIR_DOMAIN_RNG_MODEL_VIRTIO,
  
      VIR_DOMAIN_RNG_MODEL_LAST
-@@ -2229,6 +2236,7 @@ struct _virDomainDef {
+@@ -2229,6 +2236,8 @@ struct _virDomainDef {
  
      virDomainOSDef os;
      char *emulator;
 +    virDomainEmulatorType emulator_type;
++    char *emulator_cmdline;
      /* These three options are of type virTristateSwitch,
       * except VIR_DOMAIN_FEATURE_CAPABILITIES that is of type
       * virDomainCapabilitiesPolicy */
-@@ -3082,6 +3090,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
+@@ -3082,6 +3091,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
  VIR_ENUM_DECL(virDomainGraphicsVNCSharePolicy)
  VIR_ENUM_DECL(virDomainHyperv)
  VIR_ENUM_DECL(virDomainKVM)
@@ -185,7 +196,7 @@ index b8e79f9..b1b7f19 100644
  VIR_ENUM_DECL(virDomainRNGBackend)
  VIR_ENUM_DECL(virDomainTPMModel)
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 027a26d..30f8155 100644
+index 027a26d..7f03761 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -748,6 +748,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
@@ -201,8 +212,8 @@ index 027a26d..30f8155 100644
 +        if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM)
 +            libxl_defbool_set(&b_info->device_model_stubdomain, 1);
 +
-+        if (def->os.cmdline && def->os.cmdline[0]) {
-+            b_info->extra_hvm = virStringSplit(def->os.cmdline, " ", 0);
++        if (def->emulator_cmdline && def->emulator_cmdline[0]) {
++            b_info->extra_hvm = virStringSplit(def->emulator_cmdline, " ", 0);
 +            if (b_info->extra_hvm == NULL) {
 +                virReportOOMError();
 +                return -1;

@@ -1,0 +1,53 @@
+From 86dafd882c5878ef838903d4ac4bdf5dc222003f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sat, 28 Nov 2015 18:27:59 +0100
+Subject: [PATCH 13/13] libxl: plug workaround for missing pcidev group
+ assignment to 'nostrictreset' option
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+From commit in xen tree:
+commit 11d942df114045860a27563418cf5dbd5bcd0402
+Author: Tiejun Chen <tiejun.chen@intel.com>
+Date:   Mon Sep 14 13:42:34 2015 +0200
+
+    vtd/iommu: permit group devices to passthrough in relaxed mode
+
+    Currently we don't allow passing through any group devices which are
+    sharing same RMRR entry since it would break security among VMs. And
+    indeed, we expect we can figure out a better way to handle this kind
+    of case completely.
+
+    But before the group assignment gets implemented, we might make this
+    permission dependent on our RMRR policy. So, now it would be allowed
+    in the relaxed mode.
+
+nostrictreset isn't the best place to put such workaround, but it is
+similar in consequences (weaken PCI passthrough).
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 7f03761..7657d72 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -1679,6 +1679,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+     pcidev->bus = pcisrc->addr.bus;
+     pcidev->dev = pcisrc->addr.slot;
+     pcidev->func = pcisrc->addr.function;
++    /* there is no LIBXL_HAVE_xxx for this field... */
++    if (hostdev->nostrictreset)
++        pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;
+ 
+     return 0;
+ }
+-- 
+2.1.0
+

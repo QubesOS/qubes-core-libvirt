@@ -31,20 +31,21 @@ similar in consequences (weaken PCI passthrough).
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_conf.c | 3 +++
- 1 file changed, 3 insertions(+)
+ src/libxl/libxl_conf.c | 5 +++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 7f03761..7657d72 100644
---- a/src/libxl/libxl_conf.c
-+++ b/src/libxl/libxl_conf.c
-@@ -1679,6 +1679,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+diff -ur a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+--- a/src/libxl/libxl_conf.c	2016-03-09 22:45:03.227076985 +1300
++++ b/src/libxl/libxl_conf.c	2016-03-09 22:48:56.709076985 +1300
+@@ -1659,6 +1659,11 @@
      pcidev->bus = pcisrc->addr.bus;
      pcidev->dev = pcisrc->addr.slot;
      pcidev->func = pcisrc->addr.function;
++#ifdef LIBXL_RDM_RESERVE_POLICY_RELAXED
 +    /* there is no LIBXL_HAVE_xxx for this field... */
 +    if (hostdev->nostrictreset)
 +        pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;
++#endif
  
      return 0;
  }

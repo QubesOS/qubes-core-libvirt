@@ -503,7 +503,7 @@ BuildRequires: systemd-units
 BuildRequires: systemd-devel
 %endif
 %if %{with_xen} || %{with_libxl}
-BuildRequires: xen-devel
+BuildRequires: xen-devel >= 4.6.0
 %endif
 BuildRequires: libxml2-devel
 BuildRequires: xhtml1-dtds

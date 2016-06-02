@@ -1,0 +1,93 @@
+From d9eb7269adad395f8fd63214582c715f3f09f8cb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 2 Jun 2016 05:55:39 +0200
+Subject: [PATCH 17/17] tests: check e820_host option handling
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ tests/xlconfigdata/test-paravirt-e820_host.cfg | 13 ++++++++++
+ tests/xlconfigdata/test-paravirt-e820_host.xml | 35 ++++++++++++++++++++++++++
+ tests/xlconfigtest.c                           |  2 ++
+ 3 files changed, 50 insertions(+)
+ create mode 100644 tests/xlconfigdata/test-paravirt-e820_host.cfg
+ create mode 100644 tests/xlconfigdata/test-paravirt-e820_host.xml
+
+diff --git a/tests/xlconfigdata/test-paravirt-e820_host.cfg b/tests/xlconfigdata/test-paravirt-e820_host.cfg
+new file mode 100644
+index 0000000..b9e5a48
+--- /dev/null
++++ b/tests/xlconfigdata/test-paravirt-e820_host.cfg
+@@ -0,0 +1,13 @@
++name = "XenGuest1"
++uuid = "45b60f51-88a9-47a8-a3b3-5e66d71b2283"
++maxmem = 512
++memory = 512
++vcpus = 4
++e820_host = 1
++localtime = 0
++on_poweroff = "preserve"
++on_reboot = "restart"
++on_crash = "preserve"
++vif = [ "mac=5a:36:0e:be:00:09" ]
++bootloader = "/usr/bin/pygrub"
++disk = [ "/var/lib/xen/images/debian/disk.qcow2,qcow2,xvda,w,backendtype=qdisk" ]
+diff --git a/tests/xlconfigdata/test-paravirt-e820_host.xml b/tests/xlconfigdata/test-paravirt-e820_host.xml
+new file mode 100644
+index 0000000..5727023
+--- /dev/null
++++ b/tests/xlconfigdata/test-paravirt-e820_host.xml
+@@ -0,0 +1,33 @@
++<domain type='xen'>
++  <name>XenGuest1</name>
++  <uuid>45b60f51-88a9-47a8-a3b3-5e66d71b2283</uuid>
++  <memory unit='KiB'>524288</memory>
++  <currentMemory unit='KiB'>524288</currentMemory>
++  <vcpu placement='static'>4</vcpu>
++  <bootloader>/usr/bin/pygrub</bootloader>
++  <os>
++    <type arch='x86_64' machine='xenpv'>linux</type>
++  </os>
++  <features>
++    <xen>
++      <e820_host state='on'/>
++    </xen>
++  </features>
++  <clock offset='utc' adjustment='reset'/>
++  <on_poweroff>preserve</on_poweroff>
++  <on_reboot>restart</on_reboot>
++  <on_crash>preserve</on_crash>
++  <devices>
++    <disk type='file' device='disk'>
++      <driver name='qemu' type='qcow2'/>
++      <source file='/var/lib/xen/images/debian/disk.qcow2'/>
++      <target dev='xvda' bus='xen'/>
++    </disk>
++    <interface type='ethernet'>
++      <mac address='5a:36:0e:be:00:09'/>
++    </interface>
++    <console type='pty'>
++      <target type='xen' port='0'/>
++    </console>
++  </devices>
++</domain>
+diff --git a/tests/xlconfigtest.c b/tests/xlconfigtest.c
+index 952b504..b42d9ca 100644
+--- a/tests/xlconfigtest.c
++++ b/tests/xlconfigtest.c
+@@ -203,6 +203,7 @@ mymain(void)
+ #ifdef LIBXL_HAVE_BUILDINFO_KERNEL
+     DO_TEST("fullvirt-direct-kernel-boot", 3);
+ #endif
++    DO_TEST("paravirt-e820_host", 3);
+ 
+     virObjectUnref(caps);
+     virObjectUnref(xmlopt);
+-- 
+2.5.5
+

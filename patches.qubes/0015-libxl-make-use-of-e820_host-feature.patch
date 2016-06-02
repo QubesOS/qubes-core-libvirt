@@ -1,0 +1,44 @@
+From f6600e46c5b159e7a05f8473b635e2d9d2c1e108 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 2 Jun 2016 05:54:44 +0200
+Subject: [PATCH 15/17] libxl: make use of e820_host feature
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 7657d72..0394513 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -864,6 +864,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+         }
+         if (VIR_STRDUP(b_info->u.pv.ramdisk, def->os.initrd) < 0)
+             return -1;
++
++        if (def->features[VIR_DOMAIN_FEATURE_XEN] == VIR_TRISTATE_SWITCH_ON) {
++            switch ((virTristateSwitch) def->xen_features[VIR_DOMAIN_XEN_E820_HOST]) {
++                case VIR_TRISTATE_SWITCH_ON:
++                    libxl_defbool_set(&b_info->u.pv.e820_host, true);
++                    break;
++                case VIR_TRISTATE_SWITCH_OFF:
++                    libxl_defbool_set(&b_info->u.pv.e820_host, false);
++                    break;
++                case VIR_TRISTATE_SWITCH_ABSENT:
++                case VIR_TRISTATE_SWITCH_LAST:
++                    break;
++            }
++        }
+     }
+ 
+     return 0;
+-- 
+2.5.5
+

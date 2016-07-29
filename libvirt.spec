@@ -289,7 +289,9 @@ Patch0016: patches.qubes/0017-libxl-add-support-for-PVH.patch
 
 
 Requires: libvirt-daemon = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-config-nwfilter = %{version}-%{release}
 %if %{with_libxl}
 Requires: libvirt-daemon-driver-libxl = %{version}-%{release}
@@ -314,7 +316,9 @@ Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-client = %{version}-%{release}
 
@@ -531,6 +535,7 @@ Server side daemon required to manage the virtualization capabilities
 of recent versions of Linux. Requires a hypervisor specific sub-RPM
 for specific drivers.
 
+%if %{with_network}
 %package daemon-config-network
 Summary: Default configuration files for the libvirtd daemon
 Group: Development/Libraries
@@ -540,6 +545,7 @@ Requires: libvirt-daemon-driver-network = %{version}-%{release}
 
 %description daemon-config-network
 Default configuration files for setting up NAT based networking
+%endif
 
 %package daemon-config-nwfilter
 Summary: Network filter configuration files for the libvirtd daemon
@@ -551,6 +557,7 @@ Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 %description daemon-config-nwfilter
 Network filter configuration files for cleaning guest traffic
 
+%if %{with_network}
 %package daemon-driver-network
 Summary: Network driver plugin for the libvirtd daemon
 Group: Development/Libraries
@@ -566,6 +573,7 @@ Requires: iptables-ipv6
 The network driver plugin for the libvirtd daemon, providing
 an implementation of the virtual network APIs using the Linux
 bridge capabilities.
+%endif
 
 
 %package daemon-driver-nwfilter
@@ -671,7 +679,9 @@ Summary: Qemu driver plugin for the libvirtd daemon
 Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 # There really is a hard cross-driver dependency here
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
 Requires: /usr/bin/qemu-img
 # For image compression
@@ -693,7 +703,9 @@ Summary: LXC driver plugin for the libvirtd daemon
 Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 # There really is a hard cross-driver dependency here
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 
 %description daemon-driver-lxc
 The LXC driver plugin for the libvirtd daemon, providing
@@ -764,7 +776,9 @@ Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-driver-qemu = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
@@ -785,7 +799,9 @@ Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-driver-qemu = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
@@ -806,7 +822,9 @@ Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-driver-lxc = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
@@ -826,7 +844,9 @@ Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-driver-uml = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
@@ -852,7 +872,9 @@ Requires: libvirt-daemon-driver-xen = %{version}-%{release}
 Requires: libvirt-daemon-driver-libxl = %{version}-%{release}
     %endif
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
@@ -872,7 +894,9 @@ Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-driver-vbox = %{version}-%{release}
 Requires: libvirt-daemon-driver-interface = %{version}-%{release}
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nodedev = %{version}-%{release}
 Requires: libvirt-daemon-driver-nwfilter = %{version}-%{release}
 Requires: libvirt-daemon-driver-secret = %{version}-%{release}
@@ -958,7 +982,9 @@ driver
 %package nss
 Summary: Libvirt plugin for Name Service Switch
 Group: Development/Libraries
+%if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
+%endif
 
 %description nss
 Libvirt plugin for NSS for translating domain names into IP addresses.
@@ -1139,6 +1165,12 @@ rm -rf .git
     %define arg_pm_utils --without-pm-utils
 %endif
 
+%if %{with_network}
+    %define arg_network --with-network
+%else
+    %define arg_network --without-network
+%endif
+
 %define when  %(date +"%%F-%%T")
 %define where %(hostname)
 %define who   %{?packager}%{!?packager:Unknown}
@@ -1195,7 +1227,7 @@ rm -f po/stamp-po
            --without-vz \
            --without-bhyve \
            --with-interface \
-           --with-network \
+           %{?arg_network} \
            --with-storage-fs \
            --with-storage-lvm \
            --with-storage-iscsi \
@@ -1271,6 +1303,7 @@ mv $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/*/libvirt.so \
    $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/libvirt.so
 %endif
 
+%if %{with_network}
 install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/lib/libvirt/dnsmasq/
 # We don't want to install /etc/libvirt/qemu/networks in the main %files list
 # because if the admin wants to delete the default network completely, we don't
@@ -1282,6 +1315,7 @@ rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/default.xml
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/qemu/networks/autostart/default.xml
 # Strip auto-generated UUID - we need it generated per-install
 sed -i -e "/<uuid>/d" $RPM_BUILD_ROOT%{_datadir}/libvirt/networks/default.xml
+%endif
 %if ! %{with_qemu}
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_qemu.aug
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -1465,6 +1499,7 @@ if [ $1 -ge 1 ] ; then
 %endif
 fi
 
+%if %{with_network}
 %post daemon-config-network
 if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ; then
     # see if the network used by default network creates a conflict,
@@ -1510,6 +1545,7 @@ if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ;
 %endif
 
 fi
+%endif
 
 %if %{with_systemd}
 %triggerun -- libvirt < 0.9.4
@@ -1686,9 +1722,11 @@ exit 0
 
 %doc examples/polkit/*.rules
 
+%if %{with_network}
 %files daemon-config-network
 %dir %{_datadir}/libvirt/networks/
 %{_datadir}/libvirt/networks/default.xml
+%endif
 
 %files daemon-config-nwfilter
 %{_sysconfdir}/libvirt/nwfilter/*.xml
@@ -1696,6 +1734,7 @@ exit 0
 %files daemon-driver-interface
 %{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
 
+%if %{with_network}
 %files daemon-driver-network
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/networks/
@@ -1705,6 +1744,7 @@ exit 0
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/dnsmasq/
 %attr(0755, root, root) %{_libexecdir}/libvirt_leaseshelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_network.so
+%endif
 
 %files daemon-driver-nodedev
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nodedev.so

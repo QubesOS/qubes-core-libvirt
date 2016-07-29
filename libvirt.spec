@@ -269,7 +269,24 @@ URL: http://libvirt.org/
 %endif
 Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 
-Source1: patches.qubes
+Patch0000: patches.qubes/0001-conf-add-script-attribute-to-disk-specification.patch
+Patch0001: patches.qubes/0002-libxl-use-disk-script-attribute.patch
+Patch0002: patches.qubes/0003-xenconfig-parse-vif-backend-attribute-tests.patch
+Patch0003: patches.qubes/0004-libxl-Stubdom-emulator-type.patch
+Patch0004: patches.qubes/0005-libxl-support-domain-config-modification-in-virDomai.patch
+Patch0005: patches.qubes/0006-libxl-send-lifecycle-event-on-suspend.patch
+Patch0006: patches.qubes/0007-libxl-implement-virDomainPM-functions.patch
+Patch0007: patches.qubes/0008-libxl-initialize-domain-state-with-real-data.patch
+Patch0008: patches.qubes/0009-pci-do-not-fail-if-the-stub-module-handle-new_id-rem.patch
+Patch0009: patches.qubes/0010-Add-nostrictreset-attribute-to-PCI-host-devices.patch
+Patch0010: patches.qubes/0011-libxl-pause-also-stubdomain-if-any-while-pausing-a-d.patch
+Patch0011: patches.qubes/0012-libxl-plug-workaround-for-missing-pcidev-group-assig.patch
+Patch0012: patches.qubes/0013-conf-add-xen-specific-feature-e820_host.patch
+Patch0013: patches.qubes/0014-libxl-make-use-of-e820_host-feature.patch
+Patch0014: patches.qubes/0015-xenconfig-parse-e820_host-option.patch
+Patch0015: patches.qubes/0016-tests-check-e820_host-option-handling.patch
+Patch0016: patches.qubes/0017-libxl-add-support-for-PVH.patch
+
 
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: libvirt-daemon-config-network = %{version}-%{release}
@@ -970,6 +987,10 @@ exit 1
     print("PATCHCOUNT="..count.."\n")
     print("PATCHLIST="..tmp.."\n")
 }
+
+%if 0%{?qubes_builder}
+ln -s %{_sourcedir}/patches.qubes/*.patch %{_sourcedir}/
+%endif
 
 git init -q
 git config user.name rpm-build

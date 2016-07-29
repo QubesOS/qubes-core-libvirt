@@ -1304,6 +1304,9 @@ rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.qemu
 %endif
 %if ! %{with_lxc}
 rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/lxc.conf
+rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/virt-login-shell.conf
+rm -rf $RPM_BUILD_ROOT%{_mandir}/man1/virt-login-shell.1*
+rm -rf $RPM_BUILD_ROOT%{_bindir}/virt-login-shell
 rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.lxc
 %endif
 %if ! %{with_libxl}

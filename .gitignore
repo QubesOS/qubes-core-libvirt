@@ -1,6 +1,6 @@
 libvirt-external-driver.patch
-libvirt-*.tar.gz
-libvirt-*.tar.gz.asc
+libvirt-*.tar.?z
+libvirt-*.tar.?z.asc
 rpm/
 pkgs/
 *.msm

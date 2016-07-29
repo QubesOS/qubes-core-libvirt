@@ -1,8 +1,8 @@
-From fc76b0ca5207df46159f1576203753284c6b2b77 Mon Sep 17 00:00:00 2001
+From 88225a5cc95294b00c6f153cadbbc8d3c26ff91b Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:12 +0200
-Subject: [PATCH 16/17] xenconfig: parse e820_host option
+Subject: [PATCH 15/16] xenconfig: parse e820_host option
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/src/xenconfig/xen_common.c b/src/xenconfig/xen_common.c
-index 0890c73..9c995c9a2 100644
+index f62a5b1..15feb6f 100644
 --- a/src/xenconfig/xen_common.c
 +++ b/src/xenconfig/xen_common.c
-@@ -557,6 +557,14 @@ xenParseCPUFeatures(virConfPtr conf, virDomainDefPtr def)
+@@ -558,6 +558,14 @@ xenParseCPUFeatures(virConfPtr conf, virDomainDefPtr def)
              def->clock.ntimers = 1;
              def->clock.timers[0] = timer;
          }
@@ -33,7 +33,7 @@ index 0890c73..9c995c9a2 100644
      }
  
      return 0;
-@@ -1589,6 +1597,12 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def, int xendConfigVersion
+@@ -1601,6 +1609,12 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def)
                  xenConfigSetInt(conf, "hpet", def->clock.timers[i]->present) < 0)
                  return -1;
          }

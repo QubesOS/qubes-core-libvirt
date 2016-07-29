@@ -1,8 +1,8 @@
-From cf293223677d517c9e955c9f7d00ed98efdf874b Mon Sep 17 00:00:00 2001
+From 0f1037139cd211c16642f06a1d97b6264a2d08fd Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
-Subject: [PATCH 03/11] xenconfig: parse vif/backend attribute, tests
+Subject: [PATCH 03/16] xenconfig: parse vif/backend attribute, tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -15,18 +15,18 @@ some tests for generating XML with vif connected to a driver domain.
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  src/xenconfig/xen_sxpr.c                           |  4 +++
- .../sexpr2xml-bridge-driver-domain.sexpr           |  9 ++++++
- .../sexpr2xml-bridge-driver-domain.xml             | 35 ++++++++++++++++++++++
+ .../sexpr2xml-bridge-driver-domain.sexpr           |  9 +++++
+ .../sexpr2xml-bridge-driver-domain.xml             | 38 ++++++++++++++++++++++
  tests/sexpr2xmltest.c                              |  1 +
- 4 files changed, 49 insertions(+)
+ 4 files changed, 52 insertions(+)
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.sexpr
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 
 diff --git a/src/xenconfig/xen_sxpr.c b/src/xenconfig/xen_sxpr.c
-index 033b0eb..86aad37 100644
+index ea6c177..310be05 100644
 --- a/src/xenconfig/xen_sxpr.c
 +++ b/src/xenconfig/xen_sxpr.c
-@@ -576,6 +576,10 @@ xenParseSxprNets(virDomainDefPtr def,
+@@ -630,6 +630,10 @@ xenParseSxprNets(virDomainDefPtr def,
                      goto cleanup;
              }
  
@@ -54,10 +54,10 @@ index 0000000..b44876a
 +(device (vif (mac '00:11:22:33:44:55')(bridge 'xenbr2')(script 'vif-bridge')(backend 'netvm'))))
 diff --git a/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 new file mode 100644
-index 0000000..3b16872
+index 0000000..60815a8
 --- /dev/null
 +++ b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,38 @@
 +<domain type='xen' id='6'>
 +  <name>pvtest</name>
 +  <uuid>596a5d21-71f4-8fb2-e068-e2386a5c413e</uuid>
@@ -91,20 +91,23 @@ index 0000000..3b16872
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
 +    </console>
++    <input type='mouse' bus='xen'/>
++    <input type='keyboard' bus='xen'/>
++    <memballoon model='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/sexpr2xmltest.c b/tests/sexpr2xmltest.c
-index 99999f1..85ba645 100644
+index 9982fad..5061aff 100644
 --- a/tests/sexpr2xmltest.c
 +++ b/tests/sexpr2xmltest.c
-@@ -150,6 +150,7 @@ mymain(void)
-     DO_TEST("net-bridged", "net-bridged", 2);
-     DO_TEST("net-e1000", "net-e1000", 2);
-     DO_TEST("bridge-ipaddr", "bridge-ipaddr", 3);
-+    DO_TEST("bridge-driver-domain", "bridge-driver-domain", 3);
-     DO_TEST("no-source-cdrom", "no-source-cdrom", 2);
-     DO_TEST("pv-localtime", "pv-localtime", 2);
-     DO_TEST("pci-devs", "pci-devs", 2);
+@@ -154,6 +154,7 @@ mymain(void)
+     DO_TEST("net-bridged", "net-bridged");
+     DO_TEST("net-e1000", "net-e1000");
+     DO_TEST("bridge-ipaddr", "bridge-ipaddr");
++    DO_TEST("bridge-driver-domain", "bridge-driver-domain");
+     DO_TEST("no-source-cdrom", "no-source-cdrom");
+     DO_TEST("pv-localtime", "pv-localtime");
+     DO_TEST("pci-devs", "pci-devs");
 -- 
-2.1.0
+2.5.5
 

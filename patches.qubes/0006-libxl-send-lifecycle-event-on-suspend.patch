@@ -1,8 +1,8 @@
-From 411017279f9aad75c6dd2ae0f7656df877b1323c Mon Sep 17 00:00:00 2001
+From e327775eeed5d3a9fa3231f171951bf17d9eaa85 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 03:56:08 +0100
-Subject: [PATCH 07/13] libxl: send lifecycle event on suspend
+Subject: [PATCH 06/16] libxl: send lifecycle event on suspend
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index 40dcea1..7982251 100644
+index 9feba08..2caab76 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
-@@ -462,6 +462,18 @@ libxlDomainShutdownThread(void *opaque)
+@@ -498,6 +498,18 @@ libxlDomainShutdownThread(void *opaque)
          case VIR_DOMAIN_LIFECYCLE_LAST:
              goto endjob;
          }
@@ -37,7 +37,7 @@ index 40dcea1..7982251 100644
      } else {
          VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
          goto endjob;
-@@ -514,7 +526,6 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
+@@ -547,7 +559,6 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
  {
      libxlDriverPrivatePtr driver = data;
      virDomainObjPtr vm = NULL;
@@ -45,7 +45,7 @@ index 40dcea1..7982251 100644
      struct libxlShutdownThreadInfo *shutdown_info = NULL;
      virThread thread;
      libxlDriverConfigPtr cfg;
-@@ -524,13 +535,6 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
+@@ -557,13 +568,6 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
          goto error;
      }
  
@@ -56,9 +56,9 @@ index 40dcea1..7982251 100644
 -    if (xl_reason == LIBXL_SHUTDOWN_REASON_SUSPEND)
 -        goto error;
 -
-     vm = virDomainObjListFindByID(driver->domains, event->domid);
+     vm = virDomainObjListFindByIDRef(driver->domains, event->domid);
      if (!vm) {
          VIR_INFO("Received event for unknown domain ID %d", event->domid);
 -- 
-2.1.0
+2.5.5
 

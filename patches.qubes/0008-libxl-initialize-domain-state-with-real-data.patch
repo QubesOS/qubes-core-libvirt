@@ -1,8 +1,8 @@
-From 4b83e8cc3dac2d9c0f904580423884e769f1f2b4 Mon Sep 17 00:00:00 2001
+From 3064b599891946af783765b4b1484e50c9361783 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 06:35:52 +0100
-Subject: [PATCH 09/11] libxl: initialize domain state with real data
+Subject: [PATCH 08/16] libxl: initialize domain state with real data
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -18,11 +18,11 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index b7d3588..b5426ae 100644
+index 4cad2a8..84a3ad0 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -381,6 +381,17 @@ libxlReconnectDomain(virDomainObjPtr vm,
-                                             vm->def, VIR_HOSTDEV_SP_PCI) < 0)
+@@ -386,6 +386,17 @@ libxlReconnectDomain(virDomainObjPtr vm,
+                                             vm->def, hostdev_flags) < 0)
          goto out;
  
 +    if (d_info.shutdown &&
@@ -40,5 +40,5 @@ index b7d3588..b5426ae 100644
          driver->inhibitCallback(true, driver->inhibitOpaque);
  
 -- 
-2.1.0
+2.5.5
 

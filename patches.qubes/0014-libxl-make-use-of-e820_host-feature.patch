@@ -1,8 +1,8 @@
-From f6600e46c5b159e7a05f8473b635e2d9d2c1e108 Mon Sep 17 00:00:00 2001
+From f407f1a6647ea3be61f5fc87dc9f509028e10aa7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:54:44 +0200
-Subject: [PATCH 15/17] libxl: make use of e820_host feature
+Subject: [PATCH 14/16] libxl: make use of e820_host feature
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 7657d72..0394513 100644
+index af1b1d6..b9f5a9f 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -864,6 +864,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -546,6 +546,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
          }
          if (VIR_STRDUP(b_info->u.pv.ramdisk, def->os.initrd) < 0)
              return -1;

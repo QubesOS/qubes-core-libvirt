@@ -286,6 +286,7 @@ Patch0013: patches.qubes/0014-libxl-make-use-of-e820_host-feature.patch
 Patch0014: patches.qubes/0015-xenconfig-parse-e820_host-option.patch
 Patch0015: patches.qubes/0016-tests-check-e820_host-option-handling.patch
 Patch0016: patches.qubes/0017-libxl-add-support-for-PVH.patch
+Patch0017: patches.qubes/0018-libxl-set-shadow-memory-for-any-guest-type-not-only-.patch
 
 
 Requires: libvirt-daemon = %{version}-%{release}

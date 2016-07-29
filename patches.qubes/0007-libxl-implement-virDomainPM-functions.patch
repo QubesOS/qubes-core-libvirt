@@ -2,7 +2,7 @@ From eceafd2d2c3fccb71f07b8151f4aa1083eadfcaa Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 05:24:04 +0100
-Subject: [PATCH 07/16] libxl: implement virDomainPM* functions
+Subject: [PATCH] libxl: implement virDomainPM* functions
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

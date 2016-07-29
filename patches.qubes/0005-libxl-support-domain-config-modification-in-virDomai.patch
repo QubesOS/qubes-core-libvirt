@@ -1,7 +1,7 @@
 From bee0f2d31895c3d225b625c8dce9745abce7f2c1 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
-Subject: [PATCH 05/16] libxl: support domain config modification in
+Subject: [PATCH] libxl: support domain config modification in
  virDomainRestoreFlags
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

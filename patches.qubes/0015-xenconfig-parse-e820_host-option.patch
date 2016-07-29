@@ -2,7 +2,7 @@ From 88225a5cc95294b00c6f153cadbbc8d3c26ff91b Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:12 +0200
-Subject: [PATCH 15/16] xenconfig: parse e820_host option
+Subject: [PATCH] xenconfig: parse e820_host option
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

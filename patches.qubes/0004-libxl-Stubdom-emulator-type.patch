@@ -1,7 +1,7 @@
 From f48637432dde645ffed33f1b751d3110b6477a52 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
-Subject: [PATCH 04/16] libxl: Stubdom emulator type
+Subject: [PATCH] libxl: Stubdom emulator type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

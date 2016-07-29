@@ -2,7 +2,7 @@ From 7708b6b72e89839d4f89d46ea4e185e8278f385e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:39 +0200
-Subject: [PATCH 16/16] tests: check e820_host option handling
+Subject: [PATCH] tests: check e820_host option handling
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

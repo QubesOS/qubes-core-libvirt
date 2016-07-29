@@ -2,7 +2,7 @@ From 430cbff7495302b6b8bbf4b5a5c47ec78da66a5f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:48:00 +0200
-Subject: [PATCH 13/16] conf: add xen specific feature: e820_host
+Subject: [PATCH] conf: add xen specific feature: e820_host
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

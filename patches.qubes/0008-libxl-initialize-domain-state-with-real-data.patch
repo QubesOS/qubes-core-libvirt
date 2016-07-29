@@ -2,7 +2,7 @@ From 3064b599891946af783765b4b1484e50c9361783 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 06:35:52 +0100
-Subject: [PATCH 08/16] libxl: initialize domain state with real data
+Subject: [PATCH] libxl: initialize domain state with real data
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

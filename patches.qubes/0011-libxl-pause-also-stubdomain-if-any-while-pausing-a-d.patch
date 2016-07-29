@@ -2,8 +2,7 @@ From 4cf28bff796c113f15133d52f2c78fabaad794c1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 25 Nov 2015 00:48:56 +0100
-Subject: [PATCH 11/16] libxl: pause also stubdomain (if any) while pausing a
- domain
+Subject: [PATCH] libxl: pause also stubdomain (if any) while pausing a domain
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

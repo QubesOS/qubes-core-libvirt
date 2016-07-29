@@ -2,8 +2,7 @@ From 5bbc06487b4368777d93d7b6ed4645a6efec9541 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 30 Jul 2016 00:36:08 +0200
-Subject: [PATCH 18/18] libxl: set shadow memory for any guest type, not only
- HVM
+Subject: [PATCH] libxl: set shadow memory for any guest type, not only HVM
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

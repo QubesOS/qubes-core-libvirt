@@ -2,7 +2,7 @@ From e327775eeed5d3a9fa3231f171951bf17d9eaa85 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 03:56:08 +0100
-Subject: [PATCH 06/16] libxl: send lifecycle event on suspend
+Subject: [PATCH] libxl: send lifecycle event on suspend
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -2,7 +2,7 @@ From 2cb3e844014e3e83c250e043a1b4d543bda71b93 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 23 May 2015 04:25:01 +0200
-Subject: [PATCH 10/16] Add 'nostrictreset' attribute to PCI host devices
+Subject: [PATCH] Add 'nostrictreset' attribute to PCI host devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

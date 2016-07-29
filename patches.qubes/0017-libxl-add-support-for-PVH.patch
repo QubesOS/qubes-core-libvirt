@@ -2,7 +2,7 @@ From 0d5ffe680aa1fad4ebb3091c8214b1aed5cabd21 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 29 Jul 2016 19:28:51 +0200
-Subject: [PATCH 17/18] libxl: add support for PVH
+Subject: [PATCH] libxl: add support for PVH
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

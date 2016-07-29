@@ -2,7 +2,7 @@ From f407f1a6647ea3be61f5fc87dc9f509028e10aa7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:54:44 +0200
-Subject: [PATCH 14/16] libxl: make use of e820_host feature
+Subject: [PATCH] libxl: make use of e820_host feature
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

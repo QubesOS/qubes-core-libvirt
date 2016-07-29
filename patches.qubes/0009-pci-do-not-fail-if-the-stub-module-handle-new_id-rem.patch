@@ -2,8 +2,8 @@ From 9de61b3069c91aa4fb839cb5128afeb6485e3285 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 21 Mar 2015 01:49:26 +0100
-Subject: [PATCH 09/16] pci: do not fail if the stub module handle
- new_id/remove_id internally
+Subject: [PATCH] pci: do not fail if the stub module handle new_id/remove_id
+ internally
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

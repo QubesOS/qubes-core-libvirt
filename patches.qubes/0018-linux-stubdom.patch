@@ -1,0 +1,72 @@
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index d6334e6..0858fc5 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -2574,6 +2574,7 @@
+               <choice>
+                 <value>qemu</value>
+                 <value>stubdom</value>
++                <value>stubdom-linux</value>
+               </choice>
+             </attribute>
+           </optional>
+@@ -2589,6 +2590,7 @@
+             <choice>
+               <value>qemu</value>
+               <value>stubdom</value>
++              <value>stubdom-linux</value>
+             </choice>
+           </attribute>
+           <empty/>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 92a3597..eeb38e5 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -783,7 +783,8 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
+ 
+ VIR_ENUM_IMPL(virDomainEmulatorType, VIR_DOMAIN_EMULATOR_TYPE_LAST,
+               "qemu",
+-              "stubdom");
++              "stubdom",
++              "stubdom-linux");
+ 
+ VIR_ENUM_IMPL(virDomainRNGModel,
+               VIR_DOMAIN_RNG_MODEL_LAST,
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index 6b1f0f8..93ef286 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -1991,6 +1991,7 @@ struct _virBlkioDevice {
+ typedef enum {
+     VIR_DOMAIN_EMULATOR_TYPE_DEFAULT,
+     VIR_DOMAIN_EMULATOR_TYPE_STUBDOM,
++    VIR_DOMAIN_EMULATOR_TYPE_STUBDOM_LINUX,
+ 
+     VIR_DOMAIN_EMULATOR_TYPE_LAST
+ } virDomainEmulatorType;
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 0394513..4321dab 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -746,6 +746,11 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+                 return -1;
+ 
+             b_info->device_model_version = libxlDomainGetEmulatorType(def);
++        } else {
++            if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM)
++                b_info->device_model_version = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN_TRADITIONAL;
++            else if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM_LINUX)
++                b_info->device_model_version = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN;
+         }
+ 
+         /* In case of stubdom there will be two qemu instances:
+@@ -754,7 +759,8 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+          * Emulator path control only the second one. It makes a perfect sense
+          * to use <emulator type='stubdom'/> (yes, without emulator path).
+          */
+-        if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM)
++        if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM ||
++            def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM_LINUX)
+             libxl_defbool_set(&b_info->device_model_stubdomain, 1);
+ 
+         if (def->emulator_cmdline && def->emulator_cmdline[0]) {

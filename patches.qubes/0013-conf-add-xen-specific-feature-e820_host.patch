@@ -1,4 +1,4 @@
-From 430cbff7495302b6b8bbf4b5a5c47ec78da66a5f Mon Sep 17 00:00:00 2001
+From 70974367e287d3c324824168ce4289d894ea22f3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:48:00 +0200
@@ -21,10 +21,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  3 files changed, 129 insertions(+)
 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index a9da316..42d0e40 100644
+index 36dd332..a67d99b 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -4272,6 +4272,9 @@
+@@ -4420,6 +4420,9 @@
              <ref name="kvm"/>
            </optional>
            <optional>
@@ -34,7 +34,7 @@ index a9da316..42d0e40 100644
              <element name="privnet">
                <empty/>
              </element>
-@@ -5079,6 +5082,19 @@
+@@ -5156,6 +5159,19 @@
      </element>
    </define>
  
@@ -55,10 +55,10 @@ index a9da316..42d0e40 100644
    <define name="capabilities">
      <element name="capabilities">
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index b40a675..a81580c 100644
+index 4ab0466..6d74ab0 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -132,6 +132,7 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
+@@ -134,6 +134,7 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
                "privnet",
                "hyperv",
                "kvm",
@@ -66,7 +66,7 @@ index b40a675..a81580c 100644
                "pvspinlock",
                "capabilities",
                "pmu",
-@@ -157,6 +158,9 @@ VIR_ENUM_IMPL(virDomainHyperv, VIR_DOMAIN_HYPERV_LAST,
+@@ -160,6 +161,9 @@ VIR_ENUM_IMPL(virDomainHyperv, VIR_DOMAIN_HYPERV_LAST,
  VIR_ENUM_IMPL(virDomainKVM, VIR_DOMAIN_KVM_LAST,
                "hidden")
  
@@ -76,7 +76,7 @@ index b40a675..a81580c 100644
  VIR_ENUM_IMPL(virDomainCapsFeature, VIR_DOMAIN_CAPS_FEATURE_LAST,
                "audit_control",
                "audit_write",
-@@ -16294,6 +16298,7 @@ virDomainDefParseXML(xmlDocPtr xml,
+@@ -16855,6 +16859,7 @@ virDomainDefParseXML(xmlDocPtr xml,
          case VIR_DOMAIN_FEATURE_PRIVNET:
          case VIR_DOMAIN_FEATURE_HYPERV:
          case VIR_DOMAIN_FEATURE_KVM:
@@ -84,7 +84,7 @@ index b40a675..a81580c 100644
              def->features[val] = VIR_TRISTATE_SWITCH_ON;
              break;
  
-@@ -16509,6 +16514,55 @@ virDomainDefParseXML(xmlDocPtr xml,
+@@ -17071,6 +17076,55 @@ virDomainDefParseXML(xmlDocPtr xml,
          ctxt->node = node;
      }
  
@@ -140,7 +140,7 @@ index b40a675..a81580c 100644
      if ((n = virXPathNodeSet("./features/capabilities/*", ctxt, &nodes)) < 0)
          goto error;
  
-@@ -18456,6 +18510,30 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
+@@ -19041,6 +19095,30 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
          }
      }
  
@@ -171,7 +171,7 @@ index b40a675..a81580c 100644
      return true;
  }
  
-@@ -23315,6 +23393,32 @@ virDomainDefFormatInternal(virDomainDefPtr def,
+@@ -24039,6 +24117,32 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                  virBufferAddLit(buf, "</kvm>\n");
                  break;
  
@@ -205,10 +205,10 @@ index b40a675..a81580c 100644
                  if (def->features[i] == VIR_DOMAIN_CAPABILITIES_POLICY_DEFAULT &&
                          !virDomainDefHasCapabilitiesFeatures(def))
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 03d985c..eab56ef 100644
+index 1b86d44..9445bed 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -1590,6 +1590,7 @@ typedef enum {
+@@ -1636,6 +1636,7 @@ typedef enum {
      VIR_DOMAIN_FEATURE_PRIVNET,
      VIR_DOMAIN_FEATURE_HYPERV,
      VIR_DOMAIN_FEATURE_KVM,
@@ -216,7 +216,7 @@ index 03d985c..eab56ef 100644
      VIR_DOMAIN_FEATURE_PVSPINLOCK,
      VIR_DOMAIN_FEATURE_CAPABILITIES,
      VIR_DOMAIN_FEATURE_PMU,
-@@ -1622,6 +1623,12 @@ typedef enum {
+@@ -1669,6 +1670,12 @@ typedef enum {
  } virDomainKVM;
  
  typedef enum {
@@ -229,7 +229,7 @@ index 03d985c..eab56ef 100644
      VIR_DOMAIN_CAPABILITIES_POLICY_DEFAULT = 0,
      VIR_DOMAIN_CAPABILITIES_POLICY_ALLOW,
      VIR_DOMAIN_CAPABILITIES_POLICY_DENY,
-@@ -2162,6 +2169,7 @@ struct _virDomainDef {
+@@ -2228,6 +2235,7 @@ struct _virDomainDef {
      int apic_eoi;
      int hyperv_features[VIR_DOMAIN_HYPERV_LAST];
      int kvm_features[VIR_DOMAIN_KVM_LAST];
@@ -237,7 +237,7 @@ index 03d985c..eab56ef 100644
      unsigned int hyperv_spinlocks;
      virGICVersion gic_version;
      char *hyperv_vendor_id;
-@@ -2997,6 +3005,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
+@@ -3117,6 +3125,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
  VIR_ENUM_DECL(virDomainGraphicsVNCSharePolicy)
  VIR_ENUM_DECL(virDomainHyperv)
  VIR_ENUM_DECL(virDomainKVM)
@@ -246,5 +246,5 @@ index 03d985c..eab56ef 100644
  VIR_ENUM_DECL(virDomainRNGModel)
  VIR_ENUM_DECL(virDomainRNGBackend)
 -- 
-2.5.5
+2.7.4
 

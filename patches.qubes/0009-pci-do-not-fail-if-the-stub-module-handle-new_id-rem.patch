@@ -1,4 +1,4 @@
-From 9de61b3069c91aa4fb839cb5128afeb6485e3285 Mon Sep 17 00:00:00 2001
+From 916e45e493aa8e4fd14355d9104525332a2d8b09 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 21 Mar 2015 01:49:26 +0100
@@ -20,10 +20,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/src/util/virpci.c b/src/util/virpci.c
-index 132948d..193d22a 100644
+index 0601f49..683b211 100644
 --- a/src/util/virpci.c
 +++ b/src/util/virpci.c
-@@ -1242,7 +1242,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev)
+@@ -1320,7 +1320,7 @@ virPCIDeviceBindToStubWithNewid(virPCIDevicePtr dev)
      if (!(path = virPCIDriverFile(stubDriverName, "new_id")))
          goto cleanup;
  
@@ -32,7 +32,7 @@ index 132948d..193d22a 100644
          virReportSystemError(errno,
                               _("Failed to add PCI device ID '%s' to %s"),
                               dev->id, stubDriverName);
-@@ -1315,7 +1315,7 @@ virPCIDeviceBindToStub(virPCIDevicePtr dev)
+@@ -1393,7 +1393,7 @@ virPCIDeviceBindToStubWithNewid(virPCIDevicePtr dev)
          goto cleanup;
      }
  
@@ -42,5 +42,5 @@ index 132948d..193d22a 100644
                               _("Failed to remove PCI ID '%s' from %s"),
                               dev->id, stubDriverName);
 -- 
-2.5.5
+2.7.4
 

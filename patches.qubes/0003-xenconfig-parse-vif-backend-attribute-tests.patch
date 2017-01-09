@@ -1,4 +1,4 @@
-From 0f1037139cd211c16642f06a1d97b6264a2d08fd Mon Sep 17 00:00:00 2001
+From 4b39e1631464b5f91a781027030ca6afc0d3d92a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
@@ -23,7 +23,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 
 diff --git a/src/xenconfig/xen_sxpr.c b/src/xenconfig/xen_sxpr.c
-index ea6c177..310be05 100644
+index baa68b1..b8e74f6 100644
 --- a/src/xenconfig/xen_sxpr.c
 +++ b/src/xenconfig/xen_sxpr.c
 @@ -630,6 +630,10 @@ xenParseSxprNets(virDomainDefPtr def,
@@ -109,5 +109,5 @@ index 9982fad..5061aff 100644
      DO_TEST("pv-localtime", "pv-localtime");
      DO_TEST("pci-devs", "pci-devs");
 -- 
-2.5.5
+2.7.4
 

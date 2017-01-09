@@ -1,4 +1,4 @@
-From bee0f2d31895c3d225b625c8dce9745abce7f2c1 Mon Sep 17 00:00:00 2001
+From 1399b6c8c82dbb9a61d8d37ee902f4847a598a81 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
 Subject: [PATCH] libxl: support domain config modification in
@@ -11,14 +11,14 @@ Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_driver.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ src/libxl/libxl_driver.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 3189f1c..c9b6531 100644
+index 3efa91e..6283e15 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1778,11 +1778,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+@@ -1865,11 +1865,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
  #endif
  
      virCheckFlags(VIR_DOMAIN_SAVE_PAUSED, -1);
@@ -30,15 +30,16 @@ index 3189f1c..c9b6531 100644
  
      fd = libxlDomainSaveImageOpen(driver, cfg, from, &def, &hdr);
      if (fd < 0)
-@@ -1791,6 +1786,17 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+@@ -1878,6 +1873,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
      if (virDomainRestoreFlagsEnsureACL(conn, def) < 0)
          goto cleanup;
  
 +    if (dxml) {
 +        virDomainDefPtr def2 = NULL;
 +
-+        if (!(def2 = virDomainDefParseString(dxml, cfg->caps, driver->xmlopt,
-+                                        VIR_DOMAIN_DEF_PARSE_INACTIVE))) {
++        if (!(def2 = virDomainDefParseString(dxml,
++                                             cfg->caps, driver->xmlopt, NULL,
++                                             VIR_DOMAIN_DEF_PARSE_INACTIVE))) {
 +            goto cleanup;
 +        }
 +        virDomainDefFree(def);
@@ -49,5 +50,5 @@ index 3189f1c..c9b6531 100644
                                     driver->xmlopt,
                                     VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
 -- 
-2.5.5
+2.7.4
 

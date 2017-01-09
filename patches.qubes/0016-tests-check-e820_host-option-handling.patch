@@ -1,4 +1,4 @@
-From 7708b6b72e89839d4f89d46ea4e185e8278f385e Mon Sep 17 00:00:00 2001
+From b1301ed887a8dd014f9d5ecbf4bb2399406c5ef6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:39 +0200
@@ -79,17 +79,17 @@ index 0000000..5727023
 +  </devices>
 +</domain>
 diff --git a/tests/xlconfigtest.c b/tests/xlconfigtest.c
-index 4248da1..f09e28f 100644
+index 31892da..a81e392 100644
 --- a/tests/xlconfigtest.c
 +++ b/tests/xlconfigtest.c
-@@ -278,6 +278,7 @@ mymain(void)
- #endif
+@@ -286,6 +286,7 @@ mymain(void)
      DO_TEST("vif-typename");
      DO_TEST("usb");
+     DO_TEST("usbctrl");
 +    DO_TEST("paravirt-e820_host");
  
      virObjectUnref(caps);
      virObjectUnref(xmlopt);
 -- 
-2.5.5
+2.7.4
 

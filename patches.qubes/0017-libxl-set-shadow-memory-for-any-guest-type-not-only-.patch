@@ -1,0 +1,51 @@
+From 758488036a6085fb3dbb3e899a13bc7bd99cd2d8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sat, 30 Jul 2016 00:36:08 +0200
+Subject: [PATCH] libxl: set shadow memory for any guest type, not only HVM
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Otherwise starting PVH guest will result in "arch_setup_bootlate:
+mapping shared_info failed (pfn=..., rc=-1, errno: 12): Internal error".
+
+After this change the behaviour is the same as in `xl`.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 82afd6d..6f47b13 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -536,11 +536,6 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+             return -1;
+         }
+ #endif
+-
+-        /* Allow libxl to calculate shadow memory requirements */
+-        b_info->shadow_memkb =
+-            libxl_get_required_shadow_memory(b_info->max_memkb,
+-                                             b_info->max_vcpus);
+     } else {
+         /*
+          * For compatibility with the legacy xen toolstack, default to pygrub
+@@ -584,6 +579,10 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+         }
+     }
+ 
++    /* Allow libxl to calculate shadow memory requirements */
++    b_info->shadow_memkb =
++        libxl_get_required_shadow_memory(b_info->max_memkb,
++                                         b_info->max_vcpus);
+     return 0;
+ }
+ 
+-- 
+2.7.4
+

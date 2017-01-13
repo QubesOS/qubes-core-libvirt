@@ -1,0 +1,122 @@
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -4897,6 +4897,11 @@
+             <ref name="featurestate"/>
+           </element>
+         </optional>
++        <optional>
++          <element name="qubes_gui">
++            <ref name="featurestate"/>
++          </element>
++        </optional>
+       </interleave>
+     </element>
+   </define>
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -166,7 +166,8 @@ VIR_ENUM_IMPL(virDomainKVM, VIR_DOMAIN_K
+               "hidden")
+ 
+ VIR_ENUM_IMPL(virDomainXen, VIR_DOMAIN_XEN_LAST,
+-              "e820_host")
++              "e820_host",
++              "qubes_gui")
+ 
+ VIR_ENUM_IMPL(virDomainCapsFeature, VIR_DOMAIN_CAPS_FEATURE_LAST,
+               "audit_control",
+@@ -15571,6 +15572,7 @@ virDomainDefParseXML(xmlDocPtr xml,
+ 
+             switch ((virDomainXen) feature) {
+                 case VIR_DOMAIN_XEN_E820_HOST:
++                case VIR_DOMAIN_XEN_QUBES_GUI:
+                     if (!(tmp = virXPathString("string(./@state)", ctxt))) {
+                         virReportError(VIR_ERR_XML_ERROR,
+                                        _("missing 'state' attribute for "
+@@ -17626,6 +17628,7 @@ virDomainDefFeaturesCheckABIStability(vi
+         for (i = 0; i < VIR_DOMAIN_XEN_LAST; i++) {
+             switch ((virDomainXen) i) {
+             case VIR_DOMAIN_XEN_E820_HOST:
++            case VIR_DOMAIN_XEN_QUBES_GUI:
+                 if (src->xen_features[i] != dst->xen_features[i]) {
+                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                    _("State of Xen feature '%s' differs: "
+@@ -22223,6 +22226,7 @@ virDomainDefFormatInternal(virDomainDefP
+                 for (j = 0; j < VIR_DOMAIN_XEN_LAST; j++) {
+                     switch ((virDomainXen) j) {
+                     case VIR_DOMAIN_XEN_E820_HOST:
++                    case VIR_DOMAIN_XEN_QUBES_GUI:
+                         if (def->xen_features[j])
+                             virBufferAsprintf(buf, "<%s state='%s'/>\n",
+                                               virDomainXenTypeToString(j),
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -1707,6 +1707,7 @@ typedef enum {
+ 
+ typedef enum {
+     VIR_DOMAIN_XEN_E820_HOST = 0,
++    VIR_DOMAIN_XEN_QUBES_GUI,
+ 
+     VIR_DOMAIN_XEN_LAST
+ } virDomainXen;
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -843,6 +843,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr de
+          */
+         b_info->shadow_memkb = 4 * (256 * libxl_bitmap_count_set(&b_info->avail_vcpus) +
+                                     2 * (b_info->max_memkb / 1024));
++
++        if (def->features[VIR_DOMAIN_FEATURE_XEN] == VIR_TRISTATE_SWITCH_ON) {
++            switch ((virTristateSwitch) def->xen_features[VIR_DOMAIN_XEN_QUBES_GUI]) {
++                case VIR_TRISTATE_SWITCH_ON:
++                    libxl_defbool_set(&b_info->u.hvm.qubes_gui, true);
++                    break;
++                case VIR_TRISTATE_SWITCH_OFF:
++                    libxl_defbool_set(&b_info->u.hvm.qubes_gui, false);
++                    break;
++                case VIR_TRISTATE_SWITCH_ABSENT:
++                case VIR_TRISTATE_SWITCH_LAST:
++                    break;
++            }
++        }
+     } else {
+         /*
+          * For compatibility with the legacy xen toolstack, default to pygrub
+--- a/src/xenconfig/xen_common.c
++++ b/src/xenconfig/xen_common.c
+@@ -557,6 +557,13 @@ xenParseCPUFeatures(virConfPtr conf, vir
+             def->clock.ntimers = 1;
+             def->clock.timers[0] = timer;
+         }
++
++        if (xenConfigGetBool(conf, "qubes_gui", &val, 0) < 0) {
++            return -1;
++        } else if (val) {
++            def->features[VIR_DOMAIN_FEATURE_XEN] = VIR_TRISTATE_SWITCH_ON;
++            def->xen_features[VIR_DOMAIN_XEN_QUBES_GUI] = VIR_TRISTATE_SWITCH_ON;
++        }
+     } else {
+         if (xenConfigGetBool(conf, "e820_host", &val, 0) < 0) {
+             return -1;
+@@ -1597,6 +1604,22 @@ xenFormatCPUFeatures(virConfPtr conf, vi
+                 xenConfigSetInt(conf, "hpet", def->clock.timers[i]->present) < 0)
+                 return -1;
+         }
++
++        if (def->features[VIR_DOMAIN_FEATURE_XEN] == VIR_TRISTATE_SWITCH_ON) {
++            int val = 0;
++            switch ((virTristateSwitch) def->xen_features[VIR_DOMAIN_XEN_QUBES_GUI]) {
++                case VIR_TRISTATE_SWITCH_ON:
++                    val = 1;
++                    /* fallthrough */
++                case VIR_TRISTATE_SWITCH_OFF:
++                    if (xenConfigSetInt(conf, "qubes_gui", val) < 0)
++                        return -1;
++                    break;
++                case VIR_TRISTATE_SWITCH_ABSENT:
++                case VIR_TRISTATE_SWITCH_LAST:
++                    break;
++            }
++        }
+     } else {
+         if (def->features[VIR_DOMAIN_FEATURE_XEN] == VIR_TRISTATE_SWITCH_ON) {
+             if (def->xen_features[VIR_DOMAIN_XEN_E820_HOST] == VIR_TRISTATE_SWITCH_ON)

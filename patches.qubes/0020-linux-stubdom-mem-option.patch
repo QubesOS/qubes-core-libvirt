@@ -1,0 +1,95 @@
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -2583,6 +2583,11 @@
+               <text/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="memory">
++              <ref name="memoryKB"/>
++            </attribute>
++          </optional>
+           <ref name="absFilePath"/>
+         </group>
+         <group>
+@@ -2593,6 +2598,11 @@
+               <value>stubdom-linux</value>
+             </choice>
+           </attribute>
++          <optional>
++            <attribute name="memory">
++              <ref name="memoryKB"/>
++            </attribute>
++          </optional>
+           <empty/>
+         </group>
+       </choice>
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -15830,6 +15830,18 @@ virDomainDefParseXML(xmlDocPtr xml,
+     }
+     def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
+ 
++
++    n = virXPathULong("string(./devices/emulator/@memory)",
++                      ctxt,
++                      &def->emulator_memory);
++    if (n == -2) {
++        virReportError(VIR_ERR_XML_ERROR, "%s",
++                _("emulator memory (in KiB) must be an integer"));
++        goto error;
++    } else if (n < 0) {
++        def->emulator_memory = 0;
++    }
++
+     /* analysis of the disk devices */
+     if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
+         goto error;
+@@ -17898,6 +17910,14 @@ virDomainDefCheckABIStability(virDomainD
+         goto error;
+     }
+ 
++    if (src->emulator_memory != dst->emulator_memory) {
++        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
++                _("Target domain emulator memory size %lu does not match source %lu"),
++                virDomainEmulatorTypeTypeToString(dst->emulator_memory),
++                virDomainEmulatorTypeTypeToString(src->emulator_memory));
++        goto error;
++    }
++
+     if (!virDomainDefFeaturesCheckABIStability(src, dst))
+         goto error;
+ 
+@@ -22365,6 +22385,9 @@ virDomainDefFormatInternal(virDomainDefP
+             virBufferAsprintf(buf, " type='%s'",
+                               virDomainEmulatorTypeTypeToString(def->emulator_type));
+         }
++        if (def->emulator_memory != 0) {
++            virBufferAsprintf(buf, " memory='%lu'", def->emulator_memory);
++        }
+         virBufferEscapeString(buf, " cmdline='%s'", def->emulator_cmdline);
+         if (!def->emulator) {
+             virBufferAddLit(buf, "/>\n");
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -2248,6 +2248,7 @@ struct _virDomainDef {
+     char *emulator;
+     virDomainEmulatorType emulator_type;
+     char *emulator_cmdline;
++    unsigned long emulator_memory;
+     /* These three options are of type virTristateSwitch,
+      * except VIR_DOMAIN_FEATURE_CAPABILITIES that is of type
+      * virDomainCapabilitiesPolicy */
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -771,6 +771,10 @@ libxlMakeDomBuildInfo(virDomainDefPtr de
+             }
+         }
+ 
++        if (def->emulator_memory != 0) {
++            b_info->stubdom_memkb = def->emulator_memory;
++        }
++
+         if (def->nserials) {
+             if (def->nserials > 1) {
+                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,

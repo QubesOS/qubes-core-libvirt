@@ -28,8 +28,7 @@ BuildRequires: python3-nose
 BuildRequires: python3-lxml
 #%%endif
 
-# looks like directory with patches is missing in git
-#Source1: patches.python
+Source1: patches.python
 
 #%%if %{with_python3}
 %package -n libvirt-python3
@@ -60,9 +59,9 @@ of recent versions of Linux (and other OSes).
 %prep
 %setup -q
 
-#for p in %{SOURCE1}/*; do
-#  patch -s -F0 -E -p1 --no-backup-if-mismatch -i $p
-#done
+for p in %{SOURCE1}/*; do
+  patch -s -F0 -E -p1 --no-backup-if-mismatch -i $p
+done
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
@@ -96,9 +95,11 @@ rm -f %{buildroot}%{_libdir}/python*/site-packages/*egg-info
 %defattr(-,root,root)
 %doc ChangeLog AUTHORS NEWS README COPYING COPYING.LESSER examples/
 %{_libdir}/python3*/site-packages/libvirt.py*
+%{_libdir}/python3*/site-packages/libvirtaio.py*
 %{_libdir}/python3*/site-packages/libvirt_qemu.py*
 %{_libdir}/python3*/site-packages/libvirt_lxc.py*
 %{_libdir}/python3*/site-packages/__pycache__/libvirt.cpython-*.py*
+%{_libdir}/python3*/site-packages/__pycache__/libvirtaio.cpython-*.py*
 %{_libdir}/python3*/site-packages/__pycache__/libvirt_qemu.cpython-*.py*
 %{_libdir}/python3*/site-packages/__pycache__/libvirt_lxc.cpython-*.py*
 %{_libdir}/python3*/site-packages/libvirtmod*

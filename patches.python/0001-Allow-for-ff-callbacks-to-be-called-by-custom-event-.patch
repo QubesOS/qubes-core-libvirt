@@ -1,0 +1,171 @@
+From 146cb29018f3eb5a571cfac147030f8285ac74f4 Mon Sep 17 00:00:00 2001
+From: Wojtek Porczyk <woju@invisiblethingslab.com>
+Date: Thu, 16 Mar 2017 20:03:03 +0100
+Subject: [PATCH] Allow for ff callbacks to be called by custom event
+ implementations
+
+The documentation says:
+> If the opaque user data requires free'ing when the handle is
+> unregistered, then a 2nd callback can be supplied for this purpose.
+> This callback needs to be invoked from a clean stack. If 'ff'
+> callbacks are invoked directly from the virEventRemoveHandleFunc they
+> will likely deadlock in libvirt.
+
+And they did deadlock. In removeTimeout too. Now we supply a custom
+function to pick it from the opaque blob and fire.
+
+Signed-off-by: Wojtek Porczyk <woju@invisiblethingslab.com>
+---
+ libvirt-override.c  | 36 ++++++++++++------------------------
+ libvirt-override.py | 39 +++++++++++++++++++++++++++++++++++++++
+ sanitytest.py       |  5 +++--
+ 3 files changed, 54 insertions(+), 26 deletions(-)
+
+diff --git a/libvirt-override.c b/libvirt-override.c
+index 9e40f00..37f7ee2 100644
+--- a/libvirt-override.c
++++ b/libvirt-override.c
+@@ -5223,6 +5223,9 @@ libvirt_virEventAddHandleFunc(int fd,
+ 
+     VIR_PY_TUPLE_SET_GOTO(pyobj_args, 3, cb_args, cleanup);
+ 
++    /* If changing contents of the opaque object, please also change
++     * virEventExecuteFFCallback() in libvirt-override.py
++     */
+     VIR_PY_TUPLE_SET_GOTO(cb_args, 0, libvirt_virEventHandleCallbackWrap(cb), cleanup);
+     VIR_PY_TUPLE_SET_GOTO(cb_args, 1, libvirt_virVoidPtrWrap(opaque), cleanup);
+     VIR_PY_TUPLE_SET_GOTO(cb_args, 2, libvirt_virFreeCallbackWrap(ff), cleanup);
+@@ -5292,20 +5295,11 @@ libvirt_virEventRemoveHandleFunc(int watch)
+     VIR_PY_TUPLE_SET_GOTO(pyobj_args, 0, libvirt_intWrap(watch), cleanup);
+ 
+     result = PyEval_CallObject(removeHandleObj, pyobj_args);
+-    if (!result) {
++    if (result) {
++        retval = 0;
++    } else {
+         PyErr_Print();
+         PyErr_Clear();
+-    } else if (!PyTuple_Check(result) || PyTuple_Size(result) != 3) {
+-        DEBUG("%s: %s must return opaque obj registered with %s"
+-              "to avoid leaking libvirt memory\n",
+-              __FUNCTION__, NAME(removeHandle), NAME(addHandle));
+-    } else {
+-        opaque = PyTuple_GetItem(result, 1);
+-        ff = PyTuple_GetItem(result, 2);
+-        cff = PyvirFreeCallback_Get(ff);
+-        if (cff)
+-            (*cff)(PyvirVoidPtr_Get(opaque));
+-        retval = 0;
+     }
+ 
+  cleanup:
+@@ -5350,6 +5344,9 @@ libvirt_virEventAddTimeoutFunc(int timeout,
+ 
+     VIR_PY_TUPLE_SET_GOTO(pyobj_args, 2, cb_args, cleanup);
+ 
++    /* If changing contents of the opaque object, please also change
++     * virEventExecuteFFCallback() in libvirt-override.py
++     */
+     VIR_PY_TUPLE_SET_GOTO(cb_args, 0, libvirt_virEventTimeoutCallbackWrap(cb), cleanup);
+     VIR_PY_TUPLE_SET_GOTO(cb_args, 1, libvirt_virVoidPtrWrap(opaque), cleanup);
+     VIR_PY_TUPLE_SET_GOTO(cb_args, 2, libvirt_virFreeCallbackWrap(ff), cleanup);
+@@ -5416,20 +5413,11 @@ libvirt_virEventRemoveTimeoutFunc(int timer)
+     VIR_PY_TUPLE_SET_GOTO(pyobj_args, 0, libvirt_intWrap(timer), cleanup);
+ 
+     result = PyEval_CallObject(removeTimeoutObj, pyobj_args);
+-    if (!result) {
++    if (result) {
++        retval = 0;
++    } else {
+         PyErr_Print();
+         PyErr_Clear();
+-    } else if (!PyTuple_Check(result) || PyTuple_Size(result) != 3) {
+-        DEBUG("%s: %s must return opaque obj registered with %s"
+-              "to avoid leaking libvirt memory\n",
+-              __FUNCTION__, NAME(removeTimeout), NAME(addTimeout));
+-    } else {
+-        opaque = PyTuple_GetItem(result, 1);
+-        ff = PyTuple_GetItem(result, 2);
+-        cff = PyvirFreeCallback_Get(ff);
+-        if (cff)
+-            (*cff)(PyvirVoidPtr_Get(opaque));
+-        retval = 0;
+     }
+ 
+  cleanup:
+diff --git a/libvirt-override.py b/libvirt-override.py
+index 63f8ecb..3d09d63 100644
+--- a/libvirt-override.py
++++ b/libvirt-override.py
+@@ -16,6 +16,7 @@ except ImportError:
+         if str(cyg_e).count("No module named"):
+             raise lib_e
+ 
++import ctypes
+ import types
+ 
+ # The root of all libvirt errors.
+@@ -211,3 +212,41 @@ def virEventAddTimeout(timeout, cb, opaque):
+     ret = libvirtmod.virEventAddTimeout(timeout, cbData)
+     if ret == -1: raise libvirtError ('virEventAddTimeout() failed')
+     return ret
++
++
++#
++# a caller for the ff callbacks for custom event loop implementations
++#
++
++ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
++ctypes.pythonapi.PyCapsule_GetPointer.argtypes = (
++        ctypes.py_object, ctypes.c_char_p)
++
++_virFreeCallback = ctypes.CFUNCTYPE(None, ctypes.c_void_p)
++
++def virEventExecuteFFCallback(opaque):
++    """
++    Execute callback which frees the opaque buffer
++
++    @opaque: the opaque object passed to addHandle or addTimeout
++
++    WARNING: This function should not be called from any call by libvirt's
++    core. It will most probably cause deadlock in C-level libvirt code.
++    Instead it should be scheduled and called from implementation's stack.
++
++    See https://libvirt.org/html/libvirt-libvirt-event.html#virEventAddHandleFunc
++    for more information.
++
++    This function is not dependent on any event loop implementation.
++    """
++    # The opaque object is really a 3-tuple, which contains a the real opaque
++    # pointer and the ff callback, both of which are inside PyCapsules. If not
++    # specified, the ff may be None. See libvirt-override.c.
++
++    dummy, caps_opaque, caps_ff = opaque
++    ff = _virFreeCallback(ctypes.pythonapi.PyCapsule_GetPointer(
++        caps_ff, "virFreeCallback".encode("ascii")))
++    if ff:
++        real_opaque = ctypes.pythonapi.PyCapsule_GetPointer(
++            caps_opaque, "void*".encode("ascii"))
++        ff(real_opaque)
+diff --git a/sanitytest.py b/sanitytest.py
+index a140ba2..6548831 100644
+--- a/sanitytest.py
++++ b/sanitytest.py
+@@ -345,11 +345,12 @@ for name in sorted(finalklassmap):
+ 
+ # Phase 6: Validate that every python API has a corresponding C API
+ for klass in gotfunctions:
+-    if klass == "libvirtError":
++    if klass in ("libvirtError", "virEventAsyncIOImpl"):
+         continue
+     for func in sorted(gotfunctions[klass]):
+         # These are pure python methods with no C APi
+-        if func in ["connect", "getConnect", "domain", "getDomain"]:
++        if func in ["connect", "getConnect", "domain", "getDomain",
++                "virEventRegisterAsyncIOImpl"]:
+             continue
+ 
+         key = "%s.%s" % (klass, func)
+-- 
+2.5.5
+

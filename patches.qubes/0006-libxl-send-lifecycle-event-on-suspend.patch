@@ -1,4 +1,4 @@
-From 39aa53065dec3b415745ce71fb90747de92cedc8 Mon Sep 17 00:00:00 2001
+From 9270dcc31121c5902af9589ba2a85a48403b5a52 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 03:56:08 +0100
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index 5cde576..c53a4c1 100644
+index ea28c93..272384b 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
-@@ -506,6 +506,18 @@ libxlDomainShutdownThread(void *opaque)
+@@ -517,6 +517,18 @@ libxlDomainShutdownThread(void *opaque)
          case VIR_DOMAIN_LIFECYCLE_LAST:
              goto endjob;
          }
@@ -37,7 +37,7 @@ index 5cde576..c53a4c1 100644
      } else {
          VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
          goto endjob;
-@@ -554,7 +566,6 @@ void
+@@ -565,7 +577,6 @@ void
  libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
  {
      libxlDriverPrivatePtr driver = data;
@@ -45,7 +45,7 @@ index 5cde576..c53a4c1 100644
      struct libxlShutdownThreadInfo *shutdown_info = NULL;
      virThread thread;
      libxlDriverConfigPtr cfg;
-@@ -565,13 +576,6 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
+@@ -576,13 +587,6 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
      }
  
      /*

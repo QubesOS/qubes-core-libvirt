@@ -1,4 +1,4 @@
-From 3ff3aae501521144a6a3f0ad00ca9e0459dd344c Mon Sep 17 00:00:00 2001
+From d15868f40c5ebccef5904250c7e5e3f320a4ecd1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:54:44 +0200
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index d754ff8..82afd6d 100644
+index f25f801..b6b2e92 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -568,6 +568,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -593,6 +593,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
          }
          if (VIR_STRDUP(b_info->u.pv.ramdisk, def->os.initrd) < 0)
              return -1;

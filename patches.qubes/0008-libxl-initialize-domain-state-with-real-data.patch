@@ -1,4 +1,4 @@
-From 818481054dfea8f46ece91c3ecbcda212aaa2684 Mon Sep 17 00:00:00 2001
+From 1fc8eef8d52208f8690508f54f6d861756f7f7ae Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 06:35:52 +0100
@@ -18,10 +18,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index e81bbc6..376d24e 100644
+index 0810d28..01e7f72 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -411,6 +411,17 @@ libxlReconnectDomain(virDomainObjPtr vm,
+@@ -413,6 +413,17 @@ libxlReconnectDomain(virDomainObjPtr vm,
                                              vm->def, hostdev_flags) < 0)
          goto error;
  

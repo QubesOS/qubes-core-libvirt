@@ -41,7 +41,7 @@
     %define with_qemu_tcg 0
     %define qemu_kvm_arches x86_64
     %if 0%{?rhel} >= 7
-        %define qemu_kvm_arches x86_64 %{power64}
+        %define qemu_kvm_arches x86_64 %{power64} aarch64
     %endif
 %endif
 
@@ -87,6 +87,7 @@
 %define with_wireshark     0%{!?_without_wireshark:0}
 %define with_libssh        0%{!?_without_libssh:0}
 %define with_pm_utils      1
+%define with_nss           1
 
 # Finally set the OS / architecture specific special cases
 
@@ -230,6 +231,7 @@
 # This isn't useful for Qubes OS (with xen provided network setup scripts
 # inside netvm), but perhaps would be enabled in the future for other VMM
 %define with_network 0
+%define with_nss 0
 
 # Mostly useless in Qubes OS dom0, save on build dependencies
 %define with_wireshark 0
@@ -406,6 +408,8 @@ BuildRequires: polkit-devel >= 0.93
 # For mount/umount in FS driver
 BuildRequires: util-linux
 %if %{with_qemu}
+# For managing ACLs
+BuildRequires: libacl-devel
 # From QEMU RPMs
 BuildRequires: /usr/bin/qemu-img
 %else
@@ -653,31 +657,13 @@ Requires: libvirt-daemon = %{version}-%{release}
 The secret driver plugin for the libvirtd daemon, providing
 an implementation of the secret key APIs.
 
-
-%package daemon-driver-storage
-Summary: Storage driver plugin for the libvirtd daemon
+%package daemon-driver-storage-core
+Summary: Storage driver plugin including base backends for the libvirtd daemon
 Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
 Requires: nfs-utils
 # For mkfs
 Requires: util-linux
-# For glusterfs
-%if 0%{?fedora}
-Requires: glusterfs-client >= 2.0.1
-%endif
-# For LVM drivers
-Requires: lvm2
-# For ISCSI driver
-Requires: iscsi-initiator-utils
-# For disk driver
-Requires: parted
-Requires: device-mapper
-# For multipath support
-Requires: device-mapper
-%if %{with_storage_sheepdog}
-# For Sheepdog support
-Requires: sheepdog
-%endif
 %if %{with_qemu}
 # From QEMU RPMs
 Requires: /usr/bin/qemu-img
@@ -686,6 +672,128 @@ Requires: /usr/bin/qemu-img
 # From Xen RPMs
 Requires: /usr/sbin/qcow-create
     %endif
+%endif
+
+%description daemon-driver-storage-core
+The storage driver plugin for the libvirtd daemon, providing
+an implementation of the storage APIs using files, local disks, LVM, SCSI,
+iSCSI, and multipath storage.
+
+%package daemon-driver-storage-logical
+Summary: Storage driver plugin for lvm volumes
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+Requires: lvm2
+
+%description daemon-driver-storage-logical
+The storage driver backend adding implementation of the storage APIs for block
+volumes using lvm.
+
+
+%package daemon-driver-storage-disk
+Summary: Storage driver plugin for disk
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+Requires: parted
+Requires: device-mapper
+
+%description daemon-driver-storage-disk
+The storage driver backend adding implementation of the storage APIs for block
+volumes using the host disks.
+
+
+%package daemon-driver-storage-scsi
+Summary: Storage driver plugin for local scsi devices
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+
+%description daemon-driver-storage-scsi
+The storage driver backend adding implementation of the storage APIs for scsi
+host devices.
+
+
+%package daemon-driver-storage-iscsi
+Summary: Storage driver plugin for iscsi
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+Requires: iscsi-initiator-utils
+
+%description daemon-driver-storage-iscsi
+The storage driver backend adding implementation of the storage APIs for iscsi
+volumes using the host iscsi stack.
+
+
+%package daemon-driver-storage-mpath
+Summary: Storage driver plugin for multipath volumes
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+Requires: device-mapper
+
+%description daemon-driver-storage-mpath
+The storage driver backend adding implementation of the storage APIs for
+multipath storage using device mapper.
+
+
+%if %{with_storage_gluster}
+%package daemon-driver-storage-gluster
+Summary: Storage driver plugin for gluster
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+    %if 0%{?fedora}
+Requires: glusterfs-client >= 2.0.1
+    %endif
+    %if (0%{?fedora} || 0%{?with_storage_gluster})
+Requires: /usr/sbin/gluster
+    %endif
+
+%description daemon-driver-storage-gluster
+The storage driver backend adding implementation of the storage APIs for gluster
+volumes using libgfapi.
+%endif
+
+
+%if %{with_storage_rbd}
+%package daemon-driver-storage-rbd
+Summary: Storage driver plugin for rbd
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+
+%description daemon-driver-storage-rbd
+The storage driver backend adding implementation of the storage APIs for rbd
+volumes using the ceph protocol.
+%endif
+
+
+%if %{with_storage_sheepdog}
+%package daemon-driver-storage-sheepdog
+Summary: Storage driver plugin for sheepdog
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+Requires: sheepdog
+
+%description daemon-driver-storage-sheepdog
+The storage driver backend adding implementation of the storage APIs for
+sheepdog volumes using.
+%endif
+
+
+%package daemon-driver-storage
+Summary: Storage driver plugin including all backends for the libvirtd daemon
+Group: Development/Libraries
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage-disk = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage-logical = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage-scsi = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage-iscsi = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage-mpath = %{version}-%{release}
+%if %{with_storage_gluster}
+Requires: libvirt-daemon-driver-storage-gluster = %{version}-%{release}
+%endif
+%if %{with_storage_rbd}
+Requires: libvirt-daemon-driver-storage-rbd = %{version}-%{release}
+%endif
+%if %{with_storage_sheepdog}
+Requires: libvirt-daemon-driver-storage-sheepdog = %{version}-%{release}
 %endif
 
 %description daemon-driver-storage
@@ -703,7 +811,7 @@ Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}
 Requires: libvirt-daemon-driver-network = %{version}-%{release}
 %endif
-Requires: libvirt-daemon-driver-storage = %{version}-%{release}
+Requires: libvirt-daemon-driver-storage-core = %{version}-%{release}
 Requires: /usr/bin/qemu-img
 # For image compression
 Requires: gzip
@@ -1023,6 +1131,7 @@ Includes the Sanlock lock manager plugin for the QEMU
 driver
 %endif
 
+%if %{with_nss}
 %package nss
 Summary: Libvirt plugin for Name Service Switch
 Group: Development/Libraries
@@ -1032,6 +1141,7 @@ Requires: libvirt-daemon-driver-network = %{version}-%{release}
 
 %description nss
 Libvirt plugin for NSS for translating domain names into IP addresses.
+%endif
 
 
 %prep
@@ -1215,6 +1325,12 @@ rm -rf .git
     %define arg_network --without-network
 %endif
 
+%if %{with_nss}
+    %define arg_nss --with-nss-plugin
+%else
+    %define arg_nss --without-nss-plugin
+%endif
+
 %define when  %(date +"%%F-%%T")
 %define where %(hostname)
 %define who   %{?packager}%{!?packager:Unknown}
@@ -1275,11 +1391,14 @@ rm -f po/stamp-po
            --with-storage-fs \
            --with-storage-lvm \
            --with-storage-iscsi \
+           --with-storage-scsi \
            --with-storage-disk \
            --with-storage-mpath \
            %{?arg_storage_rbd} \
            %{?arg_storage_sheepdog} \
            %{?arg_storage_gluster} \
+           --without-storage-zfs \
+           --without-storage-vstorage \
            %{?arg_numactl} \
            %{?arg_numad} \
            --with-capng \
@@ -1300,7 +1419,7 @@ rm -f po/stamp-po
            %{?arg_firewalld} \
            %{?arg_wireshark} \
            %{?arg_pm_utils} \
-           --with-nss-plugin \
+           %{?arg_nss} \
            %{arg_packager} \
            %{arg_packager_version} \
            --with-qemu-user=%{qemu_user} \
@@ -1341,6 +1460,8 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/lock-driver/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/lock-driver/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/connection-driver/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/connection-driver/*.a
+rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/storage-backend/*.la
+rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/storage-backend/*.a
 %if %{with_wireshark}
     %if 0%{fedora} >= 24
 rm -f $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/libvirt.la
@@ -1806,8 +1927,41 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_secret.so
 
 %files daemon-driver-storage
+
+%files daemon-driver-storage-core
 %attr(0755, root, root) %{_libexecdir}/libvirt_parthelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_storage.so
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_fs.so
+
+%files daemon-driver-storage-disk
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_disk.so
+
+%files daemon-driver-storage-logical
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_logical.so
+
+%files daemon-driver-storage-scsi
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_scsi.so
+
+%files daemon-driver-storage-iscsi
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_iscsi.so
+
+%files daemon-driver-storage-mpath
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_mpath.so
+
+%if %{with_storage_gluster}
+%files daemon-driver-storage-gluster
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_gluster.so
+%endif
+
+%if %{with_storage_rbd}
+%files daemon-driver-storage-rbd
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_rbd.so
+%endif
+
+%if %{with_storage_sheepdog}
+%files daemon-driver-storage-sheepdog
+%{_libdir}/%{name}/storage-backend/libvirt_storage_backend_sheepdog.so
+%endif
 
 %if %{with_qemu}
 %files daemon-driver-qemu
@@ -1965,6 +2119,8 @@ exit 0
 
 %{_datadir}/libvirt/cpu_map.xml
 
+%{_datadir}/libvirt/test-screenshot.png
+
 %config(noreplace) %{_sysconfdir}/sasl2/libvirt.conf
 
 %files admin
@@ -1977,8 +2133,11 @@ exit 0
 %{_libdir}/wireshark/plugins/libvirt.so
 %endif
 
+%if %{with_nss}
 %files nss
 %{_libdir}/libnss_libvirt.so.2
+%{_libdir}/libnss_libvirt_guest.so.2
+%endif
 
 %if %{with_lxc}
 %files login-shell

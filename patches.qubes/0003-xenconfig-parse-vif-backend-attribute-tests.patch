@@ -1,4 +1,4 @@
-From 4b39e1631464b5f91a781027030ca6afc0d3d92a Mon Sep 17 00:00:00 2001
+From eb95135f8b82a8b4a46b8da91b21cf2e59061a23 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
@@ -23,7 +23,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 
 diff --git a/src/xenconfig/xen_sxpr.c b/src/xenconfig/xen_sxpr.c
-index baa68b1..b8e74f6 100644
+index baa68b1..3c20afe 100644
 --- a/src/xenconfig/xen_sxpr.c
 +++ b/src/xenconfig/xen_sxpr.c
 @@ -630,6 +630,10 @@ xenParseSxprNets(virDomainDefPtr def,
@@ -31,7 +31,7 @@ index baa68b1..b8e74f6 100644
              }
  
 +            tmp = sexpr_node(node, "device/vif/backend");
-+            if (tmp && !STREQ(tmp, "0") &&
++            if (tmp && STRNEQ(tmp, "0") &&
 +                    VIR_STRDUP(net->domain_name, tmp) < 0)
 +                goto cleanup;
              tmp = sexpr_node(node, "device/vif/vifname");

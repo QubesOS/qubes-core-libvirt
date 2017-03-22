@@ -231,6 +231,9 @@
 # inside netvm), but perhaps would be enabled in the future for other VMM
 %define with_network 0
 
+# Mostly useless in Qubes OS dom0, save on build dependencies
+%define with_wireshark 0
+
 ### End of Qubes settings ####
 
 # Force QEMU to run as non-root

@@ -301,6 +301,9 @@ Patch0013: patches.qubes/0014-libxl-make-use-of-e820_host-feature.patch
 Patch0014: patches.qubes/0015-xenconfig-parse-e820_host-option.patch
 Patch0015: patches.qubes/0016-tests-check-e820_host-option-handling.patch
 Patch0016: patches.qubes/0017-libxl-set-shadow-memory-for-any-guest-type-not-only-.patch
+Patch0017: patches.qubes/0018-libxl-add-linux-stubdom-support.patch
+Patch0018: patches.qubes/0019-libxl-add-support-for-qubes-graphic-device.patch
+Patch0019: patches.qubes/0020-libxl-add-support-for-stubdom_mem-option.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

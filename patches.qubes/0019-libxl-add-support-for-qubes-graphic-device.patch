@@ -1,0 +1,103 @@
+From d78652d929cb71950a17210bf22a85793e75aff9 Mon Sep 17 00:00:00 2001
+From: HW42 <hw42@ipsumj.de>
+Date: Sat, 22 Apr 2017 08:57:58 +0200
+Subject: [PATCH 19/20] libxl: add support for qubes graphic device
+
+---
+ docs/schemas/domaincommon.rng       | 5 +++++
+ src/conf/domain_conf.c              | 4 ++++
+ src/conf/domain_conf.h              | 1 +
+ src/libxl/libxl_conf.c              | 7 +++++++
+ tests/domaincapsschemadata/full.xml | 1 +
+ 5 files changed, 18 insertions(+)
+
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index e4a20f7..d032a6b 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -3130,6 +3130,11 @@
+             </attribute>
+           </optional>
+         </group>
++        <group>
++          <attribute name="type">
++            <value>qubes</value>
++          </attribute>
++        </group>
+       </choice>
+     </element>
+   </define>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 8d9ebd5..f03c8de 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -569,6 +569,7 @@ VIR_ENUM_IMPL(virDomainGraphics, VIR_DOMAIN_GRAPHICS_TYPE_LAST,
+               "vnc",
+               "rdp",
+               "desktop",
++              "qubes",
+               "spice")
+ 
+ VIR_ENUM_IMPL(virDomainGraphicsListen, VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST,
+@@ -1314,6 +1315,9 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
+         virDomainGraphicsAuthDefClear(&def->data.spice.auth);
+         break;
+ 
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++        break;
++
+     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+         break;
+     }
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index ecad077..1c5eed3 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -1368,6 +1368,7 @@ typedef enum {
+     VIR_DOMAIN_GRAPHICS_TYPE_VNC,
+     VIR_DOMAIN_GRAPHICS_TYPE_RDP,
+     VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP,
++    VIR_DOMAIN_GRAPHICS_TYPE_QUBES,
+     VIR_DOMAIN_GRAPHICS_TYPE_SPICE,
+ 
+     VIR_DOMAIN_GRAPHICS_TYPE_LAST
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 87e1c74..5de7bc3 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -1248,6 +1248,9 @@ libxlMakeVfb(virPortAllocatorPtr graphicsports,
+         case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+         case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+             break;
++        case  VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++            libxl_defbool_set(&x_vfb->vnc.enable, false);
++            libxl_defbool_set(&x_vfb->sdl.enable, false);
+     }
+ 
+     return 0;
+@@ -1326,6 +1329,10 @@ libxlMakeBuildInfoVfb(virPortAllocatorPtr graphicsports,
+         unsigned short port;
+         virDomainGraphicsListenDefPtr glisten = NULL;
+ 
++        if (l_vfb->type == VIR_DOMAIN_GRAPHICS_TYPE_QUBES) {
++            libxl_defbool_set(&b_info->u.hvm.qubes_gui, true);
++        }
++
+         if (l_vfb->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+             continue;
+ 
+diff --git a/tests/domaincapsschemadata/full.xml b/tests/domaincapsschemadata/full.xml
+index 6abd499..b17f52a 100644
+--- a/tests/domaincapsschemadata/full.xml
++++ b/tests/domaincapsschemadata/full.xml
+@@ -57,6 +57,7 @@
+         <value>vnc</value>
+         <value>rdp</value>
+         <value>desktop</value>
++        <value>qubes</value>
+         <value>spice</value>
+       </enum>
+     </graphics>
+-- 
+2.11.0
+

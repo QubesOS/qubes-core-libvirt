@@ -1,6 +1,6 @@
-From 146cb29018f3eb5a571cfac147030f8285ac74f4 Mon Sep 17 00:00:00 2001
+From 72e237f7b9a8c8b353753a7e9c0a6fdbb3d553c5 Mon Sep 17 00:00:00 2001
 From: Wojtek Porczyk <woju@invisiblethingslab.com>
-Date: Thu, 16 Mar 2017 20:03:03 +0100
+Date: Fri, 17 Mar 2017 02:16:25 +0100
 Subject: [PATCH] Allow for ff callbacks to be called by custom event
  implementations
 
@@ -15,14 +15,15 @@ And they did deadlock. In removeTimeout too. Now we supply a custom
 function to pick it from the opaque blob and fire.
 
 Signed-off-by: Wojtek Porczyk <woju@invisiblethingslab.com>
+Signed-off-by: Daniel P. Berrange <berrange@redhat.com>
 ---
- libvirt-override.c  | 36 ++++++++++++------------------------
- libvirt-override.py | 39 +++++++++++++++++++++++++++++++++++++++
- sanitytest.py       |  5 +++--
- 3 files changed, 54 insertions(+), 26 deletions(-)
+ libvirt-override.c  | 68 ++++++++++++++++++++++++++++++-----------------------
+ libvirt-override.py | 23 ++++++++++++++++++
+ sanitytest.py       |  3 ++-
+ 3 files changed, 63 insertions(+), 31 deletions(-)
 
 diff --git a/libvirt-override.c b/libvirt-override.c
-index 9e40f00..37f7ee2 100644
+index 93c7ef0..a762941 100644
 --- a/libvirt-override.c
 +++ b/libvirt-override.c
 @@ -5223,6 +5223,9 @@ libvirt_virEventAddHandleFunc(int fd,
@@ -30,12 +31,23 @@ index 9e40f00..37f7ee2 100644
      VIR_PY_TUPLE_SET_GOTO(pyobj_args, 3, cb_args, cleanup);
  
 +    /* If changing contents of the opaque object, please also change
-+     * virEventExecuteFFCallback() in libvirt-override.py
++     * virEventInvokeFreeCallback() in libvirt-override.py
 +     */
      VIR_PY_TUPLE_SET_GOTO(cb_args, 0, libvirt_virEventHandleCallbackWrap(cb), cleanup);
      VIR_PY_TUPLE_SET_GOTO(cb_args, 1, libvirt_virVoidPtrWrap(opaque), cleanup);
      VIR_PY_TUPLE_SET_GOTO(cb_args, 2, libvirt_virFreeCallbackWrap(ff), cleanup);
-@@ -5292,20 +5295,11 @@ libvirt_virEventRemoveHandleFunc(int watch)
+@@ -5279,10 +5282,7 @@ libvirt_virEventRemoveHandleFunc(int watch)
+ {
+     PyObject *result = NULL;
+     PyObject *pyobj_args;
+-    PyObject *opaque;
+-    PyObject *ff;
+     int retval = -1;
+-    virFreeCallback cff;
+ 
+     LIBVIRT_ENSURE_THREAD_STATE;
+ 
+@@ -5292,20 +5292,11 @@ libvirt_virEventRemoveHandleFunc(int watch)
      VIR_PY_TUPLE_SET_GOTO(pyobj_args, 0, libvirt_intWrap(watch), cleanup);
  
      result = PyEval_CallObject(removeHandleObj, pyobj_args);
@@ -59,17 +71,28 @@ index 9e40f00..37f7ee2 100644
      }
  
   cleanup:
-@@ -5350,6 +5344,9 @@ libvirt_virEventAddTimeoutFunc(int timeout,
+@@ -5350,6 +5341,9 @@ libvirt_virEventAddTimeoutFunc(int timeout,
  
      VIR_PY_TUPLE_SET_GOTO(pyobj_args, 2, cb_args, cleanup);
  
 +    /* If changing contents of the opaque object, please also change
-+     * virEventExecuteFFCallback() in libvirt-override.py
++     * virEventInvokeFreeCallback() in libvirt-override.py
 +     */
      VIR_PY_TUPLE_SET_GOTO(cb_args, 0, libvirt_virEventTimeoutCallbackWrap(cb), cleanup);
      VIR_PY_TUPLE_SET_GOTO(cb_args, 1, libvirt_virVoidPtrWrap(opaque), cleanup);
      VIR_PY_TUPLE_SET_GOTO(cb_args, 2, libvirt_virFreeCallbackWrap(ff), cleanup);
-@@ -5416,20 +5413,11 @@ libvirt_virEventRemoveTimeoutFunc(int timer)
+@@ -5403,10 +5397,7 @@ libvirt_virEventRemoveTimeoutFunc(int timer)
+ {
+     PyObject *result = NULL;
+     PyObject *pyobj_args;
+-    PyObject *opaque;
+-    PyObject *ff;
+     int retval = -1;
+-    virFreeCallback cff;
+ 
+     LIBVIRT_ENSURE_THREAD_STATE;
+ 
+@@ -5416,20 +5407,11 @@ libvirt_virEventRemoveTimeoutFunc(int timer)
      VIR_PY_TUPLE_SET_GOTO(pyobj_args, 0, libvirt_intWrap(timer), cleanup);
  
      result = PyEval_CallObject(removeTimeoutObj, pyobj_args);
@@ -93,19 +116,51 @@ index 9e40f00..37f7ee2 100644
      }
  
   cleanup:
+@@ -5558,6 +5540,31 @@ libvirt_virEventInvokeTimeoutCallback(PyObject *self ATTRIBUTE_UNUSED,
+     return VIR_PY_INT_SUCCESS;
+ }
+ 
++static PyObject *
++libvirt_virEventInvokeFreeCallback(PyObject *self ATTRIBUTE_UNUSED,
++                                   PyObject *args)
++{
++    PyObject *py_f;
++    PyObject *py_opaque;
++    virFreeCallback cb;
++    void *opaque;
++
++    if (!PyArg_ParseTuple(args, (char *) "OO:virEventInvokeFreeCallback",
++                          &py_f, &py_opaque))
++        return NULL;
++
++    cb     = (virFreeCallback) PyvirEventHandleCallback_Get(py_f);
++    opaque = (void *) PyvirVoidPtr_Get(py_opaque);
++
++    if (cb) {
++        LIBVIRT_BEGIN_ALLOW_THREADS;
++        cb(opaque);
++        LIBVIRT_END_ALLOW_THREADS;
++    }
++
++    return VIR_PY_INT_SUCCESS;
++}
++
+ static void
+ libvirt_virEventHandleCallback(int watch,
+                                int fd,
+@@ -9572,6 +9579,7 @@ static PyMethodDef libvirtMethods[] = {
+     {(char *) "virEventAddTimeout", libvirt_virEventAddTimeout, METH_VARARGS, NULL},
+     {(char *) "virEventInvokeHandleCallback", libvirt_virEventInvokeHandleCallback, METH_VARARGS, NULL},
+     {(char *) "virEventInvokeTimeoutCallback", libvirt_virEventInvokeTimeoutCallback, METH_VARARGS, NULL},
++    {(char *) "virEventInvokeFreeCallback", libvirt_virEventInvokeFreeCallback, METH_VARARGS, NULL},
+     {(char *) "virNodeListDevices", libvirt_virNodeListDevices, METH_VARARGS, NULL},
+ #if LIBVIR_CHECK_VERSION(0, 10, 2)
+     {(char *) "virConnectListAllNodeDevices", libvirt_virConnectListAllNodeDevices, METH_VARARGS, NULL},
 diff --git a/libvirt-override.py b/libvirt-override.py
-index 63f8ecb..3d09d63 100644
+index 63f8ecb..b0b24ef 100644
 --- a/libvirt-override.py
 +++ b/libvirt-override.py
-@@ -16,6 +16,7 @@ except ImportError:
-         if str(cyg_e).count("No module named"):
-             raise lib_e
- 
-+import ctypes
- import types
- 
- # The root of all libvirt errors.
-@@ -211,3 +212,41 @@ def virEventAddTimeout(timeout, cb, opaque):
+@@ -211,3 +211,26 @@ def virEventAddTimeout(timeout, cb, opaque):
      ret = libvirtmod.virEventAddTimeout(timeout, cbData)
      if ret == -1: raise libvirtError ('virEventAddTimeout() failed')
      return ret
@@ -115,13 +170,7 @@ index 63f8ecb..3d09d63 100644
 +# a caller for the ff callbacks for custom event loop implementations
 +#
 +
-+ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
-+ctypes.pythonapi.PyCapsule_GetPointer.argtypes = (
-+        ctypes.py_object, ctypes.c_char_p)
-+
-+_virFreeCallback = ctypes.CFUNCTYPE(None, ctypes.c_void_p)
-+
-+def virEventExecuteFFCallback(opaque):
++def virEventInvokeFreeCallback(opaque):
 +    """
 +    Execute callback which frees the opaque buffer
 +
@@ -136,36 +185,22 @@ index 63f8ecb..3d09d63 100644
 +
 +    This function is not dependent on any event loop implementation.
 +    """
-+    # The opaque object is really a 3-tuple, which contains a the real opaque
-+    # pointer and the ff callback, both of which are inside PyCapsules. If not
-+    # specified, the ff may be None. See libvirt-override.c.
 +
-+    dummy, caps_opaque, caps_ff = opaque
-+    ff = _virFreeCallback(ctypes.pythonapi.PyCapsule_GetPointer(
-+        caps_ff, "virFreeCallback".encode("ascii")))
-+    if ff:
-+        real_opaque = ctypes.pythonapi.PyCapsule_GetPointer(
-+            caps_opaque, "void*".encode("ascii"))
-+        ff(real_opaque)
++    libvirtmod.virEventInvokeFreeCallback(opaque[2], opaque[1])
 diff --git a/sanitytest.py b/sanitytest.py
-index a140ba2..6548831 100644
+index a140ba2..7183baa 100644
 --- a/sanitytest.py
 +++ b/sanitytest.py
-@@ -345,11 +345,12 @@ for name in sorted(finalklassmap):
- 
- # Phase 6: Validate that every python API has a corresponding C API
- for klass in gotfunctions:
--    if klass == "libvirtError":
-+    if klass in ("libvirtError", "virEventAsyncIOImpl"):
+@@ -349,7 +349,8 @@ for klass in gotfunctions:
          continue
      for func in sorted(gotfunctions[klass]):
          # These are pure python methods with no C APi
 -        if func in ["connect", "getConnect", "domain", "getDomain"]:
 +        if func in ["connect", "getConnect", "domain", "getDomain",
-+                "virEventRegisterAsyncIOImpl"]:
++                    "virEventInvokeFreeCallback"]:
              continue
  
          key = "%s.%s" % (klass, func)
 -- 
-2.5.5
+2.7.4
 

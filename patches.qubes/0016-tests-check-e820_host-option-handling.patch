@@ -1,4 +1,4 @@
-From 73fa6d4317d4e115dd4e4baf1467383168b5ea2c Mon Sep 17 00:00:00 2001
+From d39b68b4ca981d396e7fbf7e62ec9c0746abc0c8 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:39 +0200
@@ -79,10 +79,10 @@ index 0000000..5727023
 +  </devices>
 +</domain>
 diff --git a/tests/xlconfigtest.c b/tests/xlconfigtest.c
-index e74e4d6..e9528f7 100644
+index 05f7c20..b889796 100644
 --- a/tests/xlconfigtest.c
 +++ b/tests/xlconfigtest.c
-@@ -292,6 +292,7 @@ mymain(void)
+@@ -294,6 +294,7 @@ mymain(void)
      DO_TEST("vif-typename");
      DO_TEST("usb");
      DO_TEST("usbctrl");

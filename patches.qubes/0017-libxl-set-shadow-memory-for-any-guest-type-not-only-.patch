@@ -1,4 +1,4 @@
-From 50b7a471dbc23cad9b754ae81b74c5fc34ced86c Mon Sep 17 00:00:00 2001
+From 72b457059d2f44e20f85b44ad5fb6be82c6162fb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 30 Jul 2016 00:36:08 +0200
@@ -20,10 +20,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index b6b2e92..762fec9 100644
+index 9cc8c65..5445437 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -561,11 +561,6 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -597,11 +597,6 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
              return -1;
          }
  #endif
@@ -35,7 +35,7 @@ index b6b2e92..762fec9 100644
      } else {
          /*
           * For compatibility with the legacy xen toolstack, default to pygrub
-@@ -609,6 +604,10 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -645,6 +640,10 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
          }
      }
  

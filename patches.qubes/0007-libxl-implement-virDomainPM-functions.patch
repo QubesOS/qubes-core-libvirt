@@ -1,4 +1,4 @@
-From e86cac81af69f5ff868ca867b1e36d0cc78d4b34 Mon Sep 17 00:00:00 2001
+From 7e20f078df578ea55e8c3a4486bef2c9638c90db Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 10 Feb 2015 05:24:04 +0100
@@ -16,7 +16,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  2 files changed, 123 insertions(+), 4 deletions(-)
 
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index 272384b..b45cf93 100644
+index 52d21c3..97ab06b 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
 @@ -524,10 +524,6 @@ libxlDomainShutdownThread(void *opaque)
@@ -31,10 +31,10 @@ index 272384b..b45cf93 100644
      } else {
          VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 91f9691..0810d28 100644
+index 0dc62fe..6d50afc 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1452,6 +1452,127 @@ libxlDomainDestroy(virDomainPtr dom)
+@@ -1444,6 +1444,127 @@ libxlDomainDestroy(virDomainPtr dom)
      return libxlDomainDestroyFlags(dom, 0);
  }
  
@@ -162,7 +162,7 @@ index 91f9691..0810d28 100644
  static char *
  libxlDomainGetOSType(virDomainPtr dom)
  {
-@@ -6506,6 +6627,8 @@ static virHypervisorDriver libxlHypervisorDriver = {
+@@ -6496,6 +6617,8 @@ static virHypervisorDriver libxlHypervisorDriver = {
      .domainReboot = libxlDomainReboot, /* 0.9.0 */
      .domainDestroy = libxlDomainDestroy, /* 0.9.0 */
      .domainDestroyFlags = libxlDomainDestroyFlags, /* 0.9.4 */

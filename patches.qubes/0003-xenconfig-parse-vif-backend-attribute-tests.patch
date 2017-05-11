@@ -1,4 +1,4 @@
-From eb95135f8b82a8b4a46b8da91b21cf2e59061a23 Mon Sep 17 00:00:00 2001
+From 1476716e876206eeaf6239c0d82ff683675637a5 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
@@ -97,7 +97,7 @@ index 0000000..60815a8
 +  </devices>
 +</domain>
 diff --git a/tests/sexpr2xmltest.c b/tests/sexpr2xmltest.c
-index 9982fad..5061aff 100644
+index 107509b..9197716 100644
 --- a/tests/sexpr2xmltest.c
 +++ b/tests/sexpr2xmltest.c
 @@ -154,6 +154,7 @@ mymain(void)

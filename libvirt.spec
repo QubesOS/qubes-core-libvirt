@@ -304,6 +304,7 @@ Patch0016: patches.qubes/0017-libxl-set-shadow-memory-for-any-guest-type-not-onl
 Patch0017: patches.qubes/0018-libxl-add-linux-stubdom-support.patch
 Patch0018: patches.qubes/0019-libxl-add-support-for-qubes-graphic-device.patch
 Patch0019: patches.qubes/0020-libxl-add-support-for-stubdom_mem-option.patch
+Patch0020: patches.qubes/0021-pci-fix-link-maximum-speed-detection.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

@@ -292,7 +292,6 @@ Patch0004: patches.qubes/0005-libxl-support-domain-config-modification-in-virDom
 Patch0005: patches.qubes/0006-libxl-send-lifecycle-event-on-suspend.patch
 Patch0006: patches.qubes/0007-libxl-implement-virDomainPM-functions.patch
 Patch0007: patches.qubes/0008-libxl-initialize-domain-state-with-real-data.patch
-Patch0008: patches.qubes/0009-pci-do-not-fail-if-the-stub-module-handle-new_id-rem.patch
 Patch0009: patches.qubes/0010-Add-nostrictreset-attribute-to-PCI-host-devices.patch
 Patch0010: patches.qubes/0011-libxl-pause-also-stubdomain-if-any-while-pausing-a-d.patch
 Patch0011: patches.qubes/0012-libxl-plug-workaround-for-missing-pcidev-group-assig.patch

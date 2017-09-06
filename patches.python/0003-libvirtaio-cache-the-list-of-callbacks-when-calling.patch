@@ -1,0 +1,43 @@
+From b91cc73076764afa2645bcf345ea75141d53907d Mon Sep 17 00:00:00 2001
+From: Wojtek Porczyk <woju@invisiblethingslab.com>
+Date: Thu, 31 Aug 2017 21:20:40 +0200
+Subject: [PATCH] libvirtaio: cache the list of callbacks when calling
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+When the callback causes something that results in changes wrt
+registered handles, python aborts iteration.
+
+Relevant error message:
+
+    Exception in callback None()
+    handle: <Handle cancelled>
+    Traceback (most recent call last):
+      File "/usr/lib64/python3.5/asyncio/events.py", line 126, in _run
+        self._callback(*self._args)
+      File "/usr/lib64/python3.5/site-packages/libvirtaio.py", line 99, in _handle
+        for callback in self.callbacks.values():
+    RuntimeError: dictionary changed size during iteration
+
+QubesOS/qubes-issues#2805
+Signed-off-by: Wojtek Porczyk <woju@invisiblethingslab.com>
+---
+ libvirtaio.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libvirtaio.py b/libvirtaio.py
+index d161cd1..46923d8 100644
+--- a/libvirtaio.py
++++ b/libvirtaio.py
+@@ -96,7 +96,7 @@ class Descriptor(object):
+ 
+         :param int event: The event (from libvirt's constants) being dispatched
+         '''
+-        for callback in self.callbacks.values():
++        for callback in list(self.callbacks.values()):
+             if callback.event is not None and callback.event & event:
+                 callback.cb(callback.iden, self.fd, event, callback.opaque)
+ 
+-- 
+2.9.4
+

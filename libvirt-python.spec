@@ -15,6 +15,8 @@ Name: libvirt-python
 Version: %{version}
 Release: 1%{?dist}%{?extra_release}
 Source: http://libvirt.org/sources/python/%{name}-%{version}.tar.gz
+Patch0000: patches.python/0001-libvirtaio-add-more-debug-logging.patch
+Patch0001: patches.python/0002-libvirtaio-add-allow-for-moving-callbacks-to-other-e.patch
 Url: http://libvirt.org
 License: LGPLv2+
 Group: Development/Libraries
@@ -56,6 +58,46 @@ of recent versions of Linux (and other OSes).
 
 %prep
 %setup -q
+
+# Patches have to be stored in a temporary file because RPM has
+# a limit on the length of the result of any macro expansion;
+# if the string is longer, it's silently cropped
+%{lua:
+    tmp = os.tmpname();
+    f = io.open(tmp, "w+");
+    count = 0;
+    for i, p in ipairs(patches) do
+        f:write(p.."\n");
+        count = count + 1;
+    end;
+    f:close();
+    print("PATCHCOUNT="..count.."\n")
+    print("PATCHLIST="..tmp.."\n")
+}
+
+%if 0%{?qubes_builder}
+ln -s %{_sourcedir}/patches.python/*.patch %{_sourcedir}/
+%endif
+
+git init -q
+git config user.name rpm-build
+git config user.email rpm-build
+git config gc.auto 0
+git add .
+git commit -q -a --author 'rpm-build <rpm-build>' \
+           -m '%{name}-%{version} base'
+
+COUNT=$(grep '\.patch$' $PATCHLIST | wc -l)
+if [ $COUNT -ne $PATCHCOUNT ]; then
+    echo "Found $COUNT patches in $PATCHLIST, expected $PATCHCOUNT"
+    exit 1
+fi
+if [ $COUNT -gt 0 ]; then
+    xargs git am <$PATCHLIST || exit 1
+fi
+echo "Applied $COUNT patches"
+rm -f $PATCHLIST
+rm -rf .git
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build

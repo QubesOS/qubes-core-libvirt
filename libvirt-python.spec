@@ -16,6 +16,12 @@ Version: %{version}
 Release: 1%{?dist}%{?extra_release}
 Source: http://libvirt.org/sources/python/%{name}-%{version}.tar.gz
 Url: http://libvirt.org
+Patch0: 0001-libvirtaio-add-more-debug-logging.patch
+Patch1: 0002-libvirtaio-cache-the-list-of-callbacks-when-calling.patch
+Patch2: 0003-libvirtaio-do-not-double-add-callbacks.patch
+Patch3: 0004-libvirtaio-fix-closing-of-the-objects.patch
+Patch4: 0005-libvirtaio-keep-track-of-the-current-implementation.patch
+Patch5: 0006-libvirtaio-add-.drain-coroutine.patch
 License: LGPLv2+
 Group: Development/Libraries
 BuildRequires: libvirt-devel >= 0.9.11

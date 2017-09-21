@@ -1,0 +1,45 @@
+From 83cc1c47b6184fc4f4a8cf10a7c0d2224ceb2644 Mon Sep 17 00:00:00 2001
+From: Wojtek Porczyk <woju@invisiblethingslab.com>
+Date: Thu, 14 Sep 2017 02:26:53 +0200
+Subject: [PATCH] libvirtaio: fix closing of the objects
+Organization: Invisible Things Lab
+Cc: Wojtek Porczyk <woju@invisiblethingslab.com>
+
+- Descriptor.close() was a dead code, never used.
+- TimeoutCallback.close(), as a cleanup function, should have called
+    super() as last statement, not first
+
+Signed-off-by: Wojtek Porczyk <woju@invisiblethingslab.com>
+---
+ libvirtaio.py | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/libvirtaio.py b/libvirtaio.py
+index 239561d..a7ede41 100644
+--- a/libvirtaio.py
++++ b/libvirtaio.py
+@@ -154,11 +154,6 @@ class Descriptor(object):
+         self.update()
+         return callback
+ 
+-    def close(self):
+-        ''''''
+-        self.callbacks.clear()
+-        self.update()
+-
+ class DescriptorDict(dict):
+     '''Descriptors collection
+ 
+@@ -249,8 +244,8 @@ class TimeoutCallback(Callback):
+ 
+     def close(self):
+         '''Stop the timer and call ff callback'''
+-        super(TimeoutCallback, self).close()
+         self.update(timeout=-1)
++        super(TimeoutCallback, self).close()
+ 
+ #
+ # main implementation
+-- 
+2.9.4
+

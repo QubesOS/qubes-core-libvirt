@@ -1,0 +1,52 @@
+From 32383140f6d2395053ab4f52b57452153d762878 Mon Sep 17 00:00:00 2001
+From: Wojtek Porczyk <woju@invisiblethingslab.com>
+Date: Thu, 14 Sep 2017 02:24:29 +0200
+Subject: [PATCH] libvirtaio: do not double-add callbacks
+Organization: Invisible Things Lab
+Cc: Wojtek Porczyk <woju@invisiblethingslab.com>
+
+This was a harmless bug, without any impact, but it is wrong to manage
+the collection of callbacks from it's members.
+
+Signed-off-by: Wojtek Porczyk <woju@invisiblethingslab.com>
+---
+ libvirtaio.py | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/libvirtaio.py b/libvirtaio.py
+index d962e64..239561d 100644
+--- a/libvirtaio.py
++++ b/libvirtaio.py
+@@ -63,11 +63,6 @@ class Callback(object):
+         self.cb = cb
+         self.opaque = opaque
+ 
+-        assert self.iden not in self.impl.callbacks, \
+-            'found {} callback: {!r}'.format(
+-                self.iden, self.impl.callbacks[self.iden])
+-        self.impl.callbacks[self.iden] = self
+-
+     def __repr__(self):
+         return '<{} iden={}>'.format(self.__class__.__name__, self.iden)
+ 
+@@ -324,6 +319,8 @@ class virEventAsyncIOImpl(object):
+         '''
+         callback = FDCallback(self, cb, opaque,
+                 descriptor=self.descriptors[fd], event=event)
++        assert callback.iden not in self.callbacks
++
+         self.log.debug('add_handle(fd=%d, event=%d, cb=..., opaque=...) = %d',
+                 fd, event, callback.iden)
+         self.callbacks[callback.iden] = callback
+@@ -376,6 +373,8 @@ class virEventAsyncIOImpl(object):
+             https://libvirt.org/html/libvirt-libvirt-event.html#virEventAddTimeoutFunc
+         '''
+         callback = TimeoutCallback(self, cb, opaque)
++        assert callback.iden not in self.callbacks
++
+         self.log.debug('add_timeout(timeout=%d, cb=..., opaque=...) = %d',
+                 timeout, callback.iden)
+         self.callbacks[callback.iden] = callback
+-- 
+2.9.4
+

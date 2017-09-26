@@ -13,7 +13,7 @@
 Summary: The libvirt virtualization API python2 binding
 Name: libvirt-python
 Version: %{version}
-Release: 1%{?dist}%{?extra_release}
+Release: 2%{?dist}%{?extra_release}
 Source: http://libvirt.org/sources/python/%{name}-%{version}.tar.gz
 Url: http://libvirt.org
 Patch0: 0001-libvirtaio-add-more-debug-logging.patch

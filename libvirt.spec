@@ -306,6 +306,7 @@ Patch0019: patches.qubes/0020-libxl-add-support-for-stubdom_mem-option.patch
 Patch0020: patches.qubes/0021-pci-fix-link-maximum-speed-detection.patch
 Patch0021: patches.qubes/0022-cpu-define-sub-leaf-0-for-leaf-7-in-cpu_map.xml.patch
 Patch0022: patches.qubes/0023-libxl-add-support-for-CPUID-features-policy.patch
+Patch0023: patches.qubes/0024-libxl-add-basic-PVHv2-support.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

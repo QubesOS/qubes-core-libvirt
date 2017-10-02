@@ -1,0 +1,74 @@
+From c21c7c20e2100338f762ba2b5771b554f9cc6dd5 Mon Sep 17 00:00:00 2001
+From: HW42 <hw42@ipsumj.de>
+Date: Fri, 29 Sep 2017 05:56:55 +0200
+Subject: [PATCH] libxl: add basic PVHv2 support
+
+---
+ docs/schemas/domaincommon.rng | 2 ++
+ src/conf/domain_conf.c        | 3 ++-
+ src/conf/domain_conf.h        | 1 +
+ src/libxl/libxl_conf.c        | 2 ++
+ 4 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index c3c6a48..f041f56 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -2851,6 +2851,7 @@
+                 <value>qemu</value>
+                 <value>stubdom</value>
+                 <value>stubdom-linux</value>
++                <value>none</value>
+               </choice>
+             </attribute>
+           </optional>
+@@ -2872,6 +2873,7 @@
+               <value>qemu</value>
+               <value>stubdom</value>
+               <value>stubdom-linux</value>
++              <value>none</value>
+             </choice>
+           </attribute>
+           <optional>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 9c2d53a..1d9683c 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -817,7 +817,8 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
+ VIR_ENUM_IMPL(virDomainEmulatorType, VIR_DOMAIN_EMULATOR_TYPE_LAST,
+               "qemu",
+               "stubdom",
+-              "stubdom-linux");
++              "stubdom-linux",
++              "none");
+ 
+ VIR_ENUM_IMPL(virDomainRNGModel,
+               VIR_DOMAIN_RNG_MODEL_LAST,
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index 0e6a523..2fd7ed5 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -1988,6 +1988,7 @@ typedef enum {
+     VIR_DOMAIN_EMULATOR_TYPE_DEFAULT,
+     VIR_DOMAIN_EMULATOR_TYPE_STUBDOM,
+     VIR_DOMAIN_EMULATOR_TYPE_STUBDOM_LINUX,
++    VIR_DOMAIN_EMULATOR_TYPE_NONE,
+ 
+     VIR_DOMAIN_EMULATOR_TYPE_LAST
+ } virDomainEmulatorType;
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 41ae19c..954c159 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -564,6 +564,8 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+                 b_info->device_model_version = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN_TRADITIONAL;
+             else if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_STUBDOM_LINUX)
+                 b_info->device_model_version = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN;
++            else if (def->emulator_type == VIR_DOMAIN_EMULATOR_TYPE_NONE)
++                b_info->device_model_version = LIBXL_DEVICE_MODEL_VERSION_NONE;
+         }
+ 
+         /* In case of stubdom there will be two qemu instances:
+-- 
+2.14.2
+

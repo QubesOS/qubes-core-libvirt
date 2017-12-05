@@ -20,7 +20,7 @@ else
 # WIN_PATH is the search path used for configure/make, it should contain msys/mingw binaries and python directory
 
 VERSION := $(shell cat version)
-URL := http://libvirt.org/sources/$(mainturl)libvirt-$(VERSION).tar.xz
+URL := https://libvirt.org/sources/$(mainturl)libvirt-$(VERSION).tar.xz
 
 ifndef SRC_FILE
 ifdef URL

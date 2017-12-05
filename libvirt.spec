@@ -282,7 +282,7 @@ URL: http://libvirt.org/
 %if %(echo %{version} | grep -o \\. | wc -l) == 3
     %define mainturl stable_updates/
 %endif
-Source: http://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 
 Patch0000: patches.qubes/0001-conf-add-script-attribute-to-disk-specification.patch
 Patch0001: patches.qubes/0002-libxl-use-disk-script-attribute.patch

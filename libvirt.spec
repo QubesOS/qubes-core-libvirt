@@ -307,6 +307,7 @@ Patch0020: patches.qubes/0021-pci-fix-link-maximum-speed-detection.patch
 Patch0021: patches.qubes/0022-cpu-define-sub-leaf-0-for-leaf-7-in-cpu_map.xml.patch
 Patch0022: patches.qubes/0023-libxl-add-support-for-CPUID-features-policy.patch
 Patch0023: patches.qubes/0024-libxl-add-basic-PVHv2-support.patch
+Patch0024: patches.qubes/0025-libxl-add-support-for-multiple-IP-addresses.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

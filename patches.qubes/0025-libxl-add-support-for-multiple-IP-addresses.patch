@@ -1,0 +1,94 @@
+From 1afa40a1e5ea51a016ae2e6bf7be8f2e525154f5 Mon Sep 17 00:00:00 2001
+Message-Id: <1afa40a1e5ea51a016ae2e6bf7be8f2e525154f5.1512152064.git-series.marmarek@invisiblethingslab.com>
+From: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+Date: Fri,  1 Dec 2017 15:07:32 +0100
+Subject: [PATCH 1/2] libxl: add support for multiple IP addresses
+
+vif-* scripts support it for a long time, and expect addresses to be
+separated by spaces. Add appropriate support to libxl driver.
+---
+ src/libxl/libxl_conf.c   | 29 +++++++++++++++++++++++++++--
+ src/libxl/libxl_domain.c | 12 ------------
+ 2 files changed, 27 insertions(+), 14 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 2a9be69..f84ffc6 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -1067,6 +1067,31 @@ libxlUpdateDiskDef(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
+         ignore_value(virDomainDiskSetDriver(l_disk, driver));
+ }
+ 
++static char *
++libxlMakeIPList(virNetDevIPInfoPtr guestIP)
++{
++    size_t i;
++    char **address_array;
++    char *ret = NULL;
++
++    if (VIR_ALLOC_N(address_array, guestIP->nips + 1) < 0)
++        return NULL;
++
++    for (i = 0; i < guestIP->nips; i++) {
++        address_array[i] = virSocketAddrFormat(&guestIP->ips[i]->address);
++        if (!address_array[i])
++            goto cleanup;
++    }
++    address_array[guestIP->nips] = NULL;
++
++    ret = virStringListJoin((const char**)address_array, " ");
++
++ cleanup:
++    while (i > 0)
++        VIR_FREE(address_array[--i]);
++    return ret;
++}
++
+ int
+ libxlMakeNic(virDomainDefPtr def,
+              virDomainNetDefPtr l_nic,
+@@ -1144,7 +1169,7 @@ libxlMakeNic(virDomainDefPtr def,
+             if (VIR_STRDUP(x_nic->script, l_nic->script) < 0)
+                 goto cleanup;
+             if (l_nic->guestIP.nips > 0) {
+-                x_nic->ip = virSocketAddrFormat(&l_nic->guestIP.ips[0]->address);
++                x_nic->ip = libxlMakeIPList(&l_nic->guestIP);
+                 if (!x_nic->ip)
+                     goto cleanup;
+             }
+@@ -1160,7 +1185,7 @@ libxlMakeNic(virDomainDefPtr def,
+             }
+ 
+             if (l_nic->guestIP.nips > 0) {
+-                x_nic->ip = virSocketAddrFormat(&l_nic->guestIP.ips[0]->address);
++                x_nic->ip = libxlMakeIPList(&l_nic->guestIP);
+                 if (!x_nic->ip)
+                     goto cleanup;
+             }
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index d054b07..395c8a9 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -294,18 +294,6 @@ libxlDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
+         def->os.type != VIR_DOMAIN_OSTYPE_HVM)
+         dev->data.chr->targetType = VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_XEN;
+ 
+-    if (dev->type == VIR_DOMAIN_DEVICE_NET &&
+-            (dev->data.net->type == VIR_DOMAIN_NET_TYPE_BRIDGE ||
+-             dev->data.net->type == VIR_DOMAIN_NET_TYPE_ETHERNET ||
+-             dev->data.net->type == VIR_DOMAIN_NET_TYPE_NETWORK)) {
+-        if (dev->data.net->guestIP.nips > 1) {
+-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+-                    _("multiple IP addresses not supported on device type %s"),
+-                    virDomainNetTypeToString(dev->data.net->type));
+-            return -1;
+-        }
+-    }
+-
+     if (dev->type == VIR_DOMAIN_DEVICE_HOSTDEV ||
+         (dev->type == VIR_DOMAIN_DEVICE_NET &&
+          dev->data.net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV)) {
+
+base-commit: 9f0ccc717ba9026c30ce38951a354dd66fa12e3b
+-- 
+git-series 0.9.1

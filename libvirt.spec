@@ -308,6 +308,7 @@ Patch0021: patches.qubes/0022-cpu-define-sub-leaf-0-for-leaf-7-in-cpu_map.xml.pa
 Patch0022: patches.qubes/0023-libxl-add-support-for-CPUID-features-policy.patch
 Patch0023: patches.qubes/0024-libxl-add-basic-PVHv2-support.patch
 Patch0024: patches.qubes/0025-libxl-add-support-for-multiple-IP-addresses.patch
+Patch0025: patches.qubes/0026-xenMakeIPList-Don-t-leak-address_array.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

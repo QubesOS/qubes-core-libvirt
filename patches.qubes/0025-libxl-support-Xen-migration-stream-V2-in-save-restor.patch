@@ -1,0 +1,237 @@
+From c22b365a0b4aa17dc6b2c64953ded208eb2047cf Mon Sep 17 00:00:00 2001
+From: Jim Fehlig <jfehlig@suse.com>
+Date: Mon, 2 May 2016 12:00:39 -0600
+Subject: [PATCH 25/25] libxl: support Xen migration stream V2 in save/restore
+
+Xen 4.6 introduced a new migration stream commonly referred to as
+"migration V2". Xen 4.6 and newer always produce this new stream,
+whereas Xen 4.5 and older always produce the legacy stream.
+Support for migration stream V2 can be detected at build time with
+LIBXL_HAVE_SRM_V2 from libxl.h. The legacy and V2 streams are not
+compatible, but a V2 host can accept and convert a legacy stream.
+
+Commit e7440656 changed the libxl driver to use the lowest libxl
+API version possible (version 0x040200) to ensure the driver
+builds against older Xen releases. The old 4.2 restore API does
+not support specifying a stream version and assumes a legacy
+stream, even if the incoming stream is migration V2. Thinking it
+has been given a legacy stream, libxl will fail to convert an
+incoming stream that is already V2, which causes the entire
+restore operation to fail. Xen's libvirt-related OSSTest has been
+failing since commit e7440656 landed in libvirt.git master. One
+of the more recent failures can be seen here
+
+http://lists.xenproject.org/archives/html/xen-devel/2016-05/msg00071.html
+
+This patch changes the call to libxl_domain_create_restore() to
+include the stream version if LIBXL_HAVE_SRM_V2 is defined. The
+version field of the libxlSavefileHeader struct is also updated
+to '2' when LIBXL_HAVE_SRM_V2 is defined, ensuring the stream
+version in the header matches the actual stream version produced
+by Xen. Along with bumping the libxl API requirement to 0x040400,
+this patch fixes save/restore on a migration V2 Xen host.
+
+Oddly, migration has never used the libxlSavefileHeader. It
+handles passing configuration in the Begin and Prepare phases,
+and then calls libxl directly to transfer domain state/memory
+in the Perform phase. A subsequent patch will add stream
+version handling in the Begin and Prepare phase handshaking,
+which will fix the migration related OSSTest failures.
+
+Signed-off-by: Jim Fehlig <jfehlig@suse.com>
+(cherry picked from commit 5325123d235deb07f39b73c06a7d9ab6494fa2c8)
+---
+ src/libxl/libxl_conf.h      |  6 +++++-
+ src/libxl/libxl_domain.c    | 40 ++++++++++++++++++++++++++++++++++++----
+ src/libxl/libxl_domain.h    | 14 ++++++++++----
+ src/libxl/libxl_driver.c    | 13 ++++++++-----
+ src/libxl/libxl_migration.c |  2 +-
+ 5 files changed, 60 insertions(+), 15 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
+index 30eedb533..baa668afc 100644
+--- a/src/libxl/libxl_conf.h
++++ b/src/libxl/libxl_conf.h
+@@ -141,7 +141,11 @@ struct _libxlDriverPrivate {
+ };
+ 
+ # define LIBXL_SAVE_MAGIC "libvirt-xml\n \0 \r"
+-# define LIBXL_SAVE_VERSION 1
++# ifdef LIBXL_HAVE_SRM_V2
++#  define LIBXL_SAVE_VERSION 2
++# else
++#  define LIBXL_SAVE_VERSION 1
++# endif
+ 
+ typedef struct _libxlSavefileHeader libxlSavefileHeader;
+ typedef libxlSavefileHeader *libxlSavefileHeaderPtr;
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index b51d2d1ab..930e14a3f 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -494,7 +494,7 @@ libxlDomainShutdownThread(void *opaque)
+     }
+     libxlDomainDestroyInternal(driver, vm);
+     libxlDomainCleanup(driver, vm);
+-    if (libxlDomainStart(driver, vm, false, -1) < 0) {
++    if (libxlDomainStartNew(driver, vm, false) < 0) {
+         virErrorPtr err = virGetLastError();
+         VIR_ERROR(_("Failed to restart VM '%s': %s"),
+                   vm->def->name, err ? err->message : _("unknown error"));
+@@ -888,14 +888,23 @@ libxlConsoleCallback(libxl_ctx *ctx, libxl_event *ev, void *for_callback)
+ }
+ 
+ 
++#ifdef LIBXL_HAVE_SRM_V2
++# define LIBXL_DOMSTART_RESTORE_VER_ATTR /* empty */
++#else
++# define LIBXL_DOMSTART_RESTORE_VER_ATTR ATTRIBUTE_UNUSED
++#endif
++
+ /*
+  * Start a domain through libxenlight.
+  *
+  * virDomainObjPtr must be locked and a job acquired on invocation
+  */
+-int
+-libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+-                 bool start_paused, int restore_fd)
++static int
++libxlDomainStart(libxlDriverPrivatePtr driver,
++                 virDomainObjPtr vm,
++                 bool start_paused,
++                 int restore_fd,
++                 uint32_t restore_ver LIBXL_DOMSTART_RESTORE_VER_ATTR)
+ {
+     libxl_domain_config d_config;
+     virDomainDefPtr def = NULL;
+@@ -931,6 +940,7 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+                 goto cleanup;
+ 
+             restore_fd = managed_save_fd;
++            restore_ver = hdr.version;
+ 
+             if (STRNEQ(vm->def->name, def->name) ||
+                 memcmp(vm->def->uuid, def->uuid, VIR_UUID_BUFLEN)) {
+@@ -992,6 +1002,9 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+                                       &domid, NULL, &aop_console_how);
+     } else {
+         libxl_domain_restore_params_init(&params);
++#ifdef LIBXL_HAVE_SRM_V2
++        params.stream_version = restore_ver;
++#endif
+         ret = libxl_domain_create_restore(cfg->ctx, &d_config, &domid,
+                                           restore_fd, &params, NULL,
+                                           &aop_console_how);
+@@ -1081,6 +1094,25 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+     return ret;
+ }
+ 
++int
++libxlDomainStartNew(libxlDriverPrivatePtr driver,
++            virDomainObjPtr vm,
++            bool start_paused)
++{
++    return libxlDomainStart(driver, vm, start_paused, -1, LIBXL_SAVE_VERSION);
++}
++
++int
++libxlDomainStartRestore(libxlDriverPrivatePtr driver,
++                        virDomainObjPtr vm,
++                        bool start_paused,
++                        int restore_fd,
++                        uint32_t restore_ver)
++{
++    return libxlDomainStart(driver, vm, start_paused,
++                            restore_fd, restore_ver);
++}
++
+ bool
+ libxlDomainDefCheckABIStability(libxlDriverPrivatePtr driver,
+                                 virDomainDefPtr src,
+diff --git a/src/libxl/libxl_domain.h b/src/libxl/libxl_domain.h
+index 44b3e0bc4..40711cb67 100644
+--- a/src/libxl/libxl_domain.h
++++ b/src/libxl/libxl_domain.h
+@@ -136,10 +136,16 @@ libxlDomainSetVcpuAffinities(libxlDriverPrivatePtr driver,
+                              virDomainObjPtr vm);
+ 
+ int
+-libxlDomainStart(libxlDriverPrivatePtr driver,
+-                 virDomainObjPtr vm,
+-                 bool start_paused,
+-                 int restore_fd);
++libxlDomainStartNew(libxlDriverPrivatePtr driver,
++                    virDomainObjPtr vm,
++                    bool start_paused);
++
++int
++libxlDomainStartRestore(libxlDriverPrivatePtr driver,
++                        virDomainObjPtr vm,
++                        bool start_paused,
++                        int restore_fd,
++                        uint32_t restore_ver);
+ 
+ bool
+ libxlDomainDefCheckABIStability(libxlDriverPrivatePtr driver,
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index bf0dc893a..f725cf772 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -320,7 +320,7 @@ libxlAutostartDomain(virDomainObjPtr vm,
+     }
+ 
+     if (vm->autostart && !virDomainObjIsActive(vm) &&
+-        libxlDomainStart(driver, vm, false, -1) < 0) {
++        libxlDomainStartNew(driver, vm, false) < 0) {
+         err = virGetLastError();
+         VIR_ERROR(_("Failed to autostart VM '%s': %s"),
+                   vm->def->name,
+@@ -999,8 +999,8 @@ libxlDomainCreateXML(virConnectPtr conn, const char *xml,
+         goto cleanup;
+     }
+ 
+-    if (libxlDomainStart(driver, vm, (flags & VIR_DOMAIN_START_PAUSED) != 0,
+-                     -1) < 0) {
++    if (libxlDomainStartNew(driver, vm,
++                         (flags & VIR_DOMAIN_START_PAUSED) != 0) < 0) {
+         if (!vm->persistent) {
+             virDomainObjListRemove(driver->domains, vm);
+             vm = NULL;
+@@ -2004,7 +2004,9 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+         goto cleanup;
+     }
+ 
+-    ret = libxlDomainStart(driver, vm, (flags & VIR_DOMAIN_SAVE_PAUSED) != 0, fd);
++    ret = libxlDomainStartRestore(driver, vm,
++                                  (flags & VIR_DOMAIN_SAVE_PAUSED) != 0,
++                                  fd, hdr.version);
+     if (ret < 0 && !vm->persistent)
+         virDomainObjListRemove(driver->domains, vm);
+ 
+@@ -2898,7 +2900,8 @@ libxlDomainCreateWithFlags(virDomainPtr dom,
+         goto endjob;
+     }
+ 
+-    ret = libxlDomainStart(driver, vm, (flags & VIR_DOMAIN_START_PAUSED) != 0, -1);
++    ret = libxlDomainStartNew(driver, vm,
++                              (flags & VIR_DOMAIN_START_PAUSED) != 0);
+     if (ret < 0)
+         goto endjob;
+     dom->id = vm->def->id;
+diff --git a/src/libxl/libxl_migration.c b/src/libxl/libxl_migration.c
+index 0d23e5f70..7c2f25ec8 100644
+--- a/src/libxl/libxl_migration.c
++++ b/src/libxl/libxl_migration.c
+@@ -105,7 +105,7 @@ libxlDoMigrateReceive(void *opaque)
+      * Always start the domain paused.  If needed, unpause in the
+      * finish phase, after transfer of the domain is complete.
+      */
+-    ret = libxlDomainStart(driver, vm, true, recvfd);
++    ret = libxlDomainStartRestore(driver, vm, true, recvfd, LIBXL_SAVE_VERSION);
+ 
+     if (ret < 0 && !vm->persistent)
+         remove_dom = true;
+-- 
+2.15.1
+

@@ -1,0 +1,66 @@
+From cb6ab9193cbbaeb721e3ab66355171902fb3425f Mon Sep 17 00:00:00 2001
+From: Jim Fehlig <jfehlig@suse.com>
+Date: Thu, 28 Apr 2016 21:08:28 -0600
+Subject: [PATCH 24/25] libxl: switch to using libxl_domain_create_restore from
+ v4.4 API
+
+In LIBXL_API_VERSION 0x040400, the libxl_domain_create_restore API
+gained a parameter for specifying restore parameters. Switch to
+using version 0x040400, which will be useful in a subsequent commit
+to specify the Xen migration stream version when restoring.
+
+Signed-off-by: Jim Fehlig <jfehlig@suse.com>
+(cherry picked from commit fccf27253cedd131c5c4720d31d96ecc68c20e59)
+---
+ configure.ac             | 9 +++++----
+ src/libxl/libxl_domain.c | 6 +++++-
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 73937cf9f..fc4f7d248 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -905,10 +905,11 @@ if test "$with_libxl" != "no" ; then
+     fi
+ fi
+ 
+-# Until there is a need to use enhancements of libxl APIs such as
+-# libxl_domain_create_restore and libxl_set_vcpuaffinity, stick with
+-# the APIs as defined in libxl API version 4.2.0.
+-LIBXL_CFLAGS="$LIBXL_CFLAGS -DLIBXL_API_VERSION=0x040200"
++# LIBXL_API_VERSION 4.4.0 introduced a new parameter to
++# libxl_domain_create_restore for specifying restore parameters.
++# The libxl driver will make use of this new parameter for specifying
++# the Xen migration stream version.
++LIBXL_CFLAGS="$LIBXL_CFLAGS -DLIBXL_API_VERSION=0x040400"
+ LIBS="$old_LIBS"
+ CFLAGS="$old_CFLAGS"
+ 
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index 9f3ddd326..b51d2d1ab 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -910,6 +910,7 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+     libxlDriverConfigPtr cfg;
+     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+     libxl_asyncprogress_how aop_console_how;
++    libxl_domain_restore_params params;
+ 
+     libxl_domain_config_init(&d_config);
+ 
+@@ -990,8 +991,11 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+         ret = libxl_domain_create_new(cfg->ctx, &d_config,
+                                       &domid, NULL, &aop_console_how);
+     } else {
++        libxl_domain_restore_params_init(&params);
+         ret = libxl_domain_create_restore(cfg->ctx, &d_config, &domid,
+-                                          restore_fd, NULL, &aop_console_how);
++                                          restore_fd, &params, NULL,
++                                          &aop_console_how);
++        libxl_domain_restore_params_dispose(&params);
+     }
+     virObjectLock(vm);
+ 
+-- 
+2.15.1
+

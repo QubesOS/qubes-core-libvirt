@@ -1,0 +1,96 @@
+From c60f65f430797681bf7cafcf96faf25b3ce4cd6c Mon Sep 17 00:00:00 2001
+From: Jim Fehlig <jfehlig@suse.com>
+Date: Thu, 14 Apr 2016 16:10:32 -0600
+Subject: [PATCH 22/22] libxl: use LIBXL_API_VERSION 0x040200
+
+To ensure the libvirt libxl driver will build with future versions
+of Xen where the libxl API may change in incompatible ways,
+explicitly use LIBXL_API_VERSION 0x040200. The libxl driver
+does use new libxl APIs that have been added since Xen 4.2, but
+currently it does not make use of any changes made to existing
+APIs such as libxl_domain_create_restore or libxl_set_vcpuaffinity.
+The version can be bumped if/when the libxl driver consumes the
+changed APIs.
+
+Further details can be found in the following discussion thread
+
+https://www.redhat.com/archives/libvir-list/2016-April/msg00178.html
+Signed-off-by: Jim Fehlig <jfehlig@suse.com>
+(cherry picked from commit e744065679ccba8471d28b2cf6e93f443cd20c8c)
+---
+ configure.ac             |  4 ++++
+ src/libxl/libxl_conf.h   | 12 ------------
+ src/libxl/libxl_domain.c | 10 ----------
+ 3 files changed, 4 insertions(+), 22 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 2d0603d39..c08ddd6fe 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -906,6 +906,10 @@ if test "$with_libxl" != "no" ; then
+     fi
+ fi
+ 
++# Until there is a need to use enhancements of libxl APIs such as
++# libxl_domain_create_restore and libxl_set_vcpuaffinity, stick with
++# the APIs as defined in libxl API version 4.2.0.
++LIBXL_CFLAGS="$LIBXL_CFLAGS -DLIBXL_API_VERSION=0x040200"
+ LIBS="$old_LIBS"
+ CFLAGS="$old_CFLAGS"
+ 
+diff --git a/src/libxl/libxl_conf.h b/src/libxl/libxl_conf.h
+index 9c29b1e28..30eedb533 100644
+--- a/src/libxl/libxl_conf.h
++++ b/src/libxl/libxl_conf.h
+@@ -65,18 +65,6 @@
+ # endif
+ 
+ 
+-/* libxl interface for setting VCPU affinity changed in 4.5. In fact, a new
+- * parameter has been added, representative of 'VCPU soft affinity'. If one
+- * does not care about it (and that's libvirt case), passing NULL is the
+- * right thing to do. To mark that change, LIBXL_HAVE_VCPUINFO_SOFT_AFFINITY
+- * is defined. */
+-# ifdef LIBXL_HAVE_VCPUINFO_SOFT_AFFINITY
+-#  define libxl_set_vcpuaffinity(ctx, domid, vcpuid, map) \
+-    libxl_set_vcpuaffinity((ctx), (domid), (vcpuid), (map), NULL)
+-#  define libxl_set_vcpuaffinity_all(ctx, domid, max_vcpus, map) \
+-    libxl_set_vcpuaffinity_all((ctx), (domid), (max_vcpus), (map), NULL)
+-# endif
+-
+ typedef struct _libxlDriverPrivate libxlDriverPrivate;
+ typedef libxlDriverPrivate *libxlDriverPrivatePtr;
+ 
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index 06569929e..9f3ddd326 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -908,9 +908,6 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+     int managed_save_fd = -1;
+     libxlDomainObjPrivatePtr priv = vm->privateData;
+     libxlDriverConfigPtr cfg;
+-#ifdef LIBXL_HAVE_DOMAIN_CREATE_RESTORE_PARAMS
+-    libxl_domain_restore_params params;
+-#endif
+     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+     libxl_asyncprogress_how aop_console_how;
+ 
+@@ -993,15 +990,8 @@ libxlDomainStart(libxlDriverPrivatePtr driver, virDomainObjPtr vm,
+         ret = libxl_domain_create_new(cfg->ctx, &d_config,
+                                       &domid, NULL, &aop_console_how);
+     } else {
+-#ifdef LIBXL_HAVE_DOMAIN_CREATE_RESTORE_PARAMS
+-        params.checkpointed_stream = 0;
+-        ret = libxl_domain_create_restore(cfg->ctx, &d_config, &domid,
+-                                          restore_fd, &params, NULL,
+-                                          &aop_console_how);
+-#else
+         ret = libxl_domain_create_restore(cfg->ctx, &d_config, &domid,
+                                           restore_fd, NULL, &aop_console_how);
+-#endif
+     }
+     virObjectLock(vm);
+ 
+-- 
+2.15.1
+

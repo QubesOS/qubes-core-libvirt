@@ -1,0 +1,112 @@
+From 9969e330191a4561ff2d878ee9398941aaa71772 Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Sun, 7 Jan 2018 21:49:23 +0100
+Subject: [PATCH 19/21] libxl: add support for qubes graphic device
+
+---
+ docs/schemas/domaincommon.rng | 5 +++++
+ src/conf/domain_conf.c        | 7 +++++++
+ src/conf/domain_conf.h        | 1 +
+ src/libxl/libxl_conf.c        | 6 ++++++
+ src/qemu/qemu_command.c       | 1 +
+ 5 files changed, 20 insertions(+)
+
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index 0858fc5..2c8701c 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -2912,6 +2912,11 @@
+             </attribute>
+           </optional>
+         </group>
++        <group>
++          <attribute name="type">
++            <value>qubes</value>
++          </attribute>
++        </group>
+       </choice>
+     </element>
+   </define>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index eeb38e5..a12eaf3 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -554,6 +554,7 @@ VIR_ENUM_IMPL(virDomainGraphics, VIR_DOMAIN_GRAPHICS_TYPE_LAST,
+               "vnc",
+               "rdp",
+               "desktop",
++              "qubes",
+               "spice")
+ 
+ VIR_ENUM_IMPL(virDomainGraphicsListen, VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_LAST,
+@@ -1400,6 +1401,9 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
+         virDomainGraphicsAuthDefClear(&def->data.spice.auth);
+         break;
+ 
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++        break;
++
+     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+         break;
+     }
+@@ -21236,6 +21240,9 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
+ 
+         break;
+ 
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++        break;
++
+     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+         if (def->data.spice.port)
+             virBufferAsprintf(buf, " port='%d'",
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index 93ef286..d615278 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -1406,6 +1406,7 @@ typedef enum {
+     VIR_DOMAIN_GRAPHICS_TYPE_VNC,
+     VIR_DOMAIN_GRAPHICS_TYPE_RDP,
+     VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP,
++    VIR_DOMAIN_GRAPHICS_TYPE_QUBES,
+     VIR_DOMAIN_GRAPHICS_TYPE_SPICE,
+ 
+     VIR_DOMAIN_GRAPHICS_TYPE_LAST
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 4d9ba3f..ce2938c 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -1329,6 +1329,9 @@ libxlMakeVfb(virPortAllocatorPtr graphicsports,
+             if (VIR_STRDUP(x_vfb->keymap, l_vfb->data.vnc.keymap) < 0)
+                 return -1;
+             break;
++        case  VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++            libxl_defbool_set(&x_vfb->vnc.enable, false);
++            libxl_defbool_set(&x_vfb->sdl.enable, false);
+     }
+ 
+     return 0;
+@@ -1407,6 +1410,9 @@ libxlMakeBuildInfoVfb(virPortAllocatorPtr graphicsports,
+         unsigned short port;
+         const char *listenAddr;
+ 
++        if (l_vfb->type == VIR_DOMAIN_GRAPHICS_TYPE_QUBES)
++            libxl_defbool_set(&b_info->u.hvm.qubes_gui, true);
++
+         if (l_vfb->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+             continue;
+ 
+diff --git a/src/qemu/qemu_command.c b/src/qemu/qemu_command.c
+index bb1835c..6b06138 100644
+--- a/src/qemu/qemu_command.c
++++ b/src/qemu/qemu_command.c
+@@ -8536,6 +8536,7 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
+ 
+     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                        _("unsupported graphics type '%s'"),
+-- 
+2.15.1
+

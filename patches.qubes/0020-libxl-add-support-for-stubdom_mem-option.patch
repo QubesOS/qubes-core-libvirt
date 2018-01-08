@@ -1,0 +1,116 @@
+From 8eb3fcf6ecea72bd5d7f158c500f4de53e8b2547 Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Sun, 7 Jan 2018 21:50:59 +0100
+Subject: [PATCH 20/21] libxl: add support for stubdom_mem option
+
+---
+ docs/schemas/domaincommon.rng | 10 ++++++++++
+ src/conf/domain_conf.c        | 22 ++++++++++++++++++++++
+ src/conf/domain_conf.h        |  1 +
+ src/libxl/libxl_conf.c        |  3 +++
+ 4 files changed, 36 insertions(+)
+
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index 2c8701c..d3c4d64 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -2583,6 +2583,11 @@
+               <text/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="memory">
++              <ref name="memoryKB"/>
++            </attribute>
++          </optional>
+           <ref name="absFilePath"/>
+         </group>
+         <group>
+@@ -2593,6 +2598,11 @@
+               <value>stubdom-linux</value>
+             </choice>
+           </attribute>
++          <optional>
++            <attribute name="memory">
++              <ref name="memoryKB"/>
++            </attribute>
++          </optional>
+           <empty/>
+         </group>
+       </choice>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index a12eaf3..0979840 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -15832,6 +15832,18 @@ virDomainDefParseXML(xmlDocPtr xml,
+     }
+     def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
+ 
++
++    n = virXPathULong("string(./devices/emulator/@memory)",
++                      ctxt,
++                      &def->emulator_memory);
++    if (n == -2) {
++        virReportError(VIR_ERR_XML_ERROR, "%s",
++                _("emulator memory (in KiB) must be an integer"));
++        goto error;
++    } else if (n < 0) {
++        def->emulator_memory = 0;
++    }
++
+     /* analysis of the disk devices */
+     if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
+         goto error;
+@@ -17899,6 +17911,14 @@ virDomainDefCheckABIStability(virDomainDefPtr src,
+         goto error;
+     }
+ 
++    if (src->emulator_memory != dst->emulator_memory) {
++        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
++                _("Target domain emulator memory size %lu does not match source %lu"),
++                dst->emulator_memory,
++                src->emulator_memory);
++        goto error;
++    }
++
+     if (!virDomainDefFeaturesCheckABIStability(src, dst))
+         goto error;
+ 
+@@ -22368,6 +22388,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
+             virBufferAsprintf(buf, " type='%s'",
+                               virDomainEmulatorTypeTypeToString(def->emulator_type));
+         }
++        if (def->emulator_memory != 0)
++            virBufferAsprintf(buf, " memory='%lu'", def->emulator_memory);
+         virBufferEscapeString(buf, " cmdline='%s'", def->emulator_cmdline);
+         if (!def->emulator) {
+             virBufferAddLit(buf, "/>\n");
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index d615278..7869d87 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -2248,6 +2248,7 @@ struct _virDomainDef {
+     char *emulator;
+     virDomainEmulatorType emulator_type;
+     char *emulator_cmdline;
++    unsigned long emulator_memory;
+     /* These three options are of type virTristateSwitch,
+      * except VIR_DOMAIN_FEATURE_CAPABILITIES that is of type
+      * virDomainCapabilitiesPolicy */
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index ce2938c..ad64fd4 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -771,6 +771,9 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+             }
+         }
+ 
++        if (def->emulator_memory != 0)
++            b_info->stubdom_memkb = def->emulator_memory;
++
+         if (def->nserials) {
+             if (def->nserials > 1) {
+                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+-- 
+2.15.1
+

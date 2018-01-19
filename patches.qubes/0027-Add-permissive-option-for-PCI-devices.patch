@@ -1,0 +1,133 @@
+From 52cfe6d4a861216d539a79116ef8673abb14eb93 Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Fri, 19 Jan 2018 04:46:01 +0100
+Subject: [PATCH 26/26] Add 'permissive' option for PCI devices
+
+By setting the permissive flag the guest access to the PCI config space
+is not filtered. This might be a security risk, but it's required for
+some devices and the IOMMU and interrupt remapping should (mostly?)
+contain it.
+---
+ docs/formatdomain.html.in     |  3 +++
+ docs/schemas/domaincommon.rng |  5 +++++
+ src/conf/domain_conf.c        | 13 +++++++++++++
+ src/conf/domain_conf.h        |  1 +
+ src/libxl/libxl_conf.c        |  1 +
+ 5 files changed, 23 insertions(+)
+
+diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
+index 47f1921e3..46d4a9302 100644
+--- a/docs/formatdomain.html.in
++++ b/docs/formatdomain.html.in
+@@ -3992,6 +3992,9 @@
+             Additionally when <code>strictreset</code> is "no", device will
+             be assigned to the domain, even when reset fails. The default is
+             "yes".
++            When <code>permissive</code> is "yes" the pci config space access
++            will not be filtered. This might be a security issue. The default
++            is "no".
+           </dd>
+           <dt><code>scsi</code></dt>
+           <dd>For SCSI devices, user is responsible to make sure the device
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index f041f5614..988bf875c 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -2500,6 +2500,11 @@
+               <ref name="virYesNo"/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="permissive">
++              <ref name="virYesNo"/>
++            </attribute>
++          </optional>
+           <interleave>
+             <element name="source">
+               <optional>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 1d9683c35..39d3dd2a9 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -6511,6 +6511,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+     xmlNodePtr sourcenode;
+     char *managed = NULL;
+     char *nostrictreset = NULL;
++    char *permissive = NULL;
+     char *sgio = NULL;
+     char *rawio = NULL;
+     char *backendStr = NULL;
+@@ -6536,6 +6537,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+             def->nostrictreset = true;
+     }
+ 
++    if ((permissive = virXMLPropString(node, "permissive")) != NULL) {
++        if (STREQ(permissive, "yes"))
++            def->permissive = true;
++    }
++
+     sgio = virXMLPropString(node, "sgio");
+     rawio = virXMLPropString(node, "rawio");
+     model = virXMLPropString(node, "model");
+@@ -6676,6 +6682,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+  error:
+     VIR_FREE(managed);
+     VIR_FREE(nostrictreset);
++    VIR_FREE(permissive);
+     VIR_FREE(sgio);
+     VIR_FREE(rawio);
+     VIR_FREE(backendStr);
+@@ -21971,6 +21978,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+             virBufferAddLit(buf, " managed='yes'");
+         if  (hostdef && hostdef->nostrictreset)
+             virBufferAddLit(buf, " nostrictreset='yes'");
++        if  (hostdef && hostdef->permissive)
++            virBufferAddLit(buf, " permissive='yes'");
+     }
+     if (def->trustGuestRxFilters)
+         virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
+@@ -22148,6 +22157,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+         virBufferAddLit(buf, " managed='yes'");
+     if (hostdef && hostdef->nostrictreset)
+         virBufferAddLit(buf, " nostrictreset='yes'");
++    if (hostdef && hostdef->permissive)
++        virBufferAddLit(buf, " permissive='yes'");
+     if (def->trustGuestRxFilters)
+         virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
+                           virTristateBoolTypeToString(def->trustGuestRxFilters));
+@@ -23755,6 +23766,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+                           def->managed ? "yes" : "no");
+         if (def->nostrictreset)
+             virBufferAddLit(buf, " nostrictreset='yes'");
++        if (def->permissive)
++            virBufferAddLit(buf, " permissive='yes'");
+ 
+         if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
+             scsisrc->sgio)
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index 2fd7ed57b..891e3edaa 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -447,6 +447,7 @@ struct _virDomainHostdevDef {
+     bool readonly;
+     bool shareable;
+     bool nostrictreset;
++    bool permissive;
+     union {
+         virDomainHostdevSubsys subsys;
+         virDomainHostdevCaps caps;
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 29294afc4..300a78877 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -2080,6 +2080,7 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+     /* there is no LIBXL_HAVE_xxx for this field... */
+     if (hostdev->nostrictreset)
+         pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;
++    pcidev->permissive = hostdev->permissive;
+ 
+     return 0;
+ }
+-- 
+2.15.1
+

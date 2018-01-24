@@ -1,10 +1,5 @@
 # -*- rpm-spec -*-
 
-%if 0%{?qubes_builder}
-%define _sourcedir %(pwd)
-%endif
-%{!?version: %define version %(cat version)}
-
 # This spec file assumes you are building for Fedora 20 or newer,
 # or for RHEL 6 or newer. It may need some tweaks for other distros.
 # If neither fedora nor rhel was defined, try to guess them from dist
@@ -272,8 +267,8 @@
 
 Summary: Library providing a simple virtualization API
 Name: libvirt
-Version: %{version}
-Release: 7%{?dist}%{?extra_release}
+Version: @VERSION@
+Release: @REL@%{?dist}%{?extra_release}
 License: LGPLv2+
 Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
@@ -282,35 +277,35 @@ URL: http://libvirt.org/
 %if %(echo %{version} | grep -o \\. | wc -l) == 3
     %define mainturl stable_updates/
 %endif
-Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
+Source0: libvirt-%{version}.tar.xz
 
-Patch0000: patches.qubes/0001-conf-add-script-attribute-to-disk-specification.patch
-Patch0001: patches.qubes/0002-libxl-use-disk-script-attribute.patch
-Patch0002: patches.qubes/0003-xenconfig-parse-vif-backend-attribute-tests.patch
-Patch0003: patches.qubes/0004-libxl-Stubdom-emulator-type.patch
-Patch0004: patches.qubes/0005-libxl-support-domain-config-modification-in-virDomai.patch
-Patch0005: patches.qubes/0006-libxl-send-lifecycle-event-on-suspend.patch
-Patch0006: patches.qubes/0007-libxl-implement-virDomainPM-functions.patch
-Patch0007: patches.qubes/0008-libxl-initialize-domain-state-with-real-data.patch
-Patch0009: patches.qubes/0010-Add-nostrictreset-attribute-to-PCI-host-devices.patch
-Patch0010: patches.qubes/0011-libxl-pause-also-stubdomain-if-any-while-pausing-a-d.patch
-Patch0011: patches.qubes/0012-libxl-plug-workaround-for-missing-pcidev-group-assig.patch
-Patch0012: patches.qubes/0013-conf-add-xen-specific-feature-e820_host.patch
-Patch0013: patches.qubes/0014-libxl-make-use-of-e820_host-feature.patch
-Patch0014: patches.qubes/0015-xenconfig-parse-e820_host-option.patch
-Patch0015: patches.qubes/0016-tests-check-e820_host-option-handling.patch
-Patch0016: patches.qubes/0017-libxl-set-shadow-memory-for-any-guest-type-not-only-.patch
-Patch0017: patches.qubes/0018-libxl-add-linux-stubdom-support.patch
-Patch0018: patches.qubes/0019-libxl-add-support-for-qubes-graphic-device.patch
-Patch0019: patches.qubes/0020-libxl-add-support-for-stubdom_mem-option.patch
-Patch0020: patches.qubes/0021-pci-fix-link-maximum-speed-detection.patch
-Patch0021: patches.qubes/0022-cpu-define-sub-leaf-0-for-leaf-7-in-cpu_map.xml.patch
-Patch0022: patches.qubes/0023-libxl-add-support-for-CPUID-features-policy.patch
-Patch0023: patches.qubes/0024-libxl-add-basic-PVHv2-support.patch
-Patch0024: patches.qubes/0025-libxl-add-support-for-multiple-IP-addresses.patch
-Patch0025: patches.qubes/0026-xenMakeIPList-Don-t-leak-address_array.patch
-Patch0026: patches.qubes/0027-Add-permissive-option-for-PCI-devices.patch
-Patch0027: patches.qubes/0028-libxl-Add-basic-support-for-type-pvh.patch
+Patch0000: 0001-conf-add-script-attribute-to-disk-specification.patch
+Patch0001: 0002-libxl-use-disk-script-attribute.patch
+Patch0002: 0003-xenconfig-parse-vif-backend-attribute-tests.patch
+Patch0003: 0004-libxl-Stubdom-emulator-type.patch
+Patch0004: 0005-libxl-support-domain-config-modification-in-virDomai.patch
+Patch0005: 0006-libxl-send-lifecycle-event-on-suspend.patch
+Patch0006: 0007-libxl-implement-virDomainPM-functions.patch
+Patch0007: 0008-libxl-initialize-domain-state-with-real-data.patch
+Patch0009: 0010-Add-nostrictreset-attribute-to-PCI-host-devices.patch
+Patch0010: 0011-libxl-pause-also-stubdomain-if-any-while-pausing-a-d.patch
+Patch0011: 0012-libxl-plug-workaround-for-missing-pcidev-group-assig.patch
+Patch0012: 0013-conf-add-xen-specific-feature-e820_host.patch
+Patch0013: 0014-libxl-make-use-of-e820_host-feature.patch
+Patch0014: 0015-xenconfig-parse-e820_host-option.patch
+Patch0015: 0016-tests-check-e820_host-option-handling.patch
+Patch0016: 0017-libxl-set-shadow-memory-for-any-guest-type-not-only-.patch
+Patch0017: 0018-libxl-add-linux-stubdom-support.patch
+Patch0018: 0019-libxl-add-support-for-qubes-graphic-device.patch
+Patch0019: 0020-libxl-add-support-for-stubdom_mem-option.patch
+Patch0020: 0021-pci-fix-link-maximum-speed-detection.patch
+Patch0021: 0022-cpu-define-sub-leaf-0-for-leaf-7-in-cpu_map.xml.patch
+Patch0022: 0023-libxl-add-support-for-CPUID-features-policy.patch
+Patch0023: 0024-libxl-add-basic-PVHv2-support.patch
+Patch0024: 0025-libxl-add-support-for-multiple-IP-addresses.patch
+Patch0025: 0026-xenMakeIPList-Don-t-leak-address_array.patch
+Patch0026: 0027-Add-permissive-option-for-PCI-devices.patch
+Patch0027: 0028-libxl-Add-basic-support-for-type-pvh.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

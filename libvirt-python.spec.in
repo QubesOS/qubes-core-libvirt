@@ -1,10 +1,3 @@
-
-
-%if 0%{?qubes_builder}
-%define _sourcedir %(pwd)
-%endif
-%{!?version: %define version %(cat version)}
-
 %define with_python3 0
 %if 0%{?fedora} > 18
 %define with_python3 1
@@ -12,9 +5,9 @@
 
 Summary: The libvirt virtualization API python2 binding
 Name: libvirt-python
-Version: %{version}
+Version: @VERSION@
 Release: 2%{?dist}%{?extra_release}
-Source: https://libvirt.org/sources/python/%{name}-%{version}.tar.gz
+Source0: %{name}-%{version}.tar.gz
 Url: http://libvirt.org
 Patch0: 0001-libvirtaio-add-more-debug-logging.patch
 Patch1: 0002-libvirtaio-cache-the-list-of-callbacks-when-calling.patch
@@ -78,10 +71,6 @@ of recent versions of Linux (and other OSes).
     print("PATCHCOUNT="..count.."\n")
     print("PATCHLIST="..tmp.."\n")
 }
-
-%if 0%{?qubes_builder}
-ln -s %{_sourcedir}/patches.python/*.patch %{_sourcedir}/
-%endif
 
 git init -q
 git config user.name rpm-build

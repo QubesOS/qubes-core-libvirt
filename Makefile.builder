@@ -5,6 +5,8 @@ WIN_COMPILER := mingw
 WIN_PACKAGE_CMD := make msi
 endif
 
+NO_ARCHIVE := 1
+
 SOURCE_COPY_IN := copy-libvirt-backend
 copy-libvirt-backend:
 	@if [ -d "$(SRC_DIR)/core-libvirt-$(BACKEND_VMM)" ]; then \

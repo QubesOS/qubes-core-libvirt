@@ -363,7 +363,7 @@ BuildRequires: python
 BuildRequires: systemd-units
 %endif
 %if %{with_xen} || %{with_libxl}
-BuildRequires: xen-devel >= 4.6.0
+BuildRequires: xen-devel >= 2001:4.8.3-1
 %endif
 BuildRequires: libxml2-devel
 BuildRequires: xhtml1-dtds
@@ -903,7 +903,9 @@ VirtualBox
 Summary: Libxl driver plugin for the libvirtd daemon
 Group: Development/Libraries
 Requires: libvirt-daemon = %{version}-%{release}
-Requires: xen-libs >= 4.2.0
+Requires: xen-libs >= 2001:4.8.3-1
+# type=pvh syntax change
+Conflicts: qubes-core-dom0 < 4.0.20-1
 
 %description daemon-driver-libxl
 The Libxl driver plugin for the libvirtd daemon, providing

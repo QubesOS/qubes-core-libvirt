@@ -2212,3 +2212,4 @@ exit 0
 
 
 %changelog
+@CHANGELOG@

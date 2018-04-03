@@ -135,3 +135,4 @@ rm -f %{buildroot}%{_libdir}/python*/site-packages/*egg-info
 #%%endif
 
 %changelog
+@CHANGELOG@

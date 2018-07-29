@@ -36,6 +36,12 @@ ifdef URL
 endif
 endif
 
+DISTFILES_MIRROR ?=
+
+ifneq ($(DISTFILES_MIRROR),)
+	URL := $(addprefix $(DISTFILES_MIRROR)/,$(SRC_FILE))
+endif
+
 get-sources: $(SRC_FILE)
 
 $(SRC_FILE):

@@ -17,6 +17,7 @@ Patch4: 0005-libvirtaio-keep-track-of-the-current-implementation.patch
 Patch5: 0006-libvirtaio-add-.drain-coroutine.patch
 License: LGPLv2+
 Group: Development/Libraries
+BuildRequires: git
 BuildRequires: libvirt-devel >= 0.9.11
 BuildRequires: python-devel
 BuildRequires: python-nose

@@ -1,4 +1,4 @@
-From bfd71eb71bd9e6a7fd42f9436a19df9774bef945 Mon Sep 17 00:00:00 2001
+From 0359d1291b8f13545443ae604a22b90c22e31a8e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:54:44 +0200
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index ad731dc..9cc8c65 100644
+index 5a7651d6b7..f36cae6172 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -629,6 +629,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -725,6 +725,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
          }
          if (VIR_STRDUP(b_info->u.pv.ramdisk, def->os.initrd) < 0)
              return -1;
@@ -38,7 +38,7 @@ index ad731dc..9cc8c65 100644
 +        }
      }
  
-     return 0;
+     /* only the 'xen' balloon device model is supported */
 -- 
-2.7.4
+2.17.2
 

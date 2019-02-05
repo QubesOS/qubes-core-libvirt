@@ -1,4 +1,4 @@
-From e7ed3146a68000f32f8d5ea693a4a76357eb8a81 Mon Sep 17 00:00:00 2001
+From 4a9b0f038ba81915df2fee4107ad2372aa86ac49 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
 Subject: [PATCH] libxl: Stubdom emulator type
@@ -15,18 +15,18 @@ such configuration. Emulator path is still used for qemu running in dom0
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- docs/formatdomain.html.in     | 17 +++++++++++++++++
- docs/schemas/domaincommon.rng | 28 +++++++++++++++++++++++++++-
- src/conf/domain_conf.c        | 40 ++++++++++++++++++++++++++++++++++++++--
- src/conf/domain_conf.h        | 10 ++++++++++
- src/libxl/libxl_conf.c        | 17 +++++++++++++++++
+ docs/formatdomain.html.in     | 17 +++++++++++++++
+ docs/schemas/domaincommon.rng | 28 +++++++++++++++++++++++-
+ src/conf/domain_conf.c        | 40 +++++++++++++++++++++++++++++++++--
+ src/conf/domain_conf.h        | 10 +++++++++
+ src/libxl/libxl_conf.c        | 17 +++++++++++++++
  5 files changed, 109 insertions(+), 3 deletions(-)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index 8c884f4..e0faebe 100644
+index 7f07bb7f55..92e878b3ea 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
-@@ -2214,6 +2214,23 @@
+@@ -2682,6 +2682,23 @@
          The <a href="formatcaps.html">capabilities XML</a> specifies
          the recommended default emulator to use for each particular
          domain type / architecture combination.
@@ -51,10 +51,10 @@ index 8c884f4..e0faebe 100644
      </dl>
  
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 8bd3386..06f3561 100644
+index ac206cf03c..c09f766236 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -2838,7 +2838,33 @@
+@@ -3093,7 +3093,33 @@
      -->
    <define name="emulator">
      <element name="emulator">
@@ -90,10 +90,10 @@ index 8bd3386..06f3561 100644
    </define>
    <!--
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index d949519..7d450c0 100644
+index 88894d31cf..355518011f 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -809,6 +809,10 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
+@@ -849,6 +849,10 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
                "closed",
                "open");
  
@@ -104,8 +104,8 @@ index d949519..7d450c0 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
                "virtio");
-@@ -17853,6 +17857,17 @@ virDomainDefParseXML(xmlDocPtr xml,
-     if (virDomainDefParseBootOptions(def, ctxt, &bootHash) < 0)
+@@ -20567,6 +20571,17 @@ virDomainDefParseXML(xmlDocPtr xml,
+     if (virDomainDefParseBootOptions(def, ctxt) < 0)
          goto error;
  
 +    def->emulator = virXPathString("string(./devices/emulator[1])", ctxt);
@@ -122,7 +122,7 @@ index d949519..7d450c0 100644
      /* analysis of the disk devices */
      if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
          goto error;
-@@ -19930,6 +19945,14 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
+@@ -23004,6 +23019,14 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
          goto error;
      }
  
@@ -137,7 +137,7 @@ index d949519..7d450c0 100644
      if (!virDomainDefFeaturesCheckABIStability(src, dst))
          goto error;
  
-@@ -24723,8 +24746,21 @@ virDomainDefFormatInternal(virDomainDefPtr def,
+@@ -28624,8 +28647,21 @@ virDomainDefFormatInternal(virDomainDefPtr def,
      virBufferAddLit(buf, "<devices>\n");
      virBufferAdjustIndent(buf, 2);
  
@@ -160,35 +160,35 @@ index d949519..7d450c0 100644
 +    }
  
      for (n = 0; n < def->ndisks; n++)
-         if (virDomainDiskDefFormat(buf, def->disks[n], flags) < 0)
+         if (virDomainDiskDefFormat(buf, def->disks[n], flags, xmlopt) < 0)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 20a4b43..659caa1 100644
+index 48b52750bb..e2ffdc269d 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -1976,6 +1976,13 @@ struct _virBlkioDevice {
+@@ -2102,6 +2102,13 @@ struct _virBlkioDevice {
+     unsigned long long wbps;
  };
  
- typedef enum {
++typedef enum {
 +    VIR_DOMAIN_EMULATOR_TYPE_DEFAULT,
 +    VIR_DOMAIN_EMULATOR_TYPE_STUBDOM,
 +
 +    VIR_DOMAIN_EMULATOR_TYPE_LAST
 +} virDomainEmulatorType;
 +
-+typedef enum {
+ typedef enum {
      VIR_DOMAIN_RNG_MODEL_VIRTIO,
  
-     VIR_DOMAIN_RNG_MODEL_LAST
-@@ -2249,6 +2256,8 @@ struct _virDomainDef {
+@@ -2458,6 +2465,8 @@ struct _virDomainDef {
  
      virDomainOSDef os;
      char *emulator;
 +    virDomainEmulatorType emulator_type;
 +    char *emulator_cmdline;
-     /* These three options are of type virTristateSwitch,
-      * except VIR_DOMAIN_FEATURE_CAPABILITIES that is of type
-      * virDomainCapabilitiesPolicy */
-@@ -3150,6 +3159,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
+     /* Most {caps_,hyperv_,kvm_,}feature options utilize a virTristateSwitch
+      * to handle support. A few assign specific data values to the option.
+      * See virDomainDefFeaturesCheckABIStability() for details. */
+@@ -3461,6 +3470,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
  VIR_ENUM_DECL(virDomainGraphicsVNCSharePolicy)
  VIR_ENUM_DECL(virDomainHyperv)
  VIR_ENUM_DECL(virDomainKVM)
@@ -197,10 +197,10 @@ index 20a4b43..659caa1 100644
  VIR_ENUM_DECL(virDomainRNGBackend)
  VIR_ENUM_DECL(virDomainTPMModel)
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index de59746..8244998 100644
+index 725f026c87..9fa9ce66de 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -492,6 +492,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -577,6 +577,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
              b_info->device_model_version = libxlDomainGetEmulatorType(def);
          }
  
@@ -225,5 +225,5 @@ index de59746..8244998 100644
              if (def->nserials == 1) {
                  if (libxlMakeChrdevStr(def->serials[0], &b_info->u.hvm.serial) <
 -- 
-2.7.4
+2.17.2
 

@@ -1,4 +1,4 @@
-From 5965a3da919842325ba3a8883a1b3ad5642e5c2b Mon Sep 17 00:00:00 2001
+From a3340247542df93971709415596bcae3b2c67bcb Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:37:29 +0200
 Subject: [PATCH] conf: add 'script' attribute to disk specification
@@ -26,13 +26,14 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  3 files changed, 18 insertions(+)
 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 281309e..8bd3386 100644
+index aa50eac424..ac206cf03c 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -1218,6 +1218,14 @@
+@@ -1359,6 +1359,14 @@
+           <empty/>
          </element>
        </optional>
-       <optional>
++      <optional>
 +        <element name="script">
 +          <attribute name="path">
 +            <ref name="filePath"/>
@@ -40,42 +41,41 @@ index 281309e..8bd3386 100644
 +          <empty/>
 +        </element>
 +      </optional>
-+      <optional>
+       <optional>
          <element name="readonly">
            <empty/>
-         </element>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 0ff216e..d949519 100644
+index 222bb8c482..88894d31cf 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1678,6 +1678,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
-     VIR_FREE(def->product);
+@@ -1805,6 +1805,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
      VIR_FREE(def->domain_name);
      VIR_FREE(def->blkdeviotune.group_name);
+     VIR_FREE(def->virtio);
 +    VIR_FREE(def->script);
      virDomainDeviceInfoClear(&def->info);
      virObjectUnref(def->privateData);
  
-@@ -8137,6 +8138,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -9492,6 +9493,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      char *vendor = NULL;
      char *product = NULL;
      char *domain_name = NULL;
 +    char *script = NULL;
-     int expected_secret_usage = -1;
-     int auth_secret_usage = -1;
  
-@@ -8206,6 +8208,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-         } else if (!domain_name &&
-                    xmlStrEqual(cur->name, BAD_CAST "backenddomain")) {
-             domain_name = virXMLPropString(cur, "name");
-+        } else if (!script &&
-+                   xmlStrEqual(cur->name, BAD_CAST "script")) {
-+            script = virXMLPropString(cur, "path");
-         } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
-             if (virDomainDiskDefGeometryParse(def, cur, ctxt) < 0)
+     if (!(def = virDomainDiskDefNew(xmlopt)))
+         return NULL;
+@@ -9585,6 +9587,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+         } else if (virXMLNodeNameEqual(cur, "geometry")) {
+             if (virDomainDiskDefGeometryParse(def, cur) < 0)
                  goto error;
-@@ -8516,6 +8521,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     encryption = NULL;
++        } else if (!script &&
++                   virXMLNodeNameEqual(cur, "script")) {
++            script = virXMLPropString(cur, "path");
+         } else if (virXMLNodeNameEqual(cur, "blockio")) {
+             logical_block_size =
+                 virXMLPropString(cur, "logical_block_size");
+@@ -9863,6 +9868,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+         VIR_STEAL_PTR(def->src->encryption, encryption);
      def->domain_name = domain_name;
      domain_name = NULL;
 +    def->script = script;
@@ -83,7 +83,7 @@ index 0ff216e..d949519 100644
      def->serial = serial;
      serial = NULL;
      def->wwn = wwn;
-@@ -8553,6 +8560,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -9904,6 +9911,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
      VIR_FREE(vendor);
      VIR_FREE(product);
      VIR_FREE(domain_name);
@@ -91,7 +91,7 @@ index 0ff216e..d949519 100644
  
      ctxt->node = save_ctxt;
      return def;
-@@ -21082,6 +21090,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
+@@ -24346,6 +24354,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
          return -1;
  
      virBufferEscapeString(buf, "<backenddomain name='%s'/>\n", def->domain_name);
@@ -100,17 +100,17 @@ index 0ff216e..d949519 100644
      virDomainDiskGeometryDefFormat(buf, def);
      virDomainDiskBlockIoDefFormat(buf, def);
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 09fb7aa..20a4b43 100644
+index fae130668f..48b52750bb 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -664,6 +664,7 @@ struct _virDomainDiskDef {
-     unsigned int iothread; /* unused = 0, > 0 specific thread # */
-     int detect_zeroes; /* enum virDomainDiskDetectZeroes */
+@@ -675,6 +675,7 @@ struct _virDomainDiskDef {
      char *domain_name; /* backend domain name */
+     unsigned int queues;
+     virDomainVirtioOptionsPtr virtio;
 +    char *script;
  };
  
  
 -- 
-2.7.4
+2.17.2
 

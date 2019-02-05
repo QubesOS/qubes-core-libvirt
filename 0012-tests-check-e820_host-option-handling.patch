@@ -1,4 +1,4 @@
-From d39b68b4ca981d396e7fbf7e62ec9c0746abc0c8 Mon Sep 17 00:00:00 2001
+From 00b1c9d500f649a65ec4f1b49a7accc3dbdc0381 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:39 +0200
@@ -11,16 +11,16 @@ Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- tests/xlconfigdata/test-paravirt-e820_host.cfg | 13 ++++++++++
- tests/xlconfigdata/test-paravirt-e820_host.xml | 35 ++++++++++++++++++++++++++
- tests/xlconfigtest.c                           |  1 +
+ .../xlconfigdata/test-paravirt-e820_host.cfg  | 13 +++++++
+ .../xlconfigdata/test-paravirt-e820_host.xml  | 35 +++++++++++++++++++
+ tests/xlconfigtest.c                          |  1 +
  3 files changed, 49 insertions(+)
  create mode 100644 tests/xlconfigdata/test-paravirt-e820_host.cfg
  create mode 100644 tests/xlconfigdata/test-paravirt-e820_host.xml
 
 diff --git a/tests/xlconfigdata/test-paravirt-e820_host.cfg b/tests/xlconfigdata/test-paravirt-e820_host.cfg
 new file mode 100644
-index 0000000..b9e5a48
+index 0000000000..b9e5a482a4
 --- /dev/null
 +++ b/tests/xlconfigdata/test-paravirt-e820_host.cfg
 @@ -0,0 +1,13 @@
@@ -39,7 +39,7 @@ index 0000000..b9e5a48
 +disk = [ "format=qcow2,vdev=xvda,access=rw,backendtype=qdisk,target=/var/lib/xen/images/debian/disk.qcow2" ]
 diff --git a/tests/xlconfigdata/test-paravirt-e820_host.xml b/tests/xlconfigdata/test-paravirt-e820_host.xml
 new file mode 100644
-index 0000000..5727023
+index 0000000000..5727023e6e
 --- /dev/null
 +++ b/tests/xlconfigdata/test-paravirt-e820_host.xml
 @@ -0,0 +1,35 @@
@@ -79,11 +79,11 @@ index 0000000..5727023
 +  </devices>
 +</domain>
 diff --git a/tests/xlconfigtest.c b/tests/xlconfigtest.c
-index 05f7c20..b889796 100644
+index b1eb8a0614..773394ef32 100644
 --- a/tests/xlconfigtest.c
 +++ b/tests/xlconfigtest.c
-@@ -294,6 +294,7 @@ mymain(void)
-     DO_TEST("vif-typename");
+@@ -302,6 +302,7 @@ mymain(void)
+     DO_TEST("vif-multi-ip");
      DO_TEST("usb");
      DO_TEST("usbctrl");
 +    DO_TEST("paravirt-e820_host");
@@ -91,5 +91,5 @@ index 05f7c20..b889796 100644
      virObjectUnref(caps);
      virObjectUnref(xmlopt);
 -- 
-2.7.4
+2.17.2
 

@@ -1,4 +1,4 @@
-From 1476716e876206eeaf6239c0d82ff683675637a5 Mon Sep 17 00:00:00 2001
+From eb51bcf0f49a1ed1bd1e8f6f62b8501e7797575e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Tue, 3 Feb 2015 05:31:38 +0100
@@ -14,19 +14,19 @@ some tests for generating XML with vif connected to a driver domain.
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/xenconfig/xen_sxpr.c                           |  4 +++
- .../sexpr2xml-bridge-driver-domain.sexpr           |  9 +++++
- .../sexpr2xml-bridge-driver-domain.xml             | 38 ++++++++++++++++++++++
- tests/sexpr2xmltest.c                              |  1 +
+ src/xenconfig/xen_sxpr.c                      |  4 ++
+ .../sexpr2xml-bridge-driver-domain.sexpr      |  9 +++++
+ .../sexpr2xml-bridge-driver-domain.xml        | 38 +++++++++++++++++++
+ tests/sexpr2xmltest.c                         |  1 +
  4 files changed, 52 insertions(+)
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.sexpr
  create mode 100644 tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 
 diff --git a/src/xenconfig/xen_sxpr.c b/src/xenconfig/xen_sxpr.c
-index baa68b1..3c20afe 100644
+index 11af3e747a..835459cda6 100644
 --- a/src/xenconfig/xen_sxpr.c
 +++ b/src/xenconfig/xen_sxpr.c
-@@ -630,6 +630,10 @@ xenParseSxprNets(virDomainDefPtr def,
+@@ -621,6 +621,10 @@ xenParseSxprNets(virDomainDefPtr def,
                      goto cleanup;
              }
  
@@ -39,7 +39,7 @@ index baa68b1..3c20afe 100644
               * definition regardless of domain state.  If vifname is not
 diff --git a/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.sexpr b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.sexpr
 new file mode 100644
-index 0000000..b44876a
+index 0000000000..b44876aaec
 --- /dev/null
 +++ b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.sexpr
 @@ -0,0 +1,9 @@
@@ -54,7 +54,7 @@ index 0000000..b44876a
 +(device (vif (mac '00:11:22:33:44:55')(bridge 'xenbr2')(script 'vif-bridge')(backend 'netvm'))))
 diff --git a/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 new file mode 100644
-index 0000000..60815a8
+index 0000000000..60815a8111
 --- /dev/null
 +++ b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
 @@ -0,0 +1,38 @@
@@ -97,10 +97,10 @@ index 0000000..60815a8
 +  </devices>
 +</domain>
 diff --git a/tests/sexpr2xmltest.c b/tests/sexpr2xmltest.c
-index 107509b..9197716 100644
+index b2fc4d42fe..16ef990162 100644
 --- a/tests/sexpr2xmltest.c
 +++ b/tests/sexpr2xmltest.c
-@@ -154,6 +154,7 @@ mymain(void)
+@@ -125,6 +125,7 @@ mymain(void)
      DO_TEST("net-bridged", "net-bridged");
      DO_TEST("net-e1000", "net-e1000");
      DO_TEST("bridge-ipaddr", "bridge-ipaddr");
@@ -109,5 +109,5 @@ index 107509b..9197716 100644
      DO_TEST("pv-localtime", "pv-localtime");
      DO_TEST("pci-devs", "pci-devs");
 -- 
-2.7.4
+2.17.2
 

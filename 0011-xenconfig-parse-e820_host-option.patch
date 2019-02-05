@@ -1,4 +1,4 @@
-From 65223c05867282b31352db2d7d89c92d4fb018dc Mon Sep 17 00:00:00 2001
+From 5e66da69c5639d04bdbba613b6df27cbf1b84c1b Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:12 +0200
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/src/xenconfig/xen_common.c b/src/xenconfig/xen_common.c
-index 72ffb30..3b1d122 100644
+index 94e0703cf3..cc97f05fcf 100644
 --- a/src/xenconfig/xen_common.c
 +++ b/src/xenconfig/xen_common.c
-@@ -581,6 +581,14 @@ xenParseCPUFeatures(virConfPtr conf,
+@@ -597,6 +597,14 @@ xenParseCPUFeatures(virConfPtr conf,
  
              def->clock.timers[def->clock.ntimers - 1] = timer;
          }
@@ -33,7 +33,7 @@ index 72ffb30..3b1d122 100644
      }
  
      return 0;
-@@ -1632,6 +1640,12 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def)
+@@ -1814,6 +1822,12 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def)
                              (def->features[VIR_DOMAIN_FEATURE_VIRIDIAN] ==
                               VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
              return -1;
@@ -47,5 +47,5 @@ index 72ffb30..3b1d122 100644
  
      for (i = 0; i < def->clock.ntimers; i++) {
 -- 
-2.7.4
+2.17.2
 

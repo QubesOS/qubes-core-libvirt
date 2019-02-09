@@ -1,4 +1,4 @@
-From a0e57e7e515215aaef2c52e09d8aa95586372289 Mon Sep 17 00:00:00 2001
+From b82ca456eaa34e1e09d8b75652e82dd43fb06ddc Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Sat, 22 Apr 2017 08:57:58 +0200
 Subject: [PATCH] libxl: add support for qubes graphic device
@@ -10,20 +10,20 @@ Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- docs/schemas/domaincommon.rng       | 5 +++++
- src/conf/domain_conf.c              | 9 +++++++++
- src/conf/domain_conf.h              | 1 +
- src/libxl/libxl_conf.c              | 6 ++++++
- src/qemu/qemu_command.c             | 2 ++
- src/qemu/qemu_process.c             | 4 ++++
- tests/domaincapsschemadata/full.xml | 1 +
- 7 files changed, 28 insertions(+)
+ docs/schemas/domaincommon.rng       | 13 +++++++++
+ src/conf/domain_conf.c              | 41 +++++++++++++++++++++++++++++
+ src/conf/domain_conf.h              |  5 ++++
+ src/libxl/libxl_conf.c              | 11 ++++++++
+ src/qemu/qemu_command.c             |  2 ++
+ src/qemu/qemu_process.c             |  4 +++
+ tests/domaincapsschemadata/full.xml |  1 +
+ 7 files changed, 77 insertions(+)
 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 04d41b025b..9507a81354 100644
+index 04d41b025b..fc4f9a5e6c 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -3229,6 +3229,11 @@
+@@ -3229,6 +3229,19 @@
            </optional>
            <ref name="listenElements"/>
          </group>
@@ -31,12 +31,20 @@ index 04d41b025b..9507a81354 100644
 +          <attribute name="type">
 +            <value>qubes</value>
 +          </attribute>
++          <attribute name="domain">
++            <text/>
++          </attribute>
++          <optional>
++            <attribute name="log_level">
++              <data type="integer"/>
++            </attribute>
++          </optional>
 +        </group>
          <group>
            <attribute name="type">
              <value>spice</value>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 112dc3e928..62480c1512 100644
+index 112dc3e928..eaff6f9df3 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
 @@ -613,6 +613,7 @@ VIR_ENUM_IMPL(virDomainGraphics, VIR_DOMAIN_GRAPHICS_TYPE_LAST,
@@ -47,37 +55,76 @@ index 112dc3e928..62480c1512 100644
                "spice",
                "egl-headless")
  
-@@ -1425,6 +1426,9 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
+@@ -1425,6 +1426,10 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
          VIR_FREE(def->data.desktop.display);
          break;
  
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++        VIR_FREE(def->data.qubes_gui.domain);
 +        break;
 +
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          VIR_FREE(def->data.spice.rendernode);
          VIR_FREE(def->data.spice.keymap);
-@@ -14183,6 +14187,8 @@ virDomainGraphicsDefParseXML(xmlNodePtr node,
+@@ -13811,6 +13816,30 @@ virDomainGraphicsDefParseXMLDesktop(virDomainGraphicsDefPtr def,
+     return ret;
+ }
+ 
++static int virDomainGraphicsDefParseXMLQubes(virDomainGraphicsDefPtr def,
++                                             xmlNodePtr node)
++{
++    int ret = -1;
++    char *log_level = virXMLPropString(node, "log_level");
++
++    if (log_level) {
++        if (virStrToLong_i(log_level, NULL, 10,
++                           &def->data.qubes_gui.log_level) < 0) {
++            virReportError(VIR_ERR_INTERNAL_ERROR,
++                           _("cannot parse Qubes GUI log_level %s"), log_level);
++            goto error;
++        }
++    } else {
++        def->data.qubes_gui.log_level = 0;
++    }
++
++    def->data.qubes_gui.domain = virXMLPropString(node, "domain");
++
++    ret = 0;
++ error:
++    VIR_FREE(log_level);
++    return ret;
++}
+ 
+ static int
+ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
+@@ -14183,6 +14212,10 @@ virDomainGraphicsDefParseXML(xmlNodePtr node,
          if (virDomainGraphicsDefParseXMLDesktop(def, node) < 0)
              goto error;
          break;
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++        if (virDomainGraphicsDefParseXMLQubes(def, node) < 0)
++            goto error;
 +        break;
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          if (virDomainGraphicsDefParseXMLSpice(def, node, ctxt, flags) < 0)
              goto error;
-@@ -26995,6 +27001,9 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
+@@ -26995,6 +27028,14 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
  
          break;
  
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
++        if (def->data.qubes_gui.domain)
++            virBufferEscapeString(buf, " domain='%s'",
++                                  def->data.qubes_gui.domain);
++        virBufferAsprintf(buf, " log_level='%d'",
++                          def->data.qubes_gui.log_level);
 +        break;
 +
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          if (!glisten) {
              virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 003bbf4005..e587691508 100644
+index 003bbf4005..779d506825 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
 @@ -1477,6 +1477,7 @@ typedef enum {
@@ -88,8 +135,19 @@ index 003bbf4005..e587691508 100644
      VIR_DOMAIN_GRAPHICS_TYPE_SPICE,
      VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS,
  
+@@ -1659,6 +1660,10 @@ struct _virDomainGraphicsDef {
+             virTristateBool gl;
+             char *rendernode;
+         } spice;
++        struct {
++            char *domain;
++            int log_level;
++        } qubes_gui;
+         struct {
+             char *rendernode;
+         } egl_headless;
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 1e071fb7f6..8f16919295 100644
+index 1e071fb7f6..aa5e9ccc22 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -1574,6 +1574,9 @@ libxlMakeVfb(virPortAllocatorRangePtr graphicsports,
@@ -102,12 +160,17 @@ index 1e071fb7f6..8f16919295 100644
      }
  
      return 0;
-@@ -1652,6 +1655,9 @@ libxlMakeBuildInfoVfb(virPortAllocatorRangePtr graphicsports,
+@@ -1652,6 +1655,14 @@ libxlMakeBuildInfoVfb(virPortAllocatorRangePtr graphicsports,
          unsigned short port;
          virDomainGraphicsListenDefPtr glisten = NULL;
  
-+        if (l_vfb->type == VIR_DOMAIN_GRAPHICS_TYPE_QUBES)
-+            libxl_defbool_set(&b_info->u.hvm.qubes_gui, true);
++        if (l_vfb->type == VIR_DOMAIN_GRAPHICS_TYPE_QUBES) {
++            libxl_defbool_set(&b_info->u.hvm.qubes_gui.enable, true);
++            if (VIR_STRDUP(b_info->u.hvm.qubes_gui.domname,
++                           l_vfb->data.qubes_gui.domain) < 0)
++                return -1;
++            b_info->u.hvm.qubes_gui.log_level = l_vfb->data.qubes_gui.log_level;
++        }
 +
          if (l_vfb->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
              continue;

@@ -1,4 +1,4 @@
-From 901d1dfc21ba429f309f366be102c097fd9f95a3 Mon Sep 17 00:00:00 2001
+From 0a3c937379320bd3b2a806d5db952e3fbee4c7a9 Mon Sep 17 00:00:00 2001
 From: Simon Gaiser <simon@invisiblethingslab.com>
 Date: Fri, 19 Jan 2018 04:46:01 +0100
 Subject: [PATCH] Add 'permissive' option for PCI devices
@@ -37,7 +37,7 @@ index 5d856c1ff5..4dcf06fa68 100644
            <dt><code>scsi</code></dt>
            <dd>For SCSI devices, user is responsible to make sure the device
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index fa822b86fc..171021354a 100644
+index ab2a491309..b4bd906528 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
 @@ -2748,6 +2748,11 @@
@@ -53,10 +53,10 @@ index fa822b86fc..171021354a 100644
              <element name="source">
                <optional>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 4315584560..503f21af06 100644
+index 67b3ab4e04..8dc562c62c 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -7586,6 +7586,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -7587,6 +7587,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      xmlNodePtr sourcenode;
      char *managed = NULL;
      char *nostrictreset = NULL;
@@ -64,7 +64,7 @@ index 4315584560..503f21af06 100644
      char *sgio = NULL;
      char *rawio = NULL;
      char *backendStr = NULL;
-@@ -7612,6 +7613,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -7613,6 +7614,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
              def->nostrictreset = true;
      }
  
@@ -76,7 +76,7 @@ index 4315584560..503f21af06 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
      model = virXMLPropString(node, "model");
-@@ -7762,6 +7768,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -7763,6 +7769,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
   cleanup:
      VIR_FREE(managed);
      VIR_FREE(nostrictreset);
@@ -84,7 +84,7 @@ index 4315584560..503f21af06 100644
      VIR_FREE(sgio);
      VIR_FREE(rawio);
      VIR_FREE(backendStr);
-@@ -25198,6 +25205,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -25225,6 +25232,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
              virBufferAddLit(buf, " managed='yes'");
          if  (hostdef && hostdef->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -93,7 +93,7 @@ index 4315584560..503f21af06 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -25395,6 +25404,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -25422,6 +25431,8 @@ virDomainNetDefFormat(virBufferPtr buf,
          virBufferAddLit(buf, " managed='yes'");
      if (hostdef && hostdef->nostrictreset)
          virBufferAddLit(buf, " nostrictreset='yes'");
@@ -102,7 +102,7 @@ index 4315584560..503f21af06 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -27245,6 +27256,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -27277,6 +27288,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
                            def->managed ? "yes" : "no");
          if (def->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -112,7 +112,7 @@ index 4315584560..503f21af06 100644
          if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
              scsisrc->sgio)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 423b416fbf..9b2b1d4532 100644
+index ea153eebd0..fe708f66c4 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
 @@ -453,6 +453,7 @@ struct _virDomainHostdevDef {
@@ -124,10 +124,10 @@ index 423b416fbf..9b2b1d4532 100644
          virDomainHostdevSubsys subsys;
          virDomainHostdevCaps caps;
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index f8af86444f..279ca5056e 100644
+index 9472672aa8..b1a4cabb09 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2367,6 +2367,7 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+@@ -2372,6 +2372,7 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
      /* there is no LIBXL_HAVE_xxx for this field... */
      if (hostdev->nostrictreset)
          pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;

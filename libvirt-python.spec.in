@@ -11,6 +11,7 @@ Source0: %{name}-%{version}.tar.gz
 Url: http://libvirt.org
 License: LGPLv2+
 Group: Development/Libraries
+BuildRequires: gcc
 BuildRequires: git
 BuildRequires: libvirt-devel >= 0.9.11
 BuildRequires: python-devel

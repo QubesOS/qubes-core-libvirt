@@ -281,6 +281,7 @@ Patch0013: 0013-libxl-add-linux-stubdom-support.patch
 Patch0014: 0014-libxl-add-support-for-qubes-graphic-device.patch
 Patch0015: 0015-libxl-add-support-for-stubdom_mem-option.patch
 Patch0016: 0016-Add-permissive-option-for-PCI-devices.patch
+Patch0017: 0016-libxl-Fix-libxlDomainPMSuspendForDuration-domain-act.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

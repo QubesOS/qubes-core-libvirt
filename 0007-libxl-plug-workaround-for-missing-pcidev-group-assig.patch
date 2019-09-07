@@ -1,4 +1,4 @@
-From 1395c8b6a3a26f534ede2296041ad1762bb0962f Mon Sep 17 00:00:00 2001
+From 5a33f3d5961bd81b54da6c731ffe6f2fd21bee44 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 28 Nov 2015 18:27:59 +0100
@@ -7,8 +7,6 @@ Subject: [PATCH] libxl: plug workaround for missing pcidev group assignment to
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 From commit in xen tree:
 commit 11d942df114045860a27563418cf5dbd5bcd0402
@@ -35,10 +33,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 9fa9ce66de..5a7651d6b7 100644
+index c713d23c62..a35d3788f4 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2335,6 +2335,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+@@ -2347,6 +2347,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
      pcidev->bus = pcisrc->addr.bus;
      pcidev->dev = pcisrc->addr.slot;
      pcidev->func = pcisrc->addr.function;
@@ -49,5 +47,5 @@ index 9fa9ce66de..5a7651d6b7 100644
      return 0;
  }
 -- 
-2.17.2
+2.21.0
 

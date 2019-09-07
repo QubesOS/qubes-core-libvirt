@@ -1,4 +1,4 @@
-From 0359d1291b8f13545443ae604a22b90c22e31a8e Mon Sep 17 00:00:00 2001
+From 8f100c26a49769489eaa2dab1fa0f7c12e9222b6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:54:44 +0200
@@ -6,8 +6,6 @@ Subject: [PATCH] libxl: make use of e820_host feature
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
@@ -15,10 +13,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 5a7651d6b7..f36cae6172 100644
+index a35d3788f4..211eb023e3 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -725,6 +725,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -736,6 +736,20 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
          }
          if (VIR_STRDUP(b_info->u.pv.ramdisk, def->os.initrd) < 0)
              return -1;
@@ -40,5 +38,5 @@ index 5a7651d6b7..f36cae6172 100644
  
      /* only the 'xen' balloon device model is supported */
 -- 
-2.17.2
+2.21.0
 

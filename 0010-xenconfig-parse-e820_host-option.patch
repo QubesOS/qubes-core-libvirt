@@ -1,4 +1,4 @@
-From 5e66da69c5639d04bdbba613b6df27cbf1b84c1b Mon Sep 17 00:00:00 2001
+From 7b23438c4696b209478f48e8b24c20fdb0cd5db5 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:12 +0200
@@ -6,19 +6,17 @@ Subject: [PATCH] xenconfig: parse e820_host option
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/xenconfig/xen_common.c | 14 ++++++++++++++
+ src/libxl/xen_common.c | 14 ++++++++++++++
  1 file changed, 14 insertions(+)
 
-diff --git a/src/xenconfig/xen_common.c b/src/xenconfig/xen_common.c
-index 94e0703cf3..cc97f05fcf 100644
---- a/src/xenconfig/xen_common.c
-+++ b/src/xenconfig/xen_common.c
-@@ -597,6 +597,14 @@ xenParseCPUFeatures(virConfPtr conf,
+diff --git a/src/libxl/xen_common.c b/src/libxl/xen_common.c
+index d327f03d73..9cad5d48d0 100644
+--- a/src/libxl/xen_common.c
++++ b/src/libxl/xen_common.c
+@@ -599,6 +599,14 @@ xenParseCPUFeatures(virConfPtr conf,
  
              def->clock.timers[def->clock.ntimers - 1] = timer;
          }
@@ -33,7 +31,7 @@ index 94e0703cf3..cc97f05fcf 100644
      }
  
      return 0;
-@@ -1814,6 +1822,12 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def)
+@@ -2183,6 +2191,12 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def)
                              (def->features[VIR_DOMAIN_FEATURE_VIRIDIAN] ==
                               VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
              return -1;
@@ -47,5 +45,5 @@ index 94e0703cf3..cc97f05fcf 100644
  
      for (i = 0; i < def->clock.ntimers; i++) {
 -- 
-2.17.2
+2.21.0
 

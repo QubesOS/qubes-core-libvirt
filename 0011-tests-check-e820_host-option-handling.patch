@@ -1,4 +1,4 @@
-From 00b1c9d500f649a65ec4f1b49a7accc3dbdc0381 Mon Sep 17 00:00:00 2001
+From 01bed936a33aaf066d5e52fe346b28edd6622b03 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:39 +0200
@@ -6,15 +6,13 @@ Subject: [PATCH] tests: check e820_host option handling
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
  .../xlconfigdata/test-paravirt-e820_host.cfg  | 13 +++++++
- .../xlconfigdata/test-paravirt-e820_host.xml  | 35 +++++++++++++++++++
+ .../xlconfigdata/test-paravirt-e820_host.xml  | 37 +++++++++++++++++++
  tests/xlconfigtest.c                          |  1 +
- 3 files changed, 49 insertions(+)
+ 3 files changed, 51 insertions(+)
  create mode 100644 tests/xlconfigdata/test-paravirt-e820_host.cfg
  create mode 100644 tests/xlconfigdata/test-paravirt-e820_host.xml
 
@@ -39,10 +37,10 @@ index 0000000000..b9e5a482a4
 +disk = [ "format=qcow2,vdev=xvda,access=rw,backendtype=qdisk,target=/var/lib/xen/images/debian/disk.qcow2" ]
 diff --git a/tests/xlconfigdata/test-paravirt-e820_host.xml b/tests/xlconfigdata/test-paravirt-e820_host.xml
 new file mode 100644
-index 0000000000..5727023e6e
+index 0000000000..955a780ffa
 --- /dev/null
 +++ b/tests/xlconfigdata/test-paravirt-e820_host.xml
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,37 @@
 +<domain type='xen'>
 +  <name>XenGuest1</name>
 +  <uuid>45b60f51-88a9-47a8-a3b3-5e66d71b2283</uuid>
@@ -68,6 +66,7 @@ index 0000000000..5727023e6e
 +      <source file='/var/lib/xen/images/debian/disk.qcow2'/>
 +      <target dev='xvda' bus='xen'/>
 +    </disk>
++    <controller type='xenbus' index='0'/>
 +    <interface type='ethernet'>
 +      <mac address='5a:36:0e:be:00:09'/>
 +    </interface>
@@ -76,13 +75,14 @@ index 0000000000..5727023e6e
 +    </console>
 +    <input type='mouse' bus='xen'/>
 +    <input type='keyboard' bus='xen'/>
++    <memballoon model='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlconfigtest.c b/tests/xlconfigtest.c
-index b1eb8a0614..773394ef32 100644
+index ae0db71293..1cfe470a20 100644
 --- a/tests/xlconfigtest.c
 +++ b/tests/xlconfigtest.c
-@@ -302,6 +302,7 @@ mymain(void)
+@@ -308,6 +308,7 @@ mymain(void)
      DO_TEST("vif-multi-ip");
      DO_TEST("usb");
      DO_TEST("usbctrl");
@@ -91,5 +91,5 @@ index b1eb8a0614..773394ef32 100644
      virObjectUnref(caps);
      virObjectUnref(xmlopt);
 -- 
-2.17.2
+2.21.0
 

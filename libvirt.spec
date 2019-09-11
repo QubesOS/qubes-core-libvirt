@@ -425,7 +425,7 @@ BuildRequires: /usr/bin/qemu-img
 %else
     %if %{with_xen}
 # From Xen RPMs
-BuildRequires: /usr/sbin/qcow-create
+#BuildRequires: /usr/sbin/qcow-create
     %endif
 %endif
 # For LVM drivers
@@ -680,7 +680,7 @@ Requires: /usr/bin/qemu-img
 %else
     %if %{with_xen}
 # From Xen RPMs
-Requires: /usr/sbin/qcow-create
+#Requires: /usr/sbin/qcow-create
     %endif
 %endif
 

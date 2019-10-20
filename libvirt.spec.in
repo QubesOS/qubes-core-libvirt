@@ -1495,6 +1495,12 @@ if [ $1 -ge 1 ] ; then
         /bin/systemctl start virtlogd.socket virtlogd-admin.socket || :
 fi
 
+%triggerin -- xen-libs
+# BEGIN QUBES SPECIFIC PART
+# reload libxl library otherwise libvirt will use old libraries after update
+systemctl try-restart libvirtd.service >/dev/null 2>&1 || :
+# END QUBES SPECIFIC PART
+
 %posttrans daemon
 if [ -f %{_localstatedir}/lib/rpm-state/libvirt/restart ]; then
     # See if user has previously modified their install to

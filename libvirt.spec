@@ -1559,7 +1559,7 @@ rm -fr %{buildroot}
 cd tests
 make
 # These tests don't current work in a mock build root
-for i in nodeinfotest seclabeltest
+for i in nodeinfotest seclabeltest virnetsockettest
 do
   rm -f $i
   printf 'int main(void) { return 0; }' > $i.c

@@ -1426,7 +1426,7 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
 %check
 cd tests
 # These tests don't current work in a mock build root
-for i in nodeinfotest seclabeltest
+for i in nodeinfotest seclabeltest virnetsockettest
 do
   rm -f $i
   printf 'int main(void) { return 0; }' > $i.c

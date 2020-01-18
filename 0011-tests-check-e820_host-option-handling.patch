@@ -1,4 +1,4 @@
-From 01bed936a33aaf066d5e52fe346b28edd6622b03 Mon Sep 17 00:00:00 2001
+From e20b546af5356bda0832d46d1882677c6f34d269 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 2 Jun 2016 05:55:39 +0200
@@ -6,6 +6,8 @@ Subject: [PATCH] tests: check e820_host option handling
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
@@ -79,17 +81,17 @@ index 0000000000..955a780ffa
 +  </devices>
 +</domain>
 diff --git a/tests/xlconfigtest.c b/tests/xlconfigtest.c
-index ae0db71293..1cfe470a20 100644
+index 4e4b28cd34..108864f3b3 100644
 --- a/tests/xlconfigtest.c
 +++ b/tests/xlconfigtest.c
-@@ -308,6 +308,7 @@ mymain(void)
+@@ -298,6 +298,7 @@ mymain(void)
      DO_TEST("vif-multi-ip");
      DO_TEST("usb");
      DO_TEST("usbctrl");
 +    DO_TEST("paravirt-e820_host");
  
-     virObjectUnref(caps);
-     virObjectUnref(xmlopt);
+     testXLFreeDriver(driver);
+ 
 -- 
 2.21.0
 

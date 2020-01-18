@@ -1,4 +1,4 @@
-From 61db596d90e32806c1575b11801e78adc856e9e1 Mon Sep 17 00:00:00 2001
+From 43f96d2ad8320b7c2cb4b0c43a8afa234b52433d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 25 Nov 2015 00:48:56 +0100
@@ -6,6 +6,8 @@ Subject: [PATCH] libxl: pause also stubdomain (if any) while pausing a domain
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Otherwise stubdomain would crash, if host suspend was in effect in the
 meantime.
@@ -16,10 +18,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 30 insertions(+)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index c9d1af47bd..ee83c24781 100644
+index f9ed60f194..bece313ec5 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1176,6 +1176,15 @@ libxlDomainSuspend(virDomainPtr dom)
+@@ -1173,6 +1173,15 @@ libxlDomainSuspend(virDomainPtr dom)
          goto endjob;
  
      if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PAUSED) {
@@ -35,7 +37,7 @@ index c9d1af47bd..ee83c24781 100644
          if (libxl_domain_pause(cfg->ctx, vm->def->id) != 0) {
              virReportError(VIR_ERR_INTERNAL_ERROR,
                             _("Failed to suspend domain '%d' with libxenlight"),
-@@ -1212,6 +1221,8 @@ libxlDomainResume(virDomainPtr dom)
+@@ -1209,6 +1218,8 @@ libxlDomainResume(virDomainPtr dom)
      libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
      virDomainObjPtr vm;
      virObjectEventPtr event = NULL;
@@ -44,7 +46,7 @@ index c9d1af47bd..ee83c24781 100644
      int ret = -1;
  
      if (!(vm = libxlDomObjFromDomain(dom)))
-@@ -1229,12 +1240,31 @@ libxlDomainResume(virDomainPtr dom)
+@@ -1226,12 +1237,31 @@ libxlDomainResume(virDomainPtr dom)
          goto endjob;
  
      if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {

@@ -1,10 +1,12 @@
-From 2de6107c9f3643c2e0e8d4e722945f51318adc19 Mon Sep 17 00:00:00 2001
+From c8b87fd436fd663ff7454c78f89791aea3958b89 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:04 +0200
 Subject: [PATCH] libxl: use disk 'script' attribute
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Implement handling of previously introduced <script/> element for disk
 config.
@@ -14,19 +16,18 @@ patch).
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/libxl/libxl_conf.c | 3 +++
- 1 file changed, 3 insertions(+)
+ src/libxl/libxl_conf.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 766a726ebc..2cbbdd26e0 100644
+index 2488bb9d32..0db9518f6b 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1039,6 +1039,9 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
-     if (VIR_STRDUP(x_disk->vdev, l_disk->dst) < 0)
-         return -1;
+@@ -1003,6 +1003,8 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
  
-+    if (VIR_STRDUP(x_disk->script, l_disk->script) < 0)
-+        return -1;
+     x_disk->vdev = g_strdup(l_disk->dst);
+ 
++    x_disk->script = g_strdup(l_disk->script);
 +
      if (driver) {
          if (STREQ(driver, "tap") || STREQ(driver, "tap2")) {

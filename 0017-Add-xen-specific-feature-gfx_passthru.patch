@@ -1,0 +1,110 @@
+From 968bd7caf5169de3f6675c820c4af1a088ff35b6 Mon Sep 17 00:00:00 2001
+From: Artur Puzio <cytadela8@users.noreply.github.com>
+Date: Tue, 14 Apr 2020 15:12:38 +0200
+Subject: [PATCH] Add xen specific feature gfx_passthru
+
+gfx_passthru xen option enables GPU specific quirks requied for working
+gfx_passthru. Qemu (used for device model by xen) will refuse to start a
+VM when an IGD is passed, but this option is not set.
+
+Signed-off-by: Artur Puzio <contact@puzio.waw.pl>
+---
+ docs/schemas/domaincommon.rng |  5 +++++
+ src/conf/domain_conf.c        |  6 +++++-
+ src/conf/domain_conf.h        |  1 +
+ src/libxl/libxl_conf.c        | 13 +++++++++++++
+ 4 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+index 23cfd74c21..f7f24ca0b5 100644
+--- a/docs/schemas/domaincommon.rng
++++ b/docs/schemas/domaincommon.rng
+@@ -6154,6 +6154,11 @@
+             <ref name="featurestate"/>
+           </element>
+         </optional>
++        <optional>
++          <element name="gfx_passthru">
++            <ref name="featurestate"/>
++          </element>
++        </optional>
+       </interleave>
+     </element>
+   </define>
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index e8f78ab327..deae8130f2 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -208,7 +208,8 @@ VIR_ENUM_IMPL(virDomainKVM,
+ 
+ VIR_ENUM_IMPL(virDomainXen,
+               VIR_DOMAIN_XEN_LAST,
+-              "e820_host"
++              "e820_host",
++              "gfx_passthru"
+ );
+ 
+ VIR_ENUM_IMPL(virDomainMsrsUnknown,
+@@ -20732,6 +20733,7 @@ virDomainDefParseXML(xmlDocPtr xml,
+ 
+             switch ((virDomainXen) feature) {
+                 case VIR_DOMAIN_XEN_E820_HOST:
++                case VIR_DOMAIN_XEN_GFX_PASSTHRU:
+                     if (!(tmp = virXPathString("string(./@state)", ctxt))) {
+                         virReportError(VIR_ERR_XML_ERROR,
+                                        _("missing 'state' attribute for "
+@@ -22952,6 +22954,7 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
+         for (i = 0; i < VIR_DOMAIN_XEN_LAST; i++) {
+             switch ((virDomainXen) i) {
+             case VIR_DOMAIN_XEN_E820_HOST:
++            case VIR_DOMAIN_XEN_GFX_PASSTHRU:
+                 if (src->xen_features[i] != dst->xen_features[i]) {
+                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                    _("State of Xen feature '%s' differs: "
+@@ -28495,6 +28498,7 @@ virDomainDefFormatFeatures(virBufferPtr buf,
+             for (j = 0; j < VIR_DOMAIN_XEN_LAST; j++) {
+                 switch ((virDomainXen) j) {
+                 case VIR_DOMAIN_XEN_E820_HOST:
++                case VIR_DOMAIN_XEN_GFX_PASSTHRU:
+                     if (def->xen_features[j])
+                         virBufferAsprintf(&childBuf, "<%s state='%s'/>\n",
+                                           virDomainXenTypeToString(j),
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index abed8c966c..b02abac4d3 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -1820,6 +1820,7 @@ typedef enum {
+ 
+ typedef enum {
+     VIR_DOMAIN_XEN_E820_HOST = 0,
++    VIR_DOMAIN_XEN_GFX_PASSTHRU,
+ 
+     VIR_DOMAIN_XEN_LAST
+ } virDomainXen;
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 27de67d266..07a55730a1 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -681,6 +681,19 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+             return -1;
+         }
+ #endif
++        if (def->features[VIR_DOMAIN_FEATURE_XEN] == VIR_TRISTATE_SWITCH_ON) {
++            switch ((virTristateSwitch) def->xen_features[VIR_DOMAIN_XEN_GFX_PASSTHRU]) {
++                case VIR_TRISTATE_SWITCH_ON:
++                    libxl_defbool_set(&b_info->u.hvm.gfx_passthru, true);
++                    break;
++                case VIR_TRISTATE_SWITCH_OFF:
++                    libxl_defbool_set(&b_info->u.hvm.gfx_passthru, false);
++                    break;
++                case VIR_TRISTATE_SWITCH_ABSENT:
++                case VIR_TRISTATE_SWITCH_LAST:
++                    break;
++            }
++        }
+     } else if (pvh) {
+         b_info->cmdline = g_strdup(def->os.cmdline);
+         b_info->kernel = g_strdup(def->os.kernel);
+-- 
+2.26.0
+

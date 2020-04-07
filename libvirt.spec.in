@@ -295,6 +295,7 @@ Patch0013: 0013-libxl-add-support-for-qubes-graphic-device.patch
 Patch0014: 0014-libxl-add-support-for-stubdom_mem-option.patch
 Patch0015: 0015-Add-permissive-option-for-PCI-devices.patch
 Patch0016: 0016-libxl-initialize-shutdown-inhibit-callback.patch
+Patch0017: 0017-Add-xen-specific-feature-gfx_passthru.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}

@@ -1436,6 +1436,12 @@ mv $RPM_BUILD_ROOT%{_datadir}/systemtap/tapset/libvirt_qemu_probes.stp \
     %endif
 %endif
 
+# BEGIN QUBES SPECIFIC PART
+cd $RPM_BUILD_ROOT%{_unitdir}
+rm -rf libvirtd-tcp.socket libvirtd-tls.socket virtproxyd-tcp.socket virtproxyd-tls.socket
+# END QUBES SPECIFIC PART
+
+
 %check
 cd %{_vpath_builddir}
 cd tests
@@ -1476,7 +1482,9 @@ exit 0
 %systemd_post virtlockd.socket virtlockd-admin.socket
 %systemd_post virtlogd.socket virtlogd-admin.socket
 %systemd_post libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket
-%systemd_post libvirtd-tcp.socket libvirtd-tls.socket
+# BEGIN QUBES SPECIFIC PART
+# %systemd_post libvirtd-tcp.socket libvirtd-tls.socket
+# END QUBES SPECIFIC PART
 %systemd_post libvirtd.service
 
 # request daemon restart in posttrans
@@ -1485,7 +1493,9 @@ touch %{_localstatedir}/lib/rpm-state/libvirt/restart || :
 
 %preun daemon
 %systemd_preun libvirtd.service
-%systemd_preun libvirtd-tcp.socket libvirtd-tls.socket
+# BEGIN QUBES SPECIFIC PART
+# %systemd_preun libvirtd-tcp.socket libvirtd-tls.socket
+# END QUBES SPECIFIC PART
 %systemd_preun libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket
 %systemd_preun virtlogd.socket virtlogd-admin.socket virtlogd.service
 %systemd_preun virtlockd.socket virtlockd-admin.socket virtlockd.service
@@ -1529,8 +1539,10 @@ if [ -f %{_localstatedir}/lib/rpm-state/libvirt/restart ]; then
         /bin/systemctl mask libvirtd.socket >/dev/null 2>&1 || :
         /bin/systemctl mask libvirtd-ro.socket >/dev/null 2>&1 || :
         /bin/systemctl mask libvirtd-admin.socket >/dev/null 2>&1 || :
-        /bin/systemctl mask libvirtd-tls.socket >/dev/null 2>&1 || :
-        /bin/systemctl mask libvirtd-tcp.socket >/dev/null 2>&1 || :
+# BEGIN QUBES SPECIFIC PART
+#        /bin/systemctl mask libvirtd-tls.socket >/dev/null 2>&1 || :
+#        /bin/systemctl mask libvirtd-tcp.socket >/dev/null 2>&1 || :
+# END QUBES SPECIFIC PART
     else
         # Old libvirtd owns the sockets and will delete them on
         # shutdown. Can't use a try-restart as libvirtd will simply
@@ -1676,14 +1688,18 @@ exit 0
 %{_unitdir}/libvirtd.socket
 %{_unitdir}/libvirtd-ro.socket
 %{_unitdir}/libvirtd-admin.socket
-%{_unitdir}/libvirtd-tcp.socket
-%{_unitdir}/libvirtd-tls.socket
+# BEGIN QUBES SPECIFIC PART
+# %{_unitdir}/libvirtd-tcp.socket
+# %{_unitdir}/libvirtd-tls.socket
+# END QUBES SPECIFIC PART
 %{_unitdir}/virtproxyd.service
 %{_unitdir}/virtproxyd.socket
 %{_unitdir}/virtproxyd-ro.socket
 %{_unitdir}/virtproxyd-admin.socket
-%{_unitdir}/virtproxyd-tcp.socket
-%{_unitdir}/virtproxyd-tls.socket
+# BEGIN QUBES SPECIFIC PART
+# %{_unitdir}/virtproxyd-tcp.socket
+# %{_unitdir}/virtproxyd-tls.socket
+# END QUBES SPECIFIC PART
 %{_unitdir}/virt-guest-shutdown.target
 %{_unitdir}/virtlogd.service
 %{_unitdir}/virtlogd.socket

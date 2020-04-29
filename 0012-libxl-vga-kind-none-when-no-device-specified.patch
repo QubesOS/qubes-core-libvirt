@@ -1,0 +1,62 @@
+From a13b2905f7cf5a69b344d2d35bcb046fb83f0ff6 Mon Sep 17 00:00:00 2001
+From: Artur Puzio <contact@puzio.waw.pl>
+Date: Thu, 7 May 2020 13:24:35 +0200
+Subject: [PATCH] libxl: vga.kind none when no device specified
+
+When no video device is specified in config we should set both
+hvm.nographic to 1 and hvm.vga.kind to NONE.
+
+Without hvm.vga.kind=LIBXL_VGA_INTERFACE_TYPE_NONE both -nographic and
+-device 'cirrus-vga' are on qemu cmdline.
+
+Signed-off-by: Artur Puzio <contact@puzio.waw.pl>
+Reviewed-by: Jim Fehlig <jfehlig@suse.com>
+---
+ src/libxl/libxl_conf.c                               | 1 +
+ tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json | 3 +++
+ tests/libxlxml2domconfigdata/fullvirt-cpuid.json     | 3 +++
+ 3 files changed, 7 insertions(+)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 458dfc2399..a0059fc2a7 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -2404,6 +2404,7 @@ libxlMakeVideo(virDomainDefPtr def, libxl_domain_config *d_config)
+         b_info->video_memkb = def->videos[0]->vram;
+     } else {
+         libxl_defbool_set(&b_info->u.hvm.nographic, 1);
++        b_info->u.hvm.vga.kind = LIBXL_VGA_INTERFACE_TYPE_NONE;
+     }
+ 
+     return 0;
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json b/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
+index e804389fea..f16b4a971a 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
+@@ -20,6 +20,9 @@
+             "acpi": "True",
+             "acpi_firmware": "/path/to/slic.dat",
+             "nographic": "True",
++            "vga": {
++                "kind": "none"
++            },
+             "vnc": {
+                 "enable": "False"
+             },
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-cpuid.json b/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
+index d46b464642..ddc423bca7 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
+@@ -27,6 +27,9 @@
+             "apic": "True",
+             "acpi": "True",
+             "nographic": "True",
++            "vga": {
++                "kind": "none"
++            },
+             "vnc": {
+                 "enable": "False"
+             },
+-- 
+2.27.0
+

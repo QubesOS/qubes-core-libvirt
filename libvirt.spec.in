@@ -286,15 +286,10 @@ Patch0004: 0004-libxl-support-domain-config-modification-in-virDomai.patch
 Patch0005: 0005-Add-nostrictreset-attribute-to-PCI-host-devices.patch
 Patch0006: 0006-libxl-pause-also-stubdomain-if-any-while-pausing-a-d.patch
 Patch0007: 0007-libxl-plug-workaround-for-missing-pcidev-group-assig.patch
-Patch0008: 0008-conf-add-xen-specific-feature-e820_host.patch
-Patch0009: 0009-libxl-make-use-of-e820_host-feature.patch
-Patch0010: 0010-xenconfig-parse-e820_host-option.patch
-Patch0011: 0011-tests-check-e820_host-option-handling.patch
-Patch0012: 0012-libxl-add-linux-stubdom-support.patch
-Patch0013: 0013-libxl-add-support-for-qubes-graphic-device.patch
-Patch0014: 0014-libxl-add-support-for-stubdom_mem-option.patch
-Patch0015: 0015-Add-permissive-option-for-PCI-devices.patch
-Patch0016: 0016-libxl-initialize-shutdown-inhibit-callback.patch
+Patch0008: 0008-libxl-add-linux-stubdom-support.patch
+Patch0009: 0009-libxl-add-support-for-qubes-graphic-device.patch
+Patch0010: 0010-libxl-add-support-for-stubdom_mem-option.patch
+Patch0011: 0011-Add-permissive-option-for-PCI-devices.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}
@@ -408,8 +403,13 @@ BuildRequires: device-mapper-devel
 # For XFS reflink clone support
 BuildRequires: xfsprogs-devel
 %if %{with_storage_rbd}
+    %if 0%{?fedora} || 0%{?rhel} > 7
+BuildRequires: librados-devel
+BuildRequires: librbd-devel
+    %else
 BuildRequires: librados2-devel
 BuildRequires: librbd1-devel
+    %endif
 %endif
 %if %{with_storage_gluster}
 BuildRequires: glusterfs-api-devel >= 3.4.1
@@ -1236,27 +1236,6 @@ exit 1
 
 %define arg_selinux_mount --with-selinux-mount="/sys/fs/selinux"
 
-%if 0%{?fedora}
-    # Nightly edk2.git-ovmf-x64
-    LOADERS="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd"
-    # Nightly edk2.git-ovmf-ia32
-    LOADERS="$LOADERS:/usr/share/edk2.git/ovmf-ia32/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-ia32/OVMF_VARS-pure-efi.fd"
-    # Nightly edk2.git-aarch64
-    LOADERS="$LOADERS:/usr/share/edk2.git/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2.git/aarch64/vars-template-pflash.raw"
-    # Nightly edk2.git-arm
-    LOADERS="$LOADERS:/usr/share/edk2.git/arm/QEMU_EFI-pflash.raw:/usr/share/edk2.git/arm/vars-template-pflash.raw"
-
-    # Fedora edk2-ovmf
-    LOADERS="$LOADERS:/usr/share/edk2/ovmf/OVMF_CODE.fd:/usr/share/edk2/ovmf/OVMF_VARS.fd"
-    # Fedora edk2-ovmf-ia32
-    LOADERS="$LOADERS:/usr/share/edk2/ovmf-ia32/OVMF_CODE.fd:/usr/share/edk2/ovmf-ia32/OVMF_VARS.fd"
-    # Fedora edk2-aarch64
-    LOADERS="$LOADERS:/usr/share/edk2/aarch64/QEMU_EFI-pflash.raw:/usr/share/edk2/aarch64/vars-template-pflash.raw"
-    # Fedora edk2-arm
-    LOADERS="$LOADERS:/usr/share/edk2/arm/QEMU_EFI-pflash.raw:/usr/share/edk2/arm/vars-template-pflash.raw"
-    %define arg_loader_nvram --with-loader-nvram="$LOADERS"
-%endif
-
 # place macros above and build commands below this comment
 
 # Disabled in Qubes because we generate spec; on the other hand, we get
@@ -1330,7 +1309,6 @@ cd %{_vpath_builddir}
            --with-qemu-user=%{qemu_user} \
            --with-qemu-group=%{qemu_group} \
            --with-tls-priority=%{tls_priority} \
-           %{?arg_loader_nvram} \
            %{?enable_werror} \
            --enable-expensive-tests \
            --with-init-script=systemd \
@@ -1455,7 +1433,7 @@ do
 done
 if ! make %{?_smp_mflags} check VIR_TEST_DEBUG=1
 then
-  cat test-suite.log || true
+  cat tests/test-suite.log || true
   exit 1
 fi
 
@@ -1677,7 +1655,7 @@ exit 0
 %files
 
 %files docs
-%doc AUTHORS NEWS README README.md
+%doc AUTHORS ChangeLog NEWS README README.rst
 %doc %{_vpath_builddir}/libvirt-docs/*
 
 %files daemon
@@ -1708,6 +1686,7 @@ exit 0
 %{_unitdir}/virtlockd.socket
 %{_unitdir}/virtlockd-admin.socket
 %config(noreplace) %{_sysconfdir}/sysconfig/libvirtd
+%config(noreplace) %{_sysconfdir}/sysconfig/virtproxyd
 %config(noreplace) %{_sysconfdir}/sysconfig/virtlogd
 %config(noreplace) %{_sysconfdir}/sysconfig/virtlockd
 %config(noreplace) %{_sysconfdir}/libvirt/libvirtd.conf
@@ -1778,6 +1757,7 @@ exit 0
 %ghost %{_sysconfdir}/libvirt/nwfilter/*.xml
 
 %files daemon-driver-interface
+%config(noreplace) %{_sysconfdir}/sysconfig/virtinterfaced
 %config(noreplace) %{_sysconfdir}/libvirt/virtinterfaced.conf
 %{_datadir}/augeas/lenses/virtinterfaced.aug
 %{_datadir}/augeas/lenses/tests/test_virtinterfaced.aug
@@ -1790,6 +1770,7 @@ exit 0
 
 %if %{with_network}
 %files daemon-driver-network
+%config(noreplace) %{_sysconfdir}/sysconfig/virtnetworkd
 %config(noreplace) %{_sysconfdir}/libvirt/virtnetworkd.conf
 %{_datadir}/augeas/lenses/virtnetworkd.aug
 %{_datadir}/augeas/lenses/tests/test_virtnetworkd.aug
@@ -1813,6 +1794,7 @@ exit 0
 %endif
 
 %files daemon-driver-nodedev
+%config(noreplace) %{_sysconfdir}/sysconfig/virtnodedevd
 %config(noreplace) %{_sysconfdir}/libvirt/virtnodedevd.conf
 %{_datadir}/augeas/lenses/virtnodedevd.aug
 %{_datadir}/augeas/lenses/tests/test_virtnodedevd.aug
@@ -1824,6 +1806,7 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nodedev.so
 
 %files daemon-driver-nwfilter
+%config(noreplace) %{_sysconfdir}/sysconfig/virtnwfilterd
 %config(noreplace) %{_sysconfdir}/libvirt/virtnwfilterd.conf
 %{_datadir}/augeas/lenses/virtnwfilterd.aug
 %{_datadir}/augeas/lenses/tests/test_virtnwfilterd.aug
@@ -1837,6 +1820,7 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nwfilter.so
 
 %files daemon-driver-secret
+%config(noreplace) %{_sysconfdir}/sysconfig/virtsecretd
 %config(noreplace) %{_sysconfdir}/libvirt/virtsecretd.conf
 %{_datadir}/augeas/lenses/virtsecretd.aug
 %{_datadir}/augeas/lenses/tests/test_virtsecretd.aug
@@ -1850,6 +1834,7 @@ exit 0
 %files daemon-driver-storage
 
 %files daemon-driver-storage-core
+%config(noreplace) %{_sysconfdir}/sysconfig/virtstoraged
 %config(noreplace) %{_sysconfdir}/libvirt/virtstoraged.conf
 %{_datadir}/augeas/lenses/virtstoraged.aug
 %{_datadir}/augeas/lenses/tests/test_virtstoraged.aug
@@ -1906,6 +1891,7 @@ exit 0
 
 %if %{with_qemu}
 %files daemon-driver-qemu
+%config(noreplace) %{_sysconfdir}/sysconfig/virtqemud
 %config(noreplace) %{_sysconfdir}/libvirt/virtqemud.conf
 %{_datadir}/augeas/lenses/virtqemud.aug
 %{_datadir}/augeas/lenses/tests/test_virtqemud.aug
@@ -1927,10 +1913,13 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_qemu.so
 %dir %attr(0711, root, root) %{_localstatedir}/lib/libvirt/swtpm/
 %dir %attr(0711, root, root) %{_localstatedir}/log/swtpm/libvirt/qemu/
+%{_bindir}/virt-qemu-run
+%{_mandir}/man1/virt-qemu-run.1*
 %endif
 
 %if %{with_lxc}
 %files daemon-driver-lxc
+%config(noreplace) %{_sysconfdir}/sysconfig/virtlxcd
 %config(noreplace) %{_sysconfdir}/libvirt/virtlxcd.conf
 %{_datadir}/augeas/lenses/virtlxcd.aug
 %{_datadir}/augeas/lenses/tests/test_virtlxcd.aug
@@ -1952,6 +1941,7 @@ exit 0
 
 %if %{with_libxl}
 %files daemon-driver-libxl
+%config(noreplace) %{_sysconfdir}/sysconfig/virtxend
 %config(noreplace) %{_sysconfdir}/libvirt/virtxend.conf
 %{_datadir}/augeas/lenses/virtxend.aug
 %{_datadir}/augeas/lenses/tests/test_virtxend.aug
@@ -1973,6 +1963,7 @@ exit 0
 
 %if %{with_vbox}
 %files daemon-driver-vbox
+%config(noreplace) %{_sysconfdir}/sysconfig/virtvboxd
 %config(noreplace) %{_sysconfdir}/libvirt/virtvboxd.conf
 %{_datadir}/augeas/lenses/virtvboxd.aug
 %{_datadir}/augeas/lenses/tests/test_virtvboxd.aug

@@ -1,4 +1,4 @@
-From c4346bb9a8ad507dc2cb2ee2b39a3742b0ba3f68 Mon Sep 17 00:00:00 2001
+From 6b2ea15939f3052cb37ead333a82c8861eb1040e Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
 Subject: [PATCH] libxl: support domain config modification in
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index f021ec9c5d..f9ed60f194 100644
+index 980984b199..6e53f37dbf 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1959,11 +1959,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+@@ -1969,11 +1969,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
  #endif
  
      virCheckFlags(VIR_DOMAIN_SAVE_PAUSED, -1);
@@ -30,7 +30,7 @@ index f021ec9c5d..f9ed60f194 100644
  
      fd = libxlDomainSaveImageOpen(driver, cfg, from, &def, &hdr);
      if (fd < 0)
-@@ -1972,6 +1967,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
+@@ -1982,6 +1977,18 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
      if (virDomainRestoreFlagsEnsureACL(conn, def) < 0)
          goto cleanup;
  
@@ -50,5 +50,5 @@ index f021ec9c5d..f9ed60f194 100644
                                     driver->xmlopt,
                                     VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
 -- 
-2.21.0
+2.21.1
 

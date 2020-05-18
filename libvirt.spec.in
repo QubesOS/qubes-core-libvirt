@@ -1461,7 +1461,7 @@ exit 0
 %systemd_post virtlogd.socket virtlogd-admin.socket
 %systemd_post libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket
 # BEGIN QUBES SPECIFIC PART
-# %systemd_post libvirtd-tcp.socket libvirtd-tls.socket
+# %%systemd_post libvirtd-tcp.socket libvirtd-tls.socket
 # END QUBES SPECIFIC PART
 %systemd_post libvirtd.service
 
@@ -1472,7 +1472,7 @@ touch %{_localstatedir}/lib/rpm-state/libvirt/restart || :
 %preun daemon
 %systemd_preun libvirtd.service
 # BEGIN QUBES SPECIFIC PART
-# %systemd_preun libvirtd-tcp.socket libvirtd-tls.socket
+# %%systemd_preun libvirtd-tcp.socket libvirtd-tls.socket
 # END QUBES SPECIFIC PART
 %systemd_preun libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket
 %systemd_preun virtlogd.socket virtlogd-admin.socket virtlogd.service
@@ -1667,16 +1667,16 @@ exit 0
 %{_unitdir}/libvirtd-ro.socket
 %{_unitdir}/libvirtd-admin.socket
 # BEGIN QUBES SPECIFIC PART
-# %{_unitdir}/libvirtd-tcp.socket
-# %{_unitdir}/libvirtd-tls.socket
+# %%{_unitdir}/libvirtd-tcp.socket
+# %%{_unitdir}/libvirtd-tls.socket
 # END QUBES SPECIFIC PART
 %{_unitdir}/virtproxyd.service
 %{_unitdir}/virtproxyd.socket
 %{_unitdir}/virtproxyd-ro.socket
 %{_unitdir}/virtproxyd-admin.socket
 # BEGIN QUBES SPECIFIC PART
-# %{_unitdir}/virtproxyd-tcp.socket
-# %{_unitdir}/virtproxyd-tls.socket
+# %%{_unitdir}/virtproxyd-tcp.socket
+# %%{_unitdir}/virtproxyd-tls.socket
 # END QUBES SPECIFIC PART
 %{_unitdir}/virt-guest-shutdown.target
 %{_unitdir}/virtlogd.service

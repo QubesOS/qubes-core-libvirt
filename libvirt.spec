@@ -312,6 +312,7 @@ Patch0025: patches.qubes/0026-xenMakeIPList-Don-t-leak-address_array.patch
 Patch0026: patches.qubes/0027-Add-permissive-option-for-PCI-devices.patch
 Patch0027: patches.qubes/0028-libxl-Add-basic-support-for-type-pvh.patch
 Patch0028: patches.qubes/0029-libxl-add-acpi-slic-table-support.patch
+Patch0029: patches.qubes/0030-libxl-enable-CPUID-configuration-for-PVH-too.patch
 
 Requires: libvirt-daemon = %{version}-%{release}
 %if %{with_network}

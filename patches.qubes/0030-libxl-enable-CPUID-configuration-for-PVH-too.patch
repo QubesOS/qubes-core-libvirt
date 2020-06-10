@@ -1,0 +1,71 @@
+From 8fa14ff0d93cc1e8f0204309d357b3c5b3a79803 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Wed, 10 Jun 2020 02:55:55 +0200
+Subject: [PATCH] libxl: enable CPUID configuration for PVH too
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index aa9d6f4e1e..934e9d1410 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -407,18 +407,7 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+     b_info->sched_params.weight = 1000;
+     b_info->max_memkb = virDomainDefGetMemoryInitial(def);
+     b_info->target_memkb = def->mem.cur_balloon;
+-    if (hvm) {
+-        char bootorder[VIR_DOMAIN_BOOT_LAST + 1];
+-
+-        libxl_defbool_set(&b_info->u.hvm.pae,
+-                          def->features[VIR_DOMAIN_FEATURE_PAE] ==
+-                          VIR_TRISTATE_SWITCH_ON);
+-        libxl_defbool_set(&b_info->u.hvm.apic,
+-                          def->features[VIR_DOMAIN_FEATURE_APIC] ==
+-                          VIR_TRISTATE_SWITCH_ON);
+-        libxl_defbool_set(&b_info->u.hvm.acpi,
+-                          def->features[VIR_DOMAIN_FEATURE_ACPI] ==
+-                          VIR_TRISTATE_SWITCH_ON);
++    if (hvm || pvh) {
+ 
+         if (caps && def->cpu) {
+             bool hasHwVirt = false;
+@@ -481,9 +470,26 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+                             break;
+                     }
+                 }
+-                libxl_defbool_set(&b_info->u.hvm.nested_hvm, hasHwVirt);
++                if (hvm)
++                    libxl_defbool_set(&b_info->u.hvm.nested_hvm, hasHwVirt);
++                else
++                    libxl_defbool_set(&b_info->u.pvh.nested_hvm, hasHwVirt);
+             }
+         }
++    }
++
++    if (hvm) {
++        char bootorder[VIR_DOMAIN_BOOT_LAST + 1];
++
++        libxl_defbool_set(&b_info->u.hvm.pae,
++                          def->features[VIR_DOMAIN_FEATURE_PAE] ==
++                          VIR_TRISTATE_SWITCH_ON);
++        libxl_defbool_set(&b_info->u.hvm.apic,
++                          def->features[VIR_DOMAIN_FEATURE_APIC] ==
++                          VIR_TRISTATE_SWITCH_ON);
++        libxl_defbool_set(&b_info->u.hvm.acpi,
++                          def->features[VIR_DOMAIN_FEATURE_ACPI] ==
++                          VIR_TRISTATE_SWITCH_ON);
+ 
+ 	/* copy SLIC table path to acpi_firmware */
+ 	if (def->os.slic_table &&
+-- 
+2.25.4
+

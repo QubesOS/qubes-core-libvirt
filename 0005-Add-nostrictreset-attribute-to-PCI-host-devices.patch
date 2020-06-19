@@ -1,4 +1,4 @@
-From a8c484f373565c390bcad862e01019a596b0228c Mon Sep 17 00:00:00 2001
+From c83db918791012011519937f4d0c79f347557ad6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 23 May 2015 04:25:01 +0200
@@ -27,7 +27,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  7 files changed, 42 insertions(+), 1 deletion(-)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index 72a4d99b7e..e15054e517 100644
+index bdbef45a9c..c3a6b028aa 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
 @@ -5136,6 +5136,9 @@
@@ -41,7 +41,7 @@ index 72a4d99b7e..e15054e517 100644
            <dt><code>scsi</code></dt>
            <dd>For SCSI devices, user is responsible to make sure the device
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 1f950d2dc9..2af001ff7b 100644
+index be20f0c951..a8d12f3730 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
 @@ -3073,6 +3073,11 @@
@@ -57,10 +57,10 @@ index 1f950d2dc9..2af001ff7b 100644
              <element name="source">
                <optional>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index ab1bec4ee9..0d7f8f879d 100644
+index 620ef00500..99bee990d5 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -8469,6 +8469,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8470,6 +8470,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      virDomainHostdevSubsysSCSIVHostPtr scsihostsrc = &def->source.subsys.u.scsi_host;
      virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
      g_autofree char *managed = NULL;
@@ -68,7 +68,7 @@ index ab1bec4ee9..0d7f8f879d 100644
      g_autofree char *sgio = NULL;
      g_autofree char *rawio = NULL;
      g_autofree char *backendStr = NULL;
-@@ -8484,6 +8485,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8485,6 +8486,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      if ((managed = virXMLPropString(node, "managed")) != NULL)
          ignore_value(virStringParseYesNo(managed, &def->managed));
  
@@ -80,7 +80,7 @@ index ab1bec4ee9..0d7f8f879d 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
      model = virXMLPropString(node, "model");
-@@ -26232,6 +26238,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -26242,6 +26248,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
          virDomainHostdevDefPtr hostdef = virDomainNetGetActualHostdev(def);
          if  (hostdef && hostdef->managed)
              virBufferAddLit(buf, " managed='yes'");
@@ -89,7 +89,7 @@ index ab1bec4ee9..0d7f8f879d 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -26420,6 +26428,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -26430,6 +26438,8 @@ virDomainNetDefFormat(virBufferPtr buf,
      virBufferAsprintf(buf, "<interface type='%s'", typeStr);
      if (hostdef && hostdef->managed)
          virBufferAddLit(buf, " managed='yes'");
@@ -98,7 +98,7 @@ index ab1bec4ee9..0d7f8f879d 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -28204,6 +28214,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -28216,6 +28226,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
      if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
          virBufferAsprintf(buf, " managed='%s'",
                            def->managed ? "yes" : "no");
@@ -108,7 +108,7 @@ index ab1bec4ee9..0d7f8f879d 100644
          if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
              scsisrc->sgio)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index dff3e65c72..189d277fd7 100644
+index bc78d6bb30..bf73602c00 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
 @@ -345,6 +345,7 @@ struct _virDomainHostdevDef {
@@ -196,5 +196,5 @@ index f16d23614a..1b45e193ac 100644
  int virPCIDeviceSetUsedBy(virPCIDevice *dev,
                            const char *drv_name,
 -- 
-2.21.1
+2.25.4
 

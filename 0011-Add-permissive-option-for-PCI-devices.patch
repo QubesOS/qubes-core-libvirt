@@ -1,4 +1,4 @@
-From e4d32359968ccc9db2d2feeece02b03ffb0eb97e Mon Sep 17 00:00:00 2001
+From b9ee12583cf68d5417bcd42e2bb4c22a9880a9ee Mon Sep 17 00:00:00 2001
 From: Simon Gaiser <simon@invisiblethingslab.com>
 Date: Fri, 19 Jan 2018 04:46:01 +0100
 Subject: [PATCH] Add 'permissive' option for PCI devices
@@ -23,7 +23,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  5 files changed, 22 insertions(+)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index e15054e517..9dc9048c6f 100644
+index c3a6b028aa..88f5cb8e16 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
 @@ -5139,6 +5139,9 @@
@@ -37,7 +37,7 @@ index e15054e517..9dc9048c6f 100644
            <dt><code>scsi</code></dt>
            <dd>For SCSI devices, user is responsible to make sure the device
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 7d47989a53..011ce9f52b 100644
+index 6a9a809931..56ae80a4dd 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
 @@ -3078,6 +3078,11 @@
@@ -53,10 +53,10 @@ index 7d47989a53..011ce9f52b 100644
              <element name="source">
                <optional>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 4cefaadb2c..8b818b74d5 100644
+index e2eb5022f4..dc6f977e2b 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -8476,6 +8476,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8477,6 +8477,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
      g_autofree char *managed = NULL;
      g_autofree char *nostrictreset = NULL;
@@ -64,7 +64,7 @@ index 4cefaadb2c..8b818b74d5 100644
      g_autofree char *sgio = NULL;
      g_autofree char *rawio = NULL;
      g_autofree char *backendStr = NULL;
-@@ -8496,6 +8497,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8497,6 +8498,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
              def->nostrictreset = true;
      }
  
@@ -76,7 +76,7 @@ index 4cefaadb2c..8b818b74d5 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
      model = virXMLPropString(node, "model");
-@@ -26293,6 +26299,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -26303,6 +26309,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
              virBufferAddLit(buf, " managed='yes'");
          if  (hostdef && hostdef->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -85,7 +85,7 @@ index 4cefaadb2c..8b818b74d5 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -26483,6 +26491,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -26493,6 +26501,8 @@ virDomainNetDefFormat(virBufferPtr buf,
          virBufferAddLit(buf, " managed='yes'");
      if (hostdef && hostdef->nostrictreset)
          virBufferAddLit(buf, " nostrictreset='yes'");
@@ -94,7 +94,7 @@ index 4cefaadb2c..8b818b74d5 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -28277,6 +28287,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -28289,6 +28299,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
                            def->managed ? "yes" : "no");
          if (def->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -104,7 +104,7 @@ index 4cefaadb2c..8b818b74d5 100644
          if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
              scsisrc->sgio)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 86c8a12430..959f0d45b4 100644
+index 226bb86537..d6c7551bc8 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
 @@ -346,6 +346,7 @@ struct _virDomainHostdevDef {
@@ -116,7 +116,7 @@ index 86c8a12430..959f0d45b4 100644
          virDomainHostdevSubsys subsys;
          virDomainHostdevCaps caps;
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index ca4c6e3536..68df46735e 100644
+index 15dbe7a5d6..6efd5a7306 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -2324,6 +2324,7 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
@@ -128,5 +128,5 @@ index ca4c6e3536..68df46735e 100644
      return 0;
  }
 -- 
-2.21.1
+2.25.4
 

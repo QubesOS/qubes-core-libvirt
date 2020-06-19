@@ -1,4 +1,4 @@
-From 1c3ed176a2a468e0cdd79dd9dc289b82b81d5a73 Mon Sep 17 00:00:00 2001
+From a103c37f81f37d7c049b3ba524234577dbb898e3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 28 Nov 2015 18:27:59 +0100
@@ -35,7 +35,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index bae9c9bd5a..606ef8503b 100644
+index 866386f2ef..0b2ea0331e 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -2303,6 +2303,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
@@ -49,5 +49,5 @@ index bae9c9bd5a..606ef8503b 100644
      return 0;
  }
 -- 
-2.21.1
+2.25.4
 

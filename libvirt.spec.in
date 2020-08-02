@@ -204,6 +204,9 @@
 %endif
 
 ### Qubes settings ####
+%define backend_vmm @BACKEND_VMM@
+%if x%{?backend_vmm} == xxen
+# --- QUBES-XEN ----------------------------------------------------------------
 # Disable some drivers not used by Qubes (like network storage)
 %define with_storage_fs 0
 %define with_storage_iscsi_direct 0
@@ -216,7 +219,7 @@
 %define with_firewalld_zone 0
 %define with_avahi 0
 %define with_selinux 0
-%define with_xenapi 0
+#DUPE: %define with_xenapi 0
 %define with_polkit 0
 
 # Disabled by default to minimize dependencies, enable when adding support for
@@ -241,7 +244,55 @@
 
 # Mostly useless in Qubes OS dom0, save on build dependencies
 %define with_wireshark 0
+%endif
+################################################################################
+# --- QUBES-KVM ----------------------------------------------------------------
+%if x%{?backend_vmm} == xkvm
+#%%define with_storage_fs 0
+#%%define with_storage_mpath 0
+#%%define with_selinux 0
+#%%define with_polkit 0
+%define with_network 1
 
+#### Already set above
+#%%define with_storage_iscsi_direct 0
+#%%define with_storage_rbd 0
+#%%define with_storage_sheepdog 0
+#%%define with_firewalld 0
+#%%define with_firewalld_zone 0
+#%%define with_wireshark 0
+
+#### Disable, not part of standard Fedora 32 packaging
+%define with_nss 0
+%define with_sanlock 0
+%define with_wireshark 0
+
+#### Unused
+#%%define with_libssh2_transport 0  # UNUSED (maybe 'libssh2' )
+#%%define with_avahi 0
+
+#### Hypervisor drivers
+# Disabled by default to minimize dependencies, enable when adding support for
+# particular VMM, should be conditional on %%{backend_vmm}
+%define with_qemu_kvm 1
+%define with_qemu 1
+%define with_lxc 0
+%define with_vbox 0
+%define with_openvz 0
+%define with_vmware 0
+%define with_esx 0
+%define with_hyperv 0
+%define with_xenapi 0
+
+# For: Nodedev driver plugin for the libvirtd daemon
+#      Needed for device enumeration
+%define with_hal 1
+
+# Unused
+%define with_phyp 0
+%define with_parallels 0
+%define with_uml 0
+%endif
 ### End of Qubes settings ####
 
 # Force QEMU to run as non-root
@@ -279,16 +330,18 @@ URL: https://libvirt.org/
 Source: https://libvirt.org/sources/%{?mainturl}libvirt-%{version}.tar.xz
 
 # patches
+%if x%{?backend_vmm} == xxen
 Patch0001: 0001-conf-add-script-attribute-to-disk-specification.patch
 Patch0002: 0002-libxl-use-disk-script-attribute.patch
 Patch0003: 0003-libxl-Stubdom-emulator-type.patch
 Patch0004: 0004-libxl-support-domain-config-modification-in-virDomai.patch
-Patch0005: 0005-Add-nostrictreset-attribute-to-PCI-host-devices.patch
 Patch0006: 0006-libxl-pause-also-stubdomain-if-any-while-pausing-a-d.patch
-Patch0007: 0007-libxl-plug-workaround-for-missing-pcidev-group-assig.patch
 Patch0008: 0008-libxl-add-linux-stubdom-support.patch
-Patch0009: 0009-libxl-add-support-for-qubes-graphic-device.patch
 Patch0010: 0010-libxl-add-support-for-stubdom_mem-option.patch
+%endif
+Patch0005: 0005-Add-nostrictreset-attribute-to-PCI-host-devices.patch
+Patch0007: 0007-libxl-plug-workaround-for-missing-pcidev-group-assig.patch
+Patch0009: 0009-libxl-add-support-for-qubes-graphic-device.patch
 Patch0011: 0011-Add-permissive-option-for-PCI-devices.patch
 Patch0012: 0012-libxl-use-b_info-acpi-acpi-when-available.patch
 Patch0013: 0013-libxl-stubdom-add-kernel-ramdisk-options.patch
@@ -863,7 +916,9 @@ Summary: Libxl driver plugin for the libvirtd daemon
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 Obsoletes: libvirt-daemon-driver-xen < 4.3.0
+%if x%{?backend_vmm} == xxen
 Requires: xen-libs >= 2001:4.12.0~rc1-0
+%endif
 # type=pvh syntax change
 Conflicts: qubes-core-dom0 < 4.0.20-1
 

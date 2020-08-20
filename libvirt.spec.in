@@ -1240,7 +1240,7 @@ exit 1
 
 # Disabled in Qubes because we generate spec; on the other hand, we get
 # SOURCE_DATE_EPOCH set by RPM based on changelog
-export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
+#export SOURCE_DATE_EPOCH=$(stat --printf='%Y' %{_specdir}/%{name}.spec)
 
 %if 0%{?enable_autotools}
  autoreconf -if
@@ -1655,7 +1655,7 @@ exit 0
 %files
 
 %files docs
-%doc AUTHORS ChangeLog NEWS README README.rst
+%doc AUTHORS ChangeLog NEWS.rst README README.rst
 %doc %{_vpath_builddir}/libvirt-docs/*
 
 %files daemon

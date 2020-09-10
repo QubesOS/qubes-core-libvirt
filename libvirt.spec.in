@@ -290,6 +290,7 @@ Patch0008: 0008-libxl-add-linux-stubdom-support.patch
 Patch0009: 0009-libxl-add-support-for-qubes-graphic-device.patch
 Patch0010: 0010-libxl-add-support-for-stubdom_mem-option.patch
 Patch0011: 0011-Add-permissive-option-for-PCI-devices.patch
+Patch0012: 0012-libxl-use-b_info-acpi-acpi-when-available.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}

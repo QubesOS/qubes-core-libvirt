@@ -1,4 +1,4 @@
-From b9ee12583cf68d5417bcd42e2bb4c22a9880a9ee Mon Sep 17 00:00:00 2001
+From 2895e2dc9fff331db8d74b4a1d0ee1bba452ae6d Mon Sep 17 00:00:00 2001
 From: Simon Gaiser <simon@invisiblethingslab.com>
 Date: Fri, 19 Jan 2018 04:46:01 +0100
 Subject: [PATCH] Add 'permissive' option for PCI devices
@@ -23,10 +23,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  5 files changed, 22 insertions(+)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index c3a6b028aa..88f5cb8e16 100644
+index 6f6e7f0691..c21875d6d9 100644
 --- a/docs/formatdomain.html.in
 +++ b/docs/formatdomain.html.in
-@@ -5139,6 +5139,9 @@
+@@ -5300,6 +5300,9 @@
              Additionally when <code>strictreset</code> is "no", device will
              be assigned to the domain, even when reset fails. The default is
              "yes".
@@ -37,7 +37,7 @@ index c3a6b028aa..88f5cb8e16 100644
            <dt><code>scsi</code></dt>
            <dd>For SCSI devices, user is responsible to make sure the device
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 6a9a809931..56ae80a4dd 100644
+index 3309557d86..bd12c24924 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
 @@ -3078,6 +3078,11 @@
@@ -53,10 +53,10 @@ index 6a9a809931..56ae80a4dd 100644
              <element name="source">
                <optional>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index e2eb5022f4..dc6f977e2b 100644
+index 56279f5ffb..619a80cf1c 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -8477,6 +8477,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8502,6 +8502,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
      g_autofree char *managed = NULL;
      g_autofree char *nostrictreset = NULL;
@@ -64,7 +64,7 @@ index e2eb5022f4..dc6f977e2b 100644
      g_autofree char *sgio = NULL;
      g_autofree char *rawio = NULL;
      g_autofree char *backendStr = NULL;
-@@ -8497,6 +8498,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8522,6 +8523,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
              def->nostrictreset = true;
      }
  
@@ -76,7 +76,7 @@ index e2eb5022f4..dc6f977e2b 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
      model = virXMLPropString(node, "model");
-@@ -26303,6 +26309,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -26461,6 +26467,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
              virBufferAddLit(buf, " managed='yes'");
          if  (hostdef && hostdef->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -85,7 +85,7 @@ index e2eb5022f4..dc6f977e2b 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -26493,6 +26501,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -26651,6 +26659,8 @@ virDomainNetDefFormat(virBufferPtr buf,
          virBufferAddLit(buf, " managed='yes'");
      if (hostdef && hostdef->nostrictreset)
          virBufferAddLit(buf, " nostrictreset='yes'");
@@ -94,7 +94,7 @@ index e2eb5022f4..dc6f977e2b 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -28289,6 +28299,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -28453,6 +28463,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
                            def->managed ? "yes" : "no");
          if (def->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -104,7 +104,7 @@ index e2eb5022f4..dc6f977e2b 100644
          if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
              scsisrc->sgio)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 226bb86537..d6c7551bc8 100644
+index a9ec867b3e..5d55759086 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
 @@ -346,6 +346,7 @@ struct _virDomainHostdevDef {
@@ -116,10 +116,10 @@ index 226bb86537..d6c7551bc8 100644
          virDomainHostdevSubsys subsys;
          virDomainHostdevCaps caps;
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 15dbe7a5d6..6efd5a7306 100644
+index 880afb515a..6d173a322b 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2324,6 +2324,7 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+@@ -2319,6 +2319,7 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
      /* there is no LIBXL_HAVE_xxx for this field... */
      if (hostdev->nostrictreset)
          pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;

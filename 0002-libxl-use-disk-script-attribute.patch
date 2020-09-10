@@ -1,4 +1,4 @@
-From c57743834c6e71767092ebd011f0fe50383a9a28 Mon Sep 17 00:00:00 2001
+From cecdcf4f86be69f562e3388acbe2e01728309a25 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:04 +0200
 Subject: [PATCH] libxl: use disk 'script' attribute
@@ -20,10 +20,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index a0059fc2a7..bdb468438f 100644
+index 8e63d40376..fe45baed2c 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1041,6 +1041,8 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
+@@ -1037,6 +1037,8 @@ libxlMakeDisk(virDomainDiskDefPtr l_disk, libxl_device_disk *x_disk)
  
      x_disk->vdev = g_strdup(l_disk->dst);
  

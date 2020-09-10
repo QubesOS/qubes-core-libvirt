@@ -1,4 +1,4 @@
-From 94e42b3c7ddafc4e111c2aeb5e5f9c20937f6321 Mon Sep 17 00:00:00 2001
+From acd6152aa661fd27c5e6af39f9e01ea30baf59c5 Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Sat, 22 Apr 2017 08:56:59 +0200
 Subject: [PATCH] libxl: add linux stubdom support
@@ -17,10 +17,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  4 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index a8d12f3730..f7cc3e2ac9 100644
+index 4a48d02e8b..7acfcc08aa 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -3470,6 +3470,7 @@
+@@ -3483,6 +3483,7 @@
                <choice>
                  <value>qemu</value>
                  <value>stubdom</value>
@@ -28,7 +28,7 @@ index a8d12f3730..f7cc3e2ac9 100644
                </choice>
              </attribute>
            </optional>
-@@ -3485,6 +3486,7 @@
+@@ -3498,6 +3499,7 @@
              <choice>
                <value>qemu</value>
                <value>stubdom</value>
@@ -37,10 +37,10 @@ index a8d12f3730..f7cc3e2ac9 100644
            </attribute>
            <empty/>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 99bee990d5..111767b552 100644
+index 6994c7e024..3510e51d2a 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1148,7 +1148,8 @@ VIR_ENUM_IMPL(virDomainDiskTray,
+@@ -1155,7 +1155,8 @@ VIR_ENUM_IMPL(virDomainDiskTray,
  VIR_ENUM_IMPL(virDomainEmulatorType,
                VIR_DOMAIN_EMULATOR_TYPE_LAST,
                "qemu",
@@ -51,10 +51,10 @@ index 99bee990d5..111767b552 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index bf73602c00..672dded2a5 100644
+index 7bfba21543..1f9addadc4 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -2210,6 +2210,7 @@ struct _virBlkioDevice {
+@@ -2222,6 +2222,7 @@ struct _virBlkioDevice {
  typedef enum {
      VIR_DOMAIN_EMULATOR_TYPE_DEFAULT,
      VIR_DOMAIN_EMULATOR_TYPE_STUBDOM,
@@ -63,7 +63,7 @@ index bf73602c00..672dded2a5 100644
      VIR_DOMAIN_EMULATOR_TYPE_LAST
  } virDomainEmulatorType;
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 0b2ea0331e..007ceb902a 100644
+index a907880886..98342bf279 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -591,6 +591,11 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,

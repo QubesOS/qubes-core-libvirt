@@ -1,4 +1,4 @@
-From eb05e4704a0ab8d361b8edf807acf2e0172c58e8 Mon Sep 17 00:00:00 2001
+From 68fa2855a26ea959ff9dd2f729d68852b1b8eddc Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Sat, 22 Apr 2017 08:59:12 +0200
 Subject: [PATCH] libxl: add support for stubdom_mem option
@@ -17,10 +17,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  4 files changed, 35 insertions(+)
 
 diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 5945a9e32c..6a9a809931 100644
+index 2a5b93651b..3309557d86 100644
 --- a/docs/schemas/domaincommon.rng
 +++ b/docs/schemas/domaincommon.rng
-@@ -3479,6 +3479,11 @@
+@@ -3492,6 +3492,11 @@
                <text/>
              </attribute>
            </optional>
@@ -32,7 +32,7 @@ index 5945a9e32c..6a9a809931 100644
            <ref name="absFilePath"/>
          </group>
          <group>
-@@ -3489,6 +3494,11 @@
+@@ -3502,6 +3507,11 @@
                <value>stubdom-linux</value>
              </choice>
            </attribute>
@@ -45,10 +45,10 @@ index 5945a9e32c..6a9a809931 100644
          </group>
        </choice>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 1623d6cb78..e2eb5022f4 100644
+index 93f03aa070..56279f5ffb 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -21601,6 +21601,17 @@ virDomainDefParseXML(xmlDocPtr xml,
+@@ -21674,6 +21674,17 @@ virDomainDefParseXML(xmlDocPtr xml,
      }
      def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
  
@@ -66,7 +66,7 @@ index 1623d6cb78..e2eb5022f4 100644
      /* analysis of the disk devices */
      if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
          goto error;
-@@ -24126,6 +24137,14 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
+@@ -24221,6 +24232,14 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
          goto error;
      }
  
@@ -81,7 +81,7 @@ index 1623d6cb78..e2eb5022f4 100644
      if (!virDomainDefFeaturesCheckABIStability(src, dst))
          goto error;
  
-@@ -29822,6 +29841,8 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
+@@ -29997,6 +30016,8 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
              virBufferAsprintf(buf, " type='%s'",
                                virDomainEmulatorTypeTypeToString(def->emulator_type));
          }
@@ -91,10 +91,10 @@ index 1623d6cb78..e2eb5022f4 100644
          if (!def->emulator) {
              virBufferAddLit(buf, "/>\n");
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index da078c51dc..226bb86537 100644
+index 52b74a3a93..a9ec867b3e 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -2552,6 +2552,7 @@ struct _virDomainDef {
+@@ -2565,6 +2565,7 @@ struct _virDomainDef {
      char *emulator;
      virDomainEmulatorType emulator_type;
      char *emulator_cmdline;
@@ -103,7 +103,7 @@ index da078c51dc..226bb86537 100644
       * to handle support. A few assign specific data values to the option.
       * See virDomainDefFeaturesCheckABIStability() for details. */
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 4907790eed..15dbe7a5d6 100644
+index e639563261..880afb515a 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
 @@ -616,6 +616,9 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,

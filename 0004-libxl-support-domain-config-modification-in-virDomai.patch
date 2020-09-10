@@ -1,4 +1,4 @@
-From af121a13c6f232b331db7336d807ae2cd455d5f0 Mon Sep 17 00:00:00 2001
+From 4e8da85237370427c5ff96a4eacab8e661e280a1 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 14 Apr 2013 04:28:00 +0200
 Subject: [PATCH] libxl: support domain config modification in
@@ -15,7 +15,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 63ec0a2188..a51836c1f5 100644
+index 4db3c0782e..53120068cb 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
 @@ -1969,11 +1969,6 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,

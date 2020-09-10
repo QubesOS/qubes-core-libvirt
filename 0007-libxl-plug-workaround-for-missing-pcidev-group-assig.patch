@@ -1,4 +1,4 @@
-From a103c37f81f37d7c049b3ba524234577dbb898e3 Mon Sep 17 00:00:00 2001
+From 84815a5316125540c974da5f55cdcd69abc14795 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 28 Nov 2015 18:27:59 +0100
@@ -35,10 +35,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 866386f2ef..0b2ea0331e 100644
+index ae2dfae437..a907880886 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2303,6 +2303,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
+@@ -2298,6 +2298,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
      pcidev->bus = pcisrc->addr.bus;
      pcidev->dev = pcisrc->addr.slot;
      pcidev->func = pcisrc->addr.function;

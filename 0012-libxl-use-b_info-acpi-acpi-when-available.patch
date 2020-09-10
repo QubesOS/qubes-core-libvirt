@@ -1,0 +1,256 @@
+From b0b394535357ae0e494385b8c25758c25ef7052f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 10 Sep 2020 06:03:24 +0200
+Subject: [PATCH] libxl: use b_info->{acpi,acpi} when available
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Organization: Invisible Things Lab
+Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+
+b_info->u.hvm.{acpi,apic} are deprecated. But also, on recent libxl
+version (4.14) the old one seems to be broken. While libxl part should
+be fixed too, update the usage here and at some point drop support for
+the old version.
+b_info->acpi was added in Xen 4.8
+b_info->apic was added in Xen 4.10
+Xen 4.10 is the oldest version that still has security support (until
+December 2020).
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c                              | 13 +++++++++++++
+ tests/libxlxml2domconfigdata/basic-hvm.json         |  4 ++--
+ tests/libxlxml2domconfigdata/cpu-shares-hvm.json    |  4 ++--
+ .../libxlxml2domconfigdata/fullvirt-acpi-slic.json  |  4 ++--
+ .../fullvirt-cpuid-legacy-nest.json                 |  4 ++--
+ tests/libxlxml2domconfigdata/fullvirt-cpuid.json    |  4 ++--
+ .../max-eventchannels-hvm.json                      |  4 ++--
+ tests/libxlxml2domconfigdata/max-gntframes-hvm.json |  4 ++--
+ tests/libxlxml2domconfigdata/moredevs-hvm.json      |  4 ++--
+ .../libxlxml2domconfigdata/variable-clock-hvm.json  |  4 ++--
+ .../vnuma-hvm-legacy-nest.json                      |  4 ++--
+ tests/libxlxml2domconfigdata/vnuma-hvm.json         |  4 ++--
+ 12 files changed, 35 insertions(+), 22 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 6d173a322b..14d97e34c5 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -508,12 +508,25 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+         libxl_defbool_set(&b_info->u.hvm.pae,
+                           def->features[VIR_DOMAIN_FEATURE_PAE] ==
+                           VIR_TRISTATE_SWITCH_ON);
++#ifdef LIBXL_HAVE_BUILDINFO_APIC
++        libxl_defbool_set(&b_info->apic,
++                          def->features[VIR_DOMAIN_FEATURE_APIC] ==
++                          VIR_TRISTATE_SWITCH_ON);
++        /*
++         * Strictly speaking b_info->acpi was introduced earlier (Xen 4.8), but
++         * there is no separate #define in libxl.h.
++         */
++        libxl_defbool_set(&b_info->acpi,
++                          def->features[VIR_DOMAIN_FEATURE_ACPI] ==
++                          VIR_TRISTATE_SWITCH_ON);
++#else
+         libxl_defbool_set(&b_info->u.hvm.apic,
+                           def->features[VIR_DOMAIN_FEATURE_APIC] ==
+                           VIR_TRISTATE_SWITCH_ON);
+         libxl_defbool_set(&b_info->u.hvm.acpi,
+                           def->features[VIR_DOMAIN_FEATURE_ACPI] ==
+                           VIR_TRISTATE_SWITCH_ON);
++#endif
+ 
+         /* copy SLIC table path to acpi_firmware */
+         if (def->os.slic_table)
+diff --git a/tests/libxlxml2domconfigdata/basic-hvm.json b/tests/libxlxml2domconfigdata/basic-hvm.json
+index ccd5853854..87f8cb7d8a 100644
+--- a/tests/libxlxml2domconfigdata/basic-hvm.json
++++ b/tests/libxlxml2domconfigdata/basic-hvm.json
+@@ -21,10 +21,10 @@
+         "sched_params": {
+ 
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "vga": {
+                 "kind": "cirrus"
+             },
+diff --git a/tests/libxlxml2domconfigdata/cpu-shares-hvm.json b/tests/libxlxml2domconfigdata/cpu-shares-hvm.json
+index 2e647eada2..2aa97e88c5 100644
+--- a/tests/libxlxml2domconfigdata/cpu-shares-hvm.json
++++ b/tests/libxlxml2domconfigdata/cpu-shares-hvm.json
+@@ -21,10 +21,10 @@
+         "sched_params": {
+             "weight": 1500
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "vga": {
+                 "kind": "cirrus"
+             },
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json b/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
+index f16b4a971a..a2d46797aa 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
+@@ -14,10 +14,10 @@
+         "shadow_memkb": 5656,
+         "sched_params": {
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "acpi_firmware": "/path/to/slic.dat",
+             "nographic": "True",
+             "vga": {
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-cpuid-legacy-nest.json b/tests/libxlxml2domconfigdata/fullvirt-cpuid-legacy-nest.json
+index 0944476151..6290655c20 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-cpuid-legacy-nest.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-cpuid-legacy-nest.json
+@@ -21,10 +21,10 @@
+         ],
+         "sched_params": {
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "nested_hvm": "False",
+             "nographic": "True",
+             "vga": {
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-cpuid.json b/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
+index ddc423bca7..811a4f0ac7 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
+@@ -22,10 +22,10 @@
+         "sched_params": {
+         },
+         "nested_hvm": "False",
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "nographic": "True",
+             "vga": {
+                 "kind": "none"
+diff --git a/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json b/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json
+index d5b351beb5..4a5b0ca65f 100644
+--- a/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json
++++ b/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json
+@@ -22,10 +22,10 @@
+         "sched_params": {
+ 
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "vga": {
+                 "kind": "cirrus"
+             },
+diff --git a/tests/libxlxml2domconfigdata/max-gntframes-hvm.json b/tests/libxlxml2domconfigdata/max-gntframes-hvm.json
+index ef602f09fc..2883d057ff 100644
+--- a/tests/libxlxml2domconfigdata/max-gntframes-hvm.json
++++ b/tests/libxlxml2domconfigdata/max-gntframes-hvm.json
+@@ -22,10 +22,10 @@
+         "sched_params": {
+ 
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "vga": {
+                 "kind": "cirrus"
+             },
+diff --git a/tests/libxlxml2domconfigdata/moredevs-hvm.json b/tests/libxlxml2domconfigdata/moredevs-hvm.json
+index 7bfd68bd67..1eb5f38345 100644
+--- a/tests/libxlxml2domconfigdata/moredevs-hvm.json
++++ b/tests/libxlxml2domconfigdata/moredevs-hvm.json
+@@ -23,10 +23,10 @@
+         "sched_params": {
+ 
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "hpet": "True",
+             "vga": {
+                 "kind": "cirrus"
+diff --git a/tests/libxlxml2domconfigdata/variable-clock-hvm.json b/tests/libxlxml2domconfigdata/variable-clock-hvm.json
+index 69be9c64cb..9a25d51da2 100644
+--- a/tests/libxlxml2domconfigdata/variable-clock-hvm.json
++++ b/tests/libxlxml2domconfigdata/variable-clock-hvm.json
+@@ -23,10 +23,10 @@
+         "sched_params": {
+ 
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "vga": {
+                 "kind": "cirrus"
+             },
+diff --git a/tests/libxlxml2domconfigdata/vnuma-hvm-legacy-nest.json b/tests/libxlxml2domconfigdata/vnuma-hvm-legacy-nest.json
+index 3b2fc5f40f..6cda8d0252 100644
+--- a/tests/libxlxml2domconfigdata/vnuma-hvm-legacy-nest.json
++++ b/tests/libxlxml2domconfigdata/vnuma-hvm-legacy-nest.json
+@@ -109,10 +109,10 @@
+         "sched_params": {
+ 
+         },
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "nested_hvm": "True",
+             "vga": {
+                 "kind": "cirrus"
+diff --git a/tests/libxlxml2domconfigdata/vnuma-hvm.json b/tests/libxlxml2domconfigdata/vnuma-hvm.json
+index 02c10a9deb..f578ccd3d3 100644
+--- a/tests/libxlxml2domconfigdata/vnuma-hvm.json
++++ b/tests/libxlxml2domconfigdata/vnuma-hvm.json
+@@ -110,10 +110,10 @@
+ 
+         },
+         "nested_hvm": "True",
++        "apic": "True",
++        "acpi": "True",
+         "type.hvm": {
+             "pae": "True",
+-            "apic": "True",
+-            "acpi": "True",
+             "vga": {
+                 "kind": "cirrus"
+             },
+-- 
+2.25.4
+

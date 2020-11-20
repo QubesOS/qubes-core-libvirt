@@ -1,6 +1,7 @@
 ifneq ($(OS),Windows_NT)
 default: help
 
+
 NAME := libvirt
 SPECFILE := libvirt.spec libvirt-python.spec
 include Makefile.common

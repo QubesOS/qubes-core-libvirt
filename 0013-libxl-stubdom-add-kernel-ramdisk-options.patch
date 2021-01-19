@@ -1,0 +1,92 @@
+From: Dmitry Fedorov <d.fedorov@tabit.pro>
+Subject: [PATCH] libxl: add support for emulator' kernel and ramdisk path
+
+Add ability to configure emulator kernel and ramdisk path.
+
+Signed-off-by: Dmitry Fedorov <d.fedorov@tabit.pro>
+
+diff -bpru libvirt-6.6.0/docs/schemas/domaincommon.rng libvirt-6.6.0.new/docs/schemas/domaincommon.rng
+--- libvirt-6.6.0/docs/schemas/domaincommon.rng	2020-12-23 19:05:01.937312919 +0300
++++ libvirt-6.6.0.new/docs/schemas/domaincommon.rng	2020-12-23 19:01:16.789267904 +0300
+@@ -3502,6 +3502,16 @@
+               <ref name="memoryKB"/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="kernel">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
++          <optional>
++            <attribute name="ramdisk">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
+           <ref name="absFilePath"/>
+         </group>
+         <group>
+@@ -3517,6 +3527,16 @@
+               <ref name="memoryKB"/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="kernel">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
++          <optional>
++            <attribute name="ramdisk">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
+           <empty/>
+         </group>
+       </choice>
+diff -bpru libvirt-6.6.0/src/conf/domain_conf.c libvirt-6.6.0.new/src/conf/domain_conf.c
+--- libvirt-6.6.0/src/conf/domain_conf.c	2020-12-23 19:05:01.941312938 +0300
++++ libvirt-6.6.0.new/src/conf/domain_conf.c	2020-12-23 18:59:44.848841163 +0300
+@@ -21711,6 +21711,8 @@ virDomainDefParseXML(xmlDocPtr xml,
+         }
+     }
+     def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
++    def->emulator_kernel = virXPathString("string(./devices/emulator/@kernel)", ctxt);
++    def->emulator_ramdisk = virXPathString("string(./devices/emulator/@ramdisk)", ctxt);
+ 
+     n = virXPathULong("string(./devices/emulator/@memory)",
+                       ctxt,
+@@ -30063,6 +30065,8 @@ virDomainDefFormatInternalSetRootName(vi
+         if (def->emulator_memory != 0)
+             virBufferAsprintf(buf, " memory='%lu'", def->emulator_memory);
+         virBufferEscapeString(buf, " cmdline='%s'", def->emulator_cmdline);
++        virBufferEscapeString(buf, " kernel='%s'", def->emulator_kernel);
++        virBufferEscapeString(buf, " ramdisk='%s'", def->emulator_ramdisk);
+         if (!def->emulator) {
+             virBufferAddLit(buf, "/>\n");
+         } else {
+diff -bpru libvirt-6.6.0/src/conf/domain_conf.h libvirt-6.6.0.new/src/conf/domain_conf.h
+--- libvirt-6.6.0/src/conf/domain_conf.h	2020-12-23 19:05:01.963313040 +0300
++++ libvirt-6.6.0.new/src/conf/domain_conf.h	2020-12-23 18:59:44.817841019 +0300
+@@ -2570,6 +2570,8 @@ struct _virDomainDef {
+     char *emulator;
+     virDomainEmulatorType emulator_type;
+     char *emulator_cmdline;
++    char *emulator_kernel;
++    char *emulator_ramdisk;
+     unsigned long emulator_memory;
+     /* Most {caps_,hyperv_,kvm_,}feature options utilize a virTristateSwitch
+      * to handle support. A few assign specific data values to the option.
+diff -bpru libvirt-6.6.0/src/libxl/libxl_conf.c libvirt-6.6.0.new/src/libxl/libxl_conf.c
+--- libvirt-6.6.0/src/libxl/libxl_conf.c	2020-12-23 19:05:01.966313054 +0300
++++ libvirt-6.6.0.new/src/libxl/libxl_conf.c	2020-12-23 18:59:44.820841033 +0300
+@@ -629,6 +629,11 @@ libxlMakeDomBuildInfo(virDomainDefPtr de
+             }
+         }
+ 
++	if (def->emulator_kernel && virFileExists(def->emulator_kernel))
++	    b_info->stubdomain_kernel = g_strdup(def->emulator_kernel);
++	if (def->emulator_ramdisk && virFileExists(def->emulator_ramdisk))
++	    b_info->stubdomain_ramdisk = g_strdup(def->emulator_ramdisk);
++
+         if (def->emulator_memory != 0)
+             b_info->stubdomain_memkb = def->emulator_memory;
+ 

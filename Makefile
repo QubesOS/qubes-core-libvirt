@@ -19,22 +19,27 @@ else
 # PYTHON_DIR should contain python install path in chroot
 # WIN_PATH is the search path used for configure/make, it should contain msys/mingw binaries and python directory
 
-VERSION := $(shell cat version)
+VERSION := $(or $(file <version),$(error Cannot determine version))
 URL := https://libvirt.org/sources/$(mainturl)libvirt-$(VERSION).tar.xz
 
-ifndef SRC_FILE
-ifdef URL
-	SRC_FILE := $(notdir $(URL))
-endif
-endif
+SRC_FILE := $(notdir $(URL))
 
 get-sources: $(SRC_FILE)
 
-$(SRC_FILE):
-ifneq ($(SRC_FILE), None)
-	@wget -q $(URL)
-	@wget -q $(addsuffix .asc,$(URL))
+UNTRUSTED_SUFF := .UNTRUSTED
+
+ifeq ($(FETCH_CMD),)
+$(error "You can not run this Makefile without having FETCH_CMD defined")
 endif
+
+$(SRC_FILE).asc:
+	$(FETCH_CMD) $@ $(URL).asc
+
+$(SRC_FILE): $(SRC_FILE).asc import-keys
+	$(FETCH_CMD) $@$(UNTRUSTED_SUFF) $(URL)
+	gpgv --keyring vmm-xen-trustedkeys.gpg $< $@$(UNTRUSTED_SUFF) 2>/dev/null || \
+		{ echo "Wrong signature on $@$(UNTRUSTED_SUFF)!"; exit 1; }
+	mv $@$(UNTRUSTED_SUFF) $@
 
 .PHONY: import-keys
 import-keys:
@@ -43,13 +48,8 @@ import-keys:
 
 .PHONY: verify-sources
 
-verify-sources: import-keys
-ifneq ($(SRC_FILE), None)
-	@for f in $(SRC_FILE); do \
-		gpgv --keyring core-libvirt-trustedkeys.gpg $$f.asc $$f 2>/dev/null || \
-		{ echo "Wrong signature on $$f!"; exit 1; }; \
-	done
-endif
+verify-sources:
+	@true
 
 # TODO: compile libvirt-python, apply patches.python
 all:

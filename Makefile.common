@@ -8,8 +8,8 @@ SRCRPMDIR ?= $(WORKDIR)/srpm
 BUILDDIR ?= $(WORKDIR)
 RPMDIR ?= $(WORKDIR)/rpm
 SOURCEDIR := $(WORKDIR)
-VERSION := $(shell cat version)
-EPOCH := $(shell cat epoch)
+VERSION := $(or $(file <./version),$(error cannot get version))
+EPOCH := $(or $(file <./epoch),$(error cannot get epoch))
 
 RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_specdir $(SPECDIR)" \
@@ -23,52 +23,50 @@ RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
 endif
+ifeq ($(FETCH_CMD),)
+$(error "You can not run this Makefile without having FETCH_CMD defined")
+endif
 
 all: help
 
-URL := \
-		https://libvirt.org/sources/libvirt-$(VERSION).tar.xz \
-		https://libvirt.org/sources/python/libvirt-python-$(VERSION).tar.gz
+URLS := \
+		https://libvirt.org/sources/libvirt-$(VERSION).tar.xz.asc \
+		https://libvirt.org/sources/python/libvirt-python-$(VERSION).tar.gz.asc
 
-ifndef SRC_FILE
-ifdef URL
-	SRC_FILE := $(notdir $(URL))
-endif
-endif
+ALL_FILES := $(notdir $(URLS:%.asc=%)) $(notdir $(filter %.asc, $(URLS)))
+ALL_URLS := $(URLS:%.asc=%) $(filter %.asc, $(URLS))
 
 DISTFILES_MIRROR ?=
 
 ifneq ($(DISTFILES_MIRROR),)
-	URL := $(addprefix $(DISTFILES_MIRROR)/,$(SRC_FILE))
+URLS := $(addprefix $(DISTFILES_MIRROR)/,$(ALL_FILES))
 endif
 
-get-sources: $(SRC_FILE)
+get-sources: $(ALL_FILES)
 
-$(SRC_FILE):
-ifneq ($(SRC_FILE), None)
-	@wget -q $(URL)
-	@wget -q $(addsuffix .asc,$(URL))
-endif
+$(filter %.asc,$(ALL_FILES)):
+	$(FETCH_CMD) $@ $(filter %$@,$(ALL_URLS))
+UNTRUSTED_SUFF := .UNTRUSTED
+%: %.asc import-keys
+	$(FETCH_CMD) $@$(UNTRUSTED_SUFF) -- $(filter %$@,$(ALL_URLS))
+	gpgv --keyring core-libvirt-trustedkeys.gpg $< $@$(UNTRUSTED_SUFF) 2>/dev/null || \
+		{ echo "Wrong signature on $@$(UNTRUSTED_SUFF)!"; exit 1; }
+	mv $@$(UNTRUSTED_SUFF) $@
 
 .PHONY: import-keys
 import-keys:
 	@if [ -n "$$GNUPGHOME" ]; then rm -f "$$GNUPGHOME/core-libvirt-trustedkeys.gpg"; fi
-	@gpg --no-auto-check-trustdb --no-default-keyring --keyring core-libvirt-trustedkeys.gpg -q --import *-key.asc
+	@gpg --no-auto-check-trustdb --no-default-keyring --keyring core-libvirt-trustedkeys.gpg -q --import ./*-key.asc
 
 .PHONY: verify-sources
 
-verify-sources: import-keys
-ifneq ($(SRC_FILE), None)
-	@for f in $(SRC_FILE); do \
-		gpgv --keyring core-libvirt-trustedkeys.gpg $$f.asc $$f 2>/dev/null || \
-		{ echo "Wrong signature on $$f!"; exit 1; }; \
-	done
-endif
+verify-sources:
+	@true
 
 .PHONY: clean-sources
 clean-sources:
-ifneq ($(SRC_FILE), None)
-	-rm $(SRC_FILE)
+ifneq ($(ALL_FILES), None)
+	-rm $(ALL_FILES)
 endif
 
 

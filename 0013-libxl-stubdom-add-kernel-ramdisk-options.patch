@@ -45,6 +45,15 @@ diff -bpru libvirt-6.6.0/docs/schemas/domaincommon.rng libvirt-6.6.0.new/docs/sc
 diff -bpru libvirt-6.6.0/src/conf/domain_conf.c libvirt-6.6.0.new/src/conf/domain_conf.c
 --- libvirt-6.6.0/src/conf/domain_conf.c	2020-12-23 19:05:01.941312938 +0300
 +++ libvirt-6.6.0.new/src/conf/domain_conf.c	2020-12-23 18:59:44.848841163 +0300
+@@ -3539,6 +3539,8 @@ void virDomainDefFree(virDomainDefPtr de
+     VIR_FREE(def->name);
+     virBitmapFree(def->cpumask);
+     VIR_FREE(def->emulator_cmdline);
++    VIR_FREE(def->emulator_kernel);
++    VIR_FREE(def->emulator_ramdisk);
+     VIR_FREE(def->emulator);
+     VIR_FREE(def->description);
+     VIR_FREE(def->title);
 @@ -21711,6 +21711,8 @@ virDomainDefParseXML(xmlDocPtr xml,
          }
      }

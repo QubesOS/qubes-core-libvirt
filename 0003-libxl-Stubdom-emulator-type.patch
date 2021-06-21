@@ -105,6 +105,14 @@ index 0e9db39f83..064ce64b7d 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
                "virtio",
+@@ -3538,6 +3538,7 @@ void virDomainDefFree(virDomainDefPtr de
+
+     VIR_FREE(def->name);
+     virBitmapFree(def->cpumask);
++    VIR_FREE(def->emulator_cmdline);
+     VIR_FREE(def->emulator);
+     VIR_FREE(def->description);
+     VIR_FREE(def->title);
 @@ -21618,6 +21623,17 @@ virDomainDefParseXML(xmlDocPtr xml,
      if (virDomainDefParseBootOptions(def, ctxt) < 0)
          goto error;

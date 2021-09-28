@@ -953,9 +953,6 @@ Requires: libvirt-daemon-driver-interface = %{epoch}:%{version}-%{release}
 Requires: libvirt-daemon-driver-network = %{epoch}:%{version}-%{release}
 %endif
 Requires: libvirt-daemon-driver-nodedev = %{epoch}:%{version}-%{release}
-Requires: libvirt-daemon-driver-nwfilter = %{epoch}:%{version}-%{release}
-Requires: libvirt-daemon-driver-secret = %{epoch}:%{version}-%{release}
-Requires: libvirt-daemon-driver-storage = %{epoch}:%{version}-%{release}
 Requires: xen
 
 %description daemon-xen

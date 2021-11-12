@@ -210,7 +210,7 @@
 # BEGIN QUBES SPECIFIC PART
 
 # --- QUBES-XEN ----------------------------------------------------------------
-%if x%{?backend_vmm} == xxen
+%if "%{?backend_vmm}" == "xen"
 # Disable some drivers not used by Qubes (like network storage)
 %define with_storage_fs 0
 %define with_storage_iscsi_direct 0
@@ -251,7 +251,7 @@
 %endif
 
 # --- QUBES-KVM ----------------------------------------------------------------
-%if x%{?backend_vmm} == xkvm
+%if "%{?backend_vmm}" == "kvm"
 #%%define with_storage_fs 0
 #%%define with_storage_mpath 0
 #%%define with_selinux 0
@@ -405,7 +405,7 @@ BuildRequires: perl
 BuildRequires: python3
 BuildRequires: systemd-units
 %if %{with_libxl}
-%if x%{?backend_vmm} == xxen
+%if "%{?backend_vmm}" == "xen"
 BuildRequires: xen-devel >= 2001:4.8.3-1
 %endif
 %endif
@@ -922,7 +922,7 @@ Summary: Libxl driver plugin for the libvirtd daemon
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 Obsoletes: libvirt-daemon-driver-xen < 4.3.0
-%if x%{?backend_vmm} == xxen
+%if "%{?backend_vmm}" == "xen"
 Requires: xen-libs >= 2001:4.12.0~rc1-0
 %endif
 # type=pvh syntax change

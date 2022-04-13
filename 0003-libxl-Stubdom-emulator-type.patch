@@ -1,12 +1,10 @@
-From 0baf48162489130085c2db4063b0ad5db0dc720a Mon Sep 17 00:00:00 2001
+From 750218c528023938aa002e14f2b79c18753b1b12 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Sun, 7 Apr 2013 19:48:52 +0200
 Subject: [PATCH] libxl: Stubdom emulator type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Xen have feature of having device model in separate domain (called stub
 domain). Add 'type' attribute to 'emulator' element to allow selecting
@@ -15,12 +13,12 @@ such configuration. Emulator path is still used for qemu running in dom0
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- docs/formatdomain.html.in     | 17 +++++++++++++++
- docs/schemas/domaincommon.rng | 28 +++++++++++++++++++++++-
- src/conf/domain_conf.c        | 41 +++++++++++++++++++++++++++++++++--
+ docs/formatdomain.html.in     | 17 ++++++++++++++
+ docs/schemas/domaincommon.rng | 28 ++++++++++++++++++++++-
+ src/conf/domain_conf.c        | 42 +++++++++++++++++++++++++++++++++--
  src/conf/domain_conf.h        | 10 +++++++++
- src/libxl/libxl_conf.c        | 17 +++++++++++++++
- 5 files changed, 110 insertions(+), 3 deletions(-)
+ src/libxl/libxl_conf.c        | 17 ++++++++++++++
+ 5 files changed, 111 insertions(+), 3 deletions(-)
 
 diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
 index 6b67a09bb3..684fd7d2fa 100644
@@ -90,7 +88,7 @@ index d0a7a8d055..e2fd697e20 100644
    </define>
    <!--
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 0e9db39f83..064ce64b7d 100644
+index 0e9db39f83..b24f8da6c5 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
 @@ -1152,6 +1152,11 @@ VIR_ENUM_IMPL(virDomainDiskTray,
@@ -105,15 +103,15 @@ index 0e9db39f83..064ce64b7d 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
                "virtio",
-@@ -3538,6 +3538,7 @@ void virDomainDefFree(virDomainDefPtr de
-
+@@ -3527,6 +3532,7 @@ void virDomainDefFree(virDomainDefPtr def)
      VIR_FREE(def->name);
      virBitmapFree(def->cpumask);
-+    VIR_FREE(def->emulator_cmdline);
      VIR_FREE(def->emulator);
++    VIR_FREE(def->emulator_cmdline);
      VIR_FREE(def->description);
      VIR_FREE(def->title);
-@@ -21618,6 +21623,17 @@ virDomainDefParseXML(xmlDocPtr xml,
+     VIR_FREE(def->hyperv_vendor_id);
+@@ -21618,6 +21624,17 @@ virDomainDefParseXML(xmlDocPtr xml,
      if (virDomainDefParseBootOptions(def, ctxt) < 0)
          goto error;
  
@@ -131,7 +129,7 @@ index 0e9db39f83..064ce64b7d 100644
      /* analysis of the disk devices */
      if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
          goto error;
-@@ -24157,6 +24173,14 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
+@@ -24157,6 +24174,14 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
          goto error;
      }
  
@@ -146,7 +144,7 @@ index 0e9db39f83..064ce64b7d 100644
      if (!virDomainDefFeaturesCheckABIStability(src, dst))
          goto error;
  
-@@ -29912,8 +29936,21 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
+@@ -29912,8 +29937,21 @@ virDomainDefFormatInternalSetRootName(virDomainDefPtr def,
      virBufferAddLit(buf, "<devices>\n");
      virBufferAdjustIndent(buf, 2);
  
@@ -234,5 +232,5 @@ index fe45baed2c..ae2dfae437 100644
              if (def->nserials == 1) {
                  if (libxlMakeChrdevStr(def->serials[0], &b_info->u.hvm.serial) <
 -- 
-2.25.4
+2.35.1
 

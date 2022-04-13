@@ -1,4 +1,4 @@
-From b0b394535357ae0e494385b8c25758c25ef7052f Mon Sep 17 00:00:00 2001
+From cb3e80b900ffa1aedb351ff302f411ef37da8e48 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 10 Sep 2020 06:03:24 +0200
@@ -6,8 +6,6 @@ Subject: [PATCH] libxl: use b_info->{acpi,acpi} when available
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 b_info->u.hvm.{acpi,apic} are deprecated. But also, on recent libxl
 version (4.14) the old one seems to be broken. While libxl part should
@@ -252,5 +250,5 @@ index 02c10a9deb..f578ccd3d3 100644
                  "kind": "cirrus"
              },
 -- 
-2.25.4
+2.35.1
 

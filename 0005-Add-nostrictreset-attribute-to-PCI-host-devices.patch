@@ -1,4 +1,4 @@
-From 0420bc27143cfcc51290896d67a35f96469c4ec3 Mon Sep 17 00:00:00 2001
+From 4b54209512d68c272d6f1033426168d8ba1cd4e6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 23 May 2015 04:25:01 +0200
@@ -6,8 +6,6 @@ Subject: [PATCH] Add 'nostrictreset' attribute to PCI host devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 This allows to assign PCI device to some VM, even when the device does not
 support any reset method. This may be dangerous in some cases (especially when
@@ -57,10 +55,10 @@ index e2fd697e20..4a48d02e8b 100644
              <element name="source">
                <optional>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 064ce64b7d..6994c7e024 100644
+index b24f8da6c5..717e02fa48 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -8495,6 +8495,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8496,6 +8496,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      virDomainHostdevSubsysSCSIVHostPtr scsihostsrc = &def->source.subsys.u.scsi_host;
      virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
      g_autofree char *managed = NULL;
@@ -68,7 +66,7 @@ index 064ce64b7d..6994c7e024 100644
      g_autofree char *sgio = NULL;
      g_autofree char *rawio = NULL;
      g_autofree char *backendStr = NULL;
-@@ -8510,6 +8511,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8511,6 +8512,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      if ((managed = virXMLPropString(node, "managed")) != NULL)
          ignore_value(virStringParseYesNo(managed, &def->managed));
  
@@ -80,7 +78,7 @@ index 064ce64b7d..6994c7e024 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
      model = virXMLPropString(node, "model");
-@@ -26400,6 +26406,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -26401,6 +26407,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
          virDomainHostdevDefPtr hostdef = virDomainNetGetActualHostdev(def);
          if  (hostdef && hostdef->managed)
              virBufferAddLit(buf, " managed='yes'");
@@ -89,7 +87,7 @@ index 064ce64b7d..6994c7e024 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -26588,6 +26596,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -26589,6 +26597,8 @@ virDomainNetDefFormat(virBufferPtr buf,
      virBufferAsprintf(buf, "<interface type='%s'", typeStr);
      if (hostdef && hostdef->managed)
          virBufferAddLit(buf, " managed='yes'");
@@ -98,7 +96,7 @@ index 064ce64b7d..6994c7e024 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -28380,6 +28390,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -28381,6 +28391,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
      if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
          virBufferAsprintf(buf, " managed='%s'",
                            def->managed ? "yes" : "no");
@@ -196,5 +194,5 @@ index b3322ba61b..16572fc350 100644
  int virPCIDeviceSetUsedBy(virPCIDevice *dev,
                            const char *drv_name,
 -- 
-2.25.4
+2.35.1
 

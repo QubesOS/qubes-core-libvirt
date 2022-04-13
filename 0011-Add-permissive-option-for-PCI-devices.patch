@@ -1,12 +1,10 @@
-From 2895e2dc9fff331db8d74b4a1d0ee1bba452ae6d Mon Sep 17 00:00:00 2001
+From d330187f0ac552fd9ad2d5356c423c81ff07c332 Mon Sep 17 00:00:00 2001
 From: Simon Gaiser <simon@invisiblethingslab.com>
 Date: Fri, 19 Jan 2018 04:46:01 +0100
 Subject: [PATCH] Add 'permissive' option for PCI devices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 By setting the permissive flag the guest access to the PCI config space
 is not filtered. This might be a security risk, but it's required for
@@ -53,10 +51,10 @@ index 3309557d86..bd12c24924 100644
              <element name="source">
                <optional>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 56279f5ffb..619a80cf1c 100644
+index e63502b79a..7f810e10e9 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -8502,6 +8502,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8503,6 +8503,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
      g_autofree char *managed = NULL;
      g_autofree char *nostrictreset = NULL;
@@ -64,7 +62,7 @@ index 56279f5ffb..619a80cf1c 100644
      g_autofree char *sgio = NULL;
      g_autofree char *rawio = NULL;
      g_autofree char *backendStr = NULL;
-@@ -8522,6 +8523,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -8523,6 +8524,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
              def->nostrictreset = true;
      }
  
@@ -76,7 +74,7 @@ index 56279f5ffb..619a80cf1c 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
      model = virXMLPropString(node, "model");
-@@ -26461,6 +26467,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -26462,6 +26468,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
              virBufferAddLit(buf, " managed='yes'");
          if  (hostdef && hostdef->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -85,7 +83,7 @@ index 56279f5ffb..619a80cf1c 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -26651,6 +26659,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -26652,6 +26660,8 @@ virDomainNetDefFormat(virBufferPtr buf,
          virBufferAddLit(buf, " managed='yes'");
      if (hostdef && hostdef->nostrictreset)
          virBufferAddLit(buf, " nostrictreset='yes'");
@@ -94,7 +92,7 @@ index 56279f5ffb..619a80cf1c 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -28453,6 +28463,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -28454,6 +28464,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
                            def->managed ? "yes" : "no");
          if (def->nostrictreset)
              virBufferAddLit(buf, " nostrictreset='yes'");
@@ -128,5 +126,5 @@ index 880afb515a..6d173a322b 100644
      return 0;
  }
 -- 
-2.25.4
+2.35.1
 

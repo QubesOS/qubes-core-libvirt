@@ -1,12 +1,10 @@
-From 125fd9bb8ff635fc83194e4d40c0d6384b5eecda Mon Sep 17 00:00:00 2001
+From d095404d4e004328b07f905e5fbf00823f63e437 Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Sat, 22 Apr 2017 08:57:58 +0200
 Subject: [PATCH] libxl: add support for qubes graphic device
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
@@ -47,7 +45,7 @@ index 7acfcc08aa..2a5b93651b 100644
            <attribute name="type">
              <value>spice</value>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 3510e51d2a..93f03aa070 100644
+index 61fdca36bf..6edd131b1b 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
 @@ -840,6 +840,7 @@ VIR_ENUM_IMPL(virDomainGraphics,
@@ -69,7 +67,7 @@ index 3510e51d2a..93f03aa070 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          VIR_FREE(def->data.spice.rendernode);
          VIR_FREE(def->data.spice.keymap);
-@@ -14584,6 +14589,30 @@ virDomainGraphicsDefParseXMLDesktop(virDomainGraphicsDefPtr def,
+@@ -14585,6 +14590,30 @@ virDomainGraphicsDefParseXMLDesktop(virDomainGraphicsDefPtr def,
      return 0;
  }
  
@@ -100,7 +98,7 @@ index 3510e51d2a..93f03aa070 100644
  
  static int
  virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
-@@ -14957,6 +14986,10 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
+@@ -14958,6 +14987,10 @@ virDomainGraphicsDefParseXML(virDomainXMLOptionPtr xmlopt,
          if (virDomainGraphicsDefParseXMLDesktop(def, node) < 0)
              goto error;
          break;
@@ -111,7 +109,7 @@ index 3510e51d2a..93f03aa070 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          if (virDomainGraphicsDefParseXMLSpice(def, node, ctxt, flags) < 0)
              goto error;
-@@ -28169,6 +28202,14 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
+@@ -28170,6 +28203,14 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
  
          break;
  
@@ -126,7 +124,7 @@ index 3510e51d2a..93f03aa070 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          if (!glisten) {
              virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-@@ -32697,6 +32738,7 @@ virDomainGraphicsDefHasOpenGL(const virDomainDef *def)
+@@ -32698,6 +32739,7 @@ virDomainGraphicsDefHasOpenGL(const virDomainDef *def)
          switch (graphics->type) {
          case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
          case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -134,7 +132,7 @@ index 3510e51d2a..93f03aa070 100644
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
              continue;
          case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-@@ -32749,6 +32791,7 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics)
+@@ -32750,6 +32792,7 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics)
      case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
      case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
      case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -305,5 +303,5 @@ index a123a8807c..4a72d23dbc 100644
            case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
            case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
 -- 
-2.25.4
+2.35.1
 

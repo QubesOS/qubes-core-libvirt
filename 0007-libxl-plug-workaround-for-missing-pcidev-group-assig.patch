@@ -1,4 +1,4 @@
-From 84815a5316125540c974da5f55cdcd69abc14795 Mon Sep 17 00:00:00 2001
+From 5bee0b3ff6f99815ec1354f5832d50e7d8d644a3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 28 Nov 2015 18:27:59 +0100
@@ -7,8 +7,6 @@ Subject: [PATCH] libxl: plug workaround for missing pcidev group assignment to
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 From commit in xen tree:
 commit 11d942df114045860a27563418cf5dbd5bcd0402
@@ -49,5 +47,5 @@ index ae2dfae437..a907880886 100644
      return 0;
  }
 -- 
-2.25.4
+2.35.1
 

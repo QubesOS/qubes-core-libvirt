@@ -5,8 +5,6 @@ Subject: [PATCH] conf: add 'script' attribute to disk specification
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Script to be called to prepare custom device for domain. Done with Xen
 in mind, it maps to libxl_device_disk.script.
@@ -103,5 +101,5 @@ index 6e9da298b4..3f888ba556 100644
      bool diskElementAuth;
      bool diskElementEnc;
 -- 
-2.25.4
+2.35.1
 

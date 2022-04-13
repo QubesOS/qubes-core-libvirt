@@ -5,8 +5,6 @@ Subject: [PATCH] libxl: use disk 'script' attribute
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Organization: Invisible Things Lab
-Cc: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 
 Implement handling of previously introduced <script/> element for disk
 config.
@@ -33,5 +31,5 @@ index 8e63d40376..fe45baed2c 100644
          if (STREQ(driver, "tap") || STREQ(driver, "tap2")) {
              switch (format) {
 -- 
-2.25.4
+2.35.1
 

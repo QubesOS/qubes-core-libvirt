@@ -1,6 +1,6 @@
 host:
   rpm:
-    spec:
+    build:
     - libvirt.spec
     - libvirt-python.spec
 source:

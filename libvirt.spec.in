@@ -1,5 +1,9 @@
 # -*- rpm-spec -*-
 
+# BEGIN QUBES SPECIFIC PART
+%define backend_vmm @BACKEND_VMM@
+# END QUBES SPECIFIC PART
+
 # This spec file assumes you are building on a Fedora or RHEL version
 # that's still supported by the vendor. It may work on other distros
 # or versions, but no effort will be made to ensure that going forward.
@@ -203,7 +207,10 @@
     %endif
 %endif
 
-### Qubes settings ####
+# BEGIN QUBES SPECIFIC PART
+
+# --- QUBES-XEN ----------------------------------------------------------------
+%if "%{?backend_vmm}" == "xen"
 # Disable some drivers not used by Qubes (like network storage)
 %define with_storage_fs 0
 %define with_storage_iscsi_direct 0
@@ -241,8 +248,58 @@
 
 # Mostly useless in Qubes OS dom0, save on build dependencies
 %define with_wireshark 0
+%endif
 
-### End of Qubes settings ####
+# --- QUBES-KVM ----------------------------------------------------------------
+%if "%{?backend_vmm}" == "kvm"
+#%%define with_storage_fs 0
+#%%define with_storage_mpath 0
+#%%define with_selinux 0
+#%%define with_polkit 0
+%define with_network 1
+
+#### Already set above
+#%%define with_storage_iscsi_direct 0
+#%%define with_storage_rbd 0
+#%%define with_storage_sheepdog 0
+#%%define with_firewalld 0
+#%%define with_firewalld_zone 0
+#%%define with_wireshark 0
+
+#### Disable, not part of standard Fedora 32 packaging
+%define with_nss 0
+%define with_sanlock 0
+%define with_wireshark 0
+
+#### Unused
+#%%define with_libssh2_transport 0  # UNUSED (maybe 'libssh2' )
+#%%define with_avahi 0
+
+#### Hypervisor drivers
+# Disabled by default to minimize dependencies, enable when adding support for
+# particular VMM, should be conditional on %%{backend_vmm}
+%define with_qemu_kvm 1
+%define with_qemu 1
+%define with_lxc 0
+%define with_vbox 0
+%define with_openvz 0
+%define with_vmware 0
+%define with_esx 0
+%define with_hyperv 0
+%define with_xenapi 0
+%define with_libxl 0
+
+# For: Nodedev driver plugin for the libvirtd daemon
+#      Needed for device enumeration
+%define with_hal 1
+
+# Unused
+%define with_phyp 0
+%define with_parallels 0
+%define with_uml 0
+%endif
+
+# END QUBES SPECIFIC PART
 
 # Force QEMU to run as non-root
 %define qemu_user  qemu
@@ -349,7 +406,9 @@ BuildRequires: perl
 BuildRequires: python3
 BuildRequires: systemd-units
 %if %{with_libxl}
+%if "%{?backend_vmm}" == "xen"
 BuildRequires: xen-devel >= 2001:4.8.3-1
+%endif
 %endif
 BuildRequires: glib2-devel >= 2.48
 BuildRequires: libxml2-devel
@@ -864,7 +923,9 @@ Summary: Libxl driver plugin for the libvirtd daemon
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 Obsoletes: libvirt-daemon-driver-xen < 4.3.0
+%if "%{?backend_vmm}" == "xen"
 Requires: xen-libs >= 2001:4.12.0~rc1-0
+%endif
 # type=pvh syntax change
 Conflicts: qubes-core-dom0 < 4.0.20-1
 

@@ -352,7 +352,7 @@ BuildRequires: perl
 BuildRequires: python3
 BuildRequires: systemd-units
 %if %{with_libxl}
-BuildRequires: xen-devel >= 2001:4.8.3-1
+BuildRequires: xen-devel >= 2001:4.14.5-7
 %endif
 BuildRequires: glib2-devel >= 2.48
 BuildRequires: libxml2-devel
@@ -867,7 +867,7 @@ Summary: Libxl driver plugin for the libvirtd daemon
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 Obsoletes: libvirt-daemon-driver-xen < 4.3.0
-Requires: xen-libs >= 2001:4.12.0~rc1-0
+Requires: xen-libs >= 2001:4.14.5-7
 # type=pvh syntax change
 Conflicts: qubes-core-dom0 < 4.0.20-1
 

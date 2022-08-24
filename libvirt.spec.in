@@ -294,6 +294,9 @@ Patch0012: 0012-libxl-use-b_info-acpi-acpi-when-available.patch
 Patch0013: 0013-libxl-add-support-for-emulator-kernel-and-ramdisk-pa.patch
 Patch0014: 0014-libxl-Fix-setting-invtsc-in-Xen-4.14.patch
 
+# Intel GVT-g support
+Patch0100: libxl-add-support-for-xengt-video.patch
+
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}
 Requires: libvirt-daemon-config-network = %{epoch}:%{version}-%{release}
@@ -955,6 +958,7 @@ Requires: libvirt-daemon-driver-network = %{epoch}:%{version}-%{release}
 %endif
 Requires: libvirt-daemon-driver-nodedev = %{epoch}:%{version}-%{release}
 Requires: xen
+Provides: libvirt-gvt
 
 %description daemon-xen
 Server side daemon and driver required to manage the virtualization

@@ -48,5 +48,5 @@ index 4db3c0782e..53120068cb 100644
                                     driver->xmlopt,
                                     VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
 -- 
-2.35.1
+2.37.3
 

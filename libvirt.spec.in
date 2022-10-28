@@ -293,6 +293,7 @@ Patch0011: 0011-Add-permissive-option-for-PCI-devices.patch
 Patch0012: 0012-libxl-use-b_info-acpi-acpi-when-available.patch
 Patch0013: 0013-libxl-add-support-for-emulator-kernel-and-ramdisk-pa.patch
 Patch0014: 0014-libxl-Fix-setting-invtsc-in-Xen-4.14.patch
+Patch0015: 0015-libxl-fail-with-distinct-error-on-unsupported-PM-sus.patch
 
 # Intel GVT-g support
 Patch0100: libxl-add-support-for-xengt-video.patch

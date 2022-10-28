@@ -115,5 +115,5 @@ index e639563261..880afb515a 100644
              if (def->nserials == 1) {
                  if (libxlMakeChrdevStr(def->serials[0], &b_info->u.hvm.serial) <
 -- 
-2.35.1
+2.37.3
 

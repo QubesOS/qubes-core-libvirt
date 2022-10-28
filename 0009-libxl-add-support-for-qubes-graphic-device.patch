@@ -303,5 +303,5 @@ index a123a8807c..4a72d23dbc 100644
            case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
            case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
 -- 
-2.35.1
+2.37.3
 

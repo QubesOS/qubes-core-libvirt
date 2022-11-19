@@ -1,4 +1,4 @@
-From 5bee0b3ff6f99815ec1354f5832d50e7d8d644a3 Mon Sep 17 00:00:00 2001
+From 7be1b8ef4a654a5fc7e03aa08ea19146c2587cf7 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 28 Nov 2015 18:27:59 +0100
@@ -33,13 +33,13 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index ae2dfae437..a907880886 100644
+index 5699dfe180..b2243eb623 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2298,6 +2298,9 @@ libxlMakePCI(virDomainHostdevDefPtr hostdev, libxl_device_pci *pcidev)
-     pcidev->bus = pcisrc->addr.bus;
+@@ -2281,6 +2281,9 @@ libxlMakePCI(virDomainHostdevDef *hostdev, libxl_device_pci *pcidev)
      pcidev->dev = pcisrc->addr.slot;
      pcidev->func = pcisrc->addr.function;
+     pcidev->permissive = hostdev->writeFiltering == VIR_TRISTATE_BOOL_NO;
 +    /* there is no LIBXL_HAVE_xxx for this field... */
 +    if (hostdev->nostrictreset)
 +        pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;

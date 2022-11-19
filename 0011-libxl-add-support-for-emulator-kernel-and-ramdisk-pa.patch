@@ -1,0 +1,134 @@
+From b3963c90ae7e1c8a7c5602f734b7ccddf96a90a7 Mon Sep 17 00:00:00 2001
+From: Dmitry Fedorov <d.fedorov@tabit.pro>
+Date: Wed, 13 Apr 2022 16:19:49 +0200
+Subject: [PATCH] libxl: add support for emulator' kernel and ramdisk path
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add ability to configure emulator kernel and ramdisk path.
+
+Signed-off-by: Dmitry Fedorov <d.fedorov@tabit.pro>
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/conf/domain_conf.c            |  6 ++++++
+ src/conf/domain_conf.h            |  2 ++
+ src/conf/schemas/domaincommon.rng | 20 ++++++++++++++++++++
+ src/libxl/libxl_conf.c            | 19 +++++++++++++++++++
+ 4 files changed, 47 insertions(+)
+
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index f9a0d631dc..6b15766804 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -3809,6 +3809,8 @@ void virDomainDefFree(virDomainDef *def)
+     virBitmapFree(def->cpumask);
+     g_free(def->emulator);
+     g_free(def->emulator_cmdline);
++    g_free(def->emulator_kernel);
++    g_free(def->emulator_ramdisk);
+     g_free(def->description);
+     g_free(def->title);
+     g_free(def->kvm_features);
+@@ -18393,6 +18395,8 @@ virDomainDefParseXML(xmlXPathContextPtr ctxt,
+         }
+     }
+     def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
++    def->emulator_kernel = virXPathString("string(./devices/emulator/@kernel)", ctxt);
++    def->emulator_ramdisk = virXPathString("string(./devices/emulator/@ramdisk)", ctxt);
+ 
+     n = virXPathULong("string(./devices/emulator/@memory)",
+                       ctxt,
+@@ -27236,6 +27240,8 @@ virDomainDefFormatInternalSetRootName(virDomainDef *def,
+         if (def->emulator_memory != 0)
+             virBufferAsprintf(buf, " memory='%lu'", def->emulator_memory);
+         virBufferEscapeString(buf, " cmdline='%s'", def->emulator_cmdline);
++        virBufferEscapeString(buf, " kernel='%s'", def->emulator_kernel);
++        virBufferEscapeString(buf, " ramdisk='%s'", def->emulator_ramdisk);
+         if (!def->emulator) {
+             virBufferAddLit(buf, "/>\n");
+         } else {
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index a5e0736aad..566c4beeb4 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -2934,6 +2934,8 @@ struct _virDomainDef {
+     char *emulator;
+     virDomainEmulatorType emulator_type;
+     char *emulator_cmdline;
++    char *emulator_kernel;
++    char *emulator_ramdisk;
+     unsigned long emulator_memory;
+     /* Most {caps_,hyperv_,kvm_,}feature options utilize a virTristateSwitch
+      * to handle support. A few assign specific data values to the option.
+diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
+index a10943c4da..7e674d6a6e 100644
+--- a/src/conf/schemas/domaincommon.rng
++++ b/src/conf/schemas/domaincommon.rng
+@@ -3889,6 +3889,16 @@
+               <ref name="memoryKB"/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="kernel">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
++          <optional>
++            <attribute name="ramdisk">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
+           <ref name="absFilePath"/>
+         </group>
+         <group>
+@@ -3904,6 +3914,16 @@
+               <ref name="memoryKB"/>
+             </attribute>
+           </optional>
++          <optional>
++            <attribute name="kernel">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
++          <optional>
++            <attribute name="ramdisk">
++              <ref name="absFilePath"/>
++            </attribute>
++          </optional>
+           <empty/>
+         </group>
+       </choice>
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index 3cc99a223e..1ca48fb3a7 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -693,6 +693,25 @@ libxlMakeDomBuildInfo(virDomainDef *def,
+             }
+         }
+ 
++        if (def->emulator_kernel) {
++            if (!virFileExists(def->emulator_kernel)) {
++                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
++                               _("emulator's kernel '%s' not found"),
++                               def->emulator_kernel);
++                return -1;
++            }
++	    b_info->stubdomain_kernel = g_strdup(def->emulator_kernel);
++	}
++        if (def->emulator_ramdisk) {
++            if (!virFileExists(def->emulator_ramdisk)) {
++                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
++                               _("emulator's ramdisk '%s' not found"),
++                               def->emulator_ramdisk);
++                return -1;
++            }
++	    b_info->stubdomain_ramdisk = g_strdup(def->emulator_ramdisk);
++	}
++
+         if (def->emulator_memory != 0)
+             b_info->stubdomain_memkb = def->emulator_memory;
+ 
+-- 
+2.37.3
+

@@ -1,4 +1,4 @@
-From 36de4b553e6d3bbae5c0a0d42cbf25bd14c93b46 Mon Sep 17 00:00:00 2001
+From 0312374d0b2e5c1099fcda670da223896f5fd017 Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Sat, 22 Apr 2017 08:56:59 +0200
 Subject: [PATCH] libxl: add linux stubdom support
@@ -8,37 +8,17 @@ Content-Transfer-Encoding: 8bit
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- docs/schemas/domaincommon.rng | 2 ++
- src/conf/domain_conf.c        | 3 ++-
- src/conf/domain_conf.h        | 1 +
- src/libxl/libxl_conf.c        | 8 +++++++-
+ src/conf/domain_conf.c            | 3 ++-
+ src/conf/domain_conf.h            | 1 +
+ src/conf/schemas/domaincommon.rng | 2 ++
+ src/libxl/libxl_conf.c            | 8 +++++++-
  4 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index 4a48d02e8b..7acfcc08aa 100644
---- a/docs/schemas/domaincommon.rng
-+++ b/docs/schemas/domaincommon.rng
-@@ -3483,6 +3483,7 @@
-               <choice>
-                 <value>qemu</value>
-                 <value>stubdom</value>
-+                <value>stubdom-linux</value>
-               </choice>
-             </attribute>
-           </optional>
-@@ -3498,6 +3499,7 @@
-             <choice>
-               <value>qemu</value>
-               <value>stubdom</value>
-+              <value>stubdom-linux</value>
-             </choice>
-           </attribute>
-           <empty/>
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 717e02fa48..61fdca36bf 100644
+index 502a3c87ac..2a97af517f 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -1155,7 +1155,8 @@ VIR_ENUM_IMPL(virDomainDiskTray,
+@@ -1256,7 +1256,8 @@ VIR_ENUM_IMPL(virDomainDiskTray,
  VIR_ENUM_IMPL(virDomainEmulatorType,
                VIR_DOMAIN_EMULATOR_TYPE_LAST,
                "qemu",
@@ -49,10 +29,10 @@ index 717e02fa48..61fdca36bf 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 7bfba21543..1f9addadc4 100644
+index e70aaeea31..c1ef0f2560 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -2222,6 +2222,7 @@ struct _virBlkioDevice {
+@@ -2550,6 +2550,7 @@ struct _virBlkioDevice {
  typedef enum {
      VIR_DOMAIN_EMULATOR_TYPE_DEFAULT,
      VIR_DOMAIN_EMULATOR_TYPE_STUBDOM,
@@ -60,11 +40,31 @@ index 7bfba21543..1f9addadc4 100644
  
      VIR_DOMAIN_EMULATOR_TYPE_LAST
  } virDomainEmulatorType;
+diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
+index af2f9a86e4..b56e06123a 100644
+--- a/src/conf/schemas/domaincommon.rng
++++ b/src/conf/schemas/domaincommon.rng
+@@ -3875,6 +3875,7 @@
+               <choice>
+                 <value>qemu</value>
+                 <value>stubdom</value>
++                <value>stubdom-linux</value>
+               </choice>
+             </attribute>
+           </optional>
+@@ -3890,6 +3891,7 @@
+             <choice>
+               <value>qemu</value>
+               <value>stubdom</value>
++              <value>stubdom-linux</value>
+             </choice>
+           </attribute>
+           <empty/>
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index a907880886..98342bf279 100644
+index b2243eb623..e636fc6227 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -591,6 +591,11 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -667,6 +667,11 @@ libxlMakeDomBuildInfo(virDomainDef *def,
              b_info->device_model = g_strdup(def->emulator);
  
              b_info->device_model_version = libxlDomainGetEmulatorType(def);
@@ -76,7 +76,7 @@ index a907880886..98342bf279 100644
          }
  
          /* In case of stubdom there will be two qemu instances:
-@@ -599,7 +604,8 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
+@@ -675,7 +680,8 @@ libxlMakeDomBuildInfo(virDomainDef *def,
           * Emulator path control only the second one. It makes a perfect sense
           * to use <emulator type='stubdom'/> (yes, without emulator path).
           */

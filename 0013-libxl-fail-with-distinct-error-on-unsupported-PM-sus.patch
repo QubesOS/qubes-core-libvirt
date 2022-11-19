@@ -1,4 +1,4 @@
-From e4a66be43c44c13b57e272b1587d89278abec6ef Mon Sep 17 00:00:00 2001
+From e33af4836a12f29e2560468915a3ccde1626222e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 28 Oct 2022 03:21:40 +0200
@@ -17,10 +17,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 646cda9f04..64ae56f7ee 100644
+index 76fd07ada0..45b95070e4 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -1506,7 +1506,11 @@ libxlDomainPMSuspendForDuration(virDomainPtr dom,
+@@ -1491,7 +1491,11 @@ libxlDomainPMSuspendForDuration(virDomainPtr dom,
      ret = libxl_domain_suspend_only(cfg->ctx, vm->def->id, NULL);
      virObjectLock(vm);
  

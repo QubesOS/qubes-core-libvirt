@@ -297,6 +297,7 @@ Patch0011: 0011-libxl-add-support-for-emulator-kernel-and-ramdisk-pa.patch
 Patch0012: 0012-libxl-Fix-setting-invtsc-in-Xen-4.14.patch
 Patch0013: 0013-libxl-fail-with-distinct-error-on-unsupported-PM-sus.patch
 Patch0014: 0014-libxl-add-support-for-xengt-video-device.patch
+Patch0015: 0015-tests-Fix-libxlxml2domconfigtest.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}

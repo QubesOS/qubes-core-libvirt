@@ -1,0 +1,48 @@
+From 5bbe06e8160d7d78f05e420fec2be1164710545f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sun, 20 Nov 2022 01:15:06 +0100
+Subject: [PATCH] Revert "meson: Bump minimal required meson version"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Make it work temporarily with older meson.
+
+This reverts commit 14573868ea7b8df716f80be6a0a00584954e5693.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ libvirt.spec.in | 2 +-
+ meson.build     | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libvirt.spec.in b/libvirt.spec.in
+index d946a8da48..93329350e6 100644
+--- a/libvirt.spec.in
++++ b/libvirt.spec.in
+@@ -271,7 +271,7 @@ Requires: libvirt-libs = %{version}-%{release}
+ # listed against each sub-RPM
+ BuildRequires: python3-docutils
+ BuildRequires: gcc
+-BuildRequires: meson >= 0.56.0
++BuildRequires: meson >= 0.54.0
+ BuildRequires: ninja-build
+ BuildRequires: git
+ BuildRequires: perl-interpreter
+diff --git a/meson.build b/meson.build
+index 306cc9a7fd..c622eed3e6 100644
+--- a/meson.build
++++ b/meson.build
+@@ -2,7 +2,7 @@ project(
+   'libvirt', 'c',
+   version: '8.9.0',
+   license: 'LGPLv2+',
+-  meson_version: '>= 0.56.0',
++  meson_version: '>= 0.54.0',
+   default_options: [
+     'buildtype=debugoptimized',
+     'b_pie=true',
+-- 
+2.37.3
+

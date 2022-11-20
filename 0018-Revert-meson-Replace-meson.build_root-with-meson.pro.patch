@@ -1,0 +1,277 @@
+From dd4b508adc6cb983cd3c9c1f90dbe1f1a8cf4aeb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sun, 20 Nov 2022 01:14:51 +0100
+Subject: [PATCH] Revert "meson: Replace meson.build_root() with
+ meson.project_build_root()"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Make it work temporarily with older meson.
+
+This reverts commit 5ecdcf85416c51c8fbbf4c79a72ad219854b039e.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ build-aux/meson.build            | 2 +-
+ docs/go/meson.build              | 2 +-
+ docs/html/meson.build            | 4 ++--
+ docs/kbase/internals/meson.build | 2 +-
+ docs/kbase/meson.build           | 2 +-
+ docs/manpages/meson.build        | 2 +-
+ docs/meson.build                 | 6 +++---
+ meson.build                      | 8 ++++----
+ po/meson.build                   | 2 +-
+ src/esx/meson.build              | 4 ++--
+ src/hyperv/meson.build           | 2 +-
+ src/meson.build                  | 4 ++--
+ tests/meson.build                | 4 ++--
+ 13 files changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/build-aux/meson.build b/build-aux/meson.build
+index 6017f07c0a..fcd231a386 100644
+--- a/build-aux/meson.build
++++ b/build-aux/meson.build
+@@ -30,7 +30,7 @@ awk_prog = find_program('awk')
+ 
+ syntax_check_conf = configuration_data({
+   'top_srcdir': meson.source_root(),
+-  'top_builddir': meson.project_build_root(),
++  'top_builddir': meson.build_root(),
+   'flake8_path': flake8_path,
+   'runutf8': ' '.join(runutf8),
+   'PYTHON3': python3_prog.path(),
+diff --git a/docs/go/meson.build b/docs/go/meson.build
+index 29467c61f0..c0e19c4182 100644
+--- a/docs/go/meson.build
++++ b/docs/go/meson.build
+@@ -31,7 +31,7 @@ foreach data : html_xslt_gen
+     command: [
+       xsltproc_prog,
+       '--stringparam', 'pagesrc', data.get('source', ''),
+-      '--stringparam', 'builddir', meson.project_build_root(),
++      '--stringparam', 'builddir', meson.build_root(),
+       '--stringparam', 'timestamp', docs_timestamp,
+       '--stringparam', 'href_base', data.get('href_base', ''),
+       '--nonet',
+diff --git a/docs/html/meson.build b/docs/html/meson.build
+index b0ca400d08..e194b5942c 100644
+--- a/docs/html/meson.build
++++ b/docs/html/meson.build
+@@ -39,7 +39,7 @@ index_api_gen = custom_target(
+   ],
+   command: [
+     xsltproc_prog, '--nonet', '-o', docs_builddir,
+-    '--stringparam', 'builddir', meson.project_build_root(),
++    '--stringparam', 'builddir', meson.build_root(),
+     '--stringparam', 'timestamp', docs_timestamp,
+     '@INPUT@',
+   ],
+@@ -66,7 +66,7 @@ foreach name : [ 'admin', 'lxc', 'qemu' ]
+     ],
+     command: [
+       xsltproc_prog, '--nonet', '-o', docs_builddir,
+-      '--stringparam', 'builddir', meson.project_build_root(),
++      '--stringparam', 'builddir', meson.build_root(),
+       '--stringparam', 'timestamp', docs_timestamp,
+       '--stringparam', 'indexfile', 'index-@0@.html'.format(name),
+       '@INPUT@',
+diff --git a/docs/kbase/internals/meson.build b/docs/kbase/internals/meson.build
+index f1e9122f8f..a16d5a290b 100644
+--- a/docs/kbase/internals/meson.build
++++ b/docs/kbase/internals/meson.build
+@@ -40,7 +40,7 @@ foreach data : html_xslt_gen
+     command: [
+       xsltproc_prog,
+       '--stringparam', 'pagesrc', data.get('source', ''),
+-      '--stringparam', 'builddir', meson.project_build_root(),
++      '--stringparam', 'builddir', meson.build_root(),
+       '--stringparam', 'timestamp', docs_timestamp,
+       '--stringparam', 'href_base', data.get('href_base', ''),
+       '--nonet',
+diff --git a/docs/kbase/meson.build b/docs/kbase/meson.build
+index 5b608293e2..c7eae3738f 100644
+--- a/docs/kbase/meson.build
++++ b/docs/kbase/meson.build
+@@ -50,7 +50,7 @@ foreach data : html_xslt_gen
+     command: [
+       xsltproc_prog,
+       '--stringparam', 'pagesrc', data.get('source', ''),
+-      '--stringparam', 'builddir', meson.project_build_root(),
++      '--stringparam', 'builddir', meson.build_root(),
+       '--stringparam', 'timestamp', docs_timestamp,
+       '--stringparam', 'href_base', data.get('href_base', ''),
+       '--nonet',
+diff --git a/docs/manpages/meson.build b/docs/manpages/meson.build
+index b5556996a4..83933227d9 100644
+--- a/docs/manpages/meson.build
++++ b/docs/manpages/meson.build
+@@ -148,7 +148,7 @@ foreach data : html_xslt_gen
+     command: [
+       xsltproc_prog,
+       '--stringparam', 'pagesrc', data.get('source', ''),
+-      '--stringparam', 'builddir', meson.project_build_root(),
++      '--stringparam', 'builddir', meson.build_root(),
+       '--stringparam', 'timestamp', docs_timestamp,
+       '--stringparam', 'href_base', data.get('href_base', ''),
+       '--nonet',
+diff --git a/docs/meson.build b/docs/meson.build
+index 2b292b1a5a..39c60f9034 100644
+--- a/docs/meson.build
++++ b/docs/meson.build
+@@ -264,7 +264,7 @@ hvsupport_html_in = custom_target(
+     python3_prog,
+     hvsupport_prog,
+     meson.source_root(),
+-    meson.project_build_root(),
++    meson.build_root(),
+   ],
+   capture: true,
+   depend_files: [
+@@ -305,7 +305,7 @@ foreach data : html_xslt_gen
+     command: [
+       xsltproc_prog,
+       '--stringparam', 'pagesrc', data.get('source', ''),
+-      '--stringparam', 'builddir', meson.project_build_root(),
++      '--stringparam', 'builddir', meson.build_root(),
+       '--stringparam', 'timestamp', docs_timestamp,
+       '--stringparam', 'href_base', data.get('href_base', ''),
+       '--nonet',
+@@ -360,7 +360,7 @@ test(
+   args: [
+     check_html_references_prog.path(),
+     '--prefix',
+-    meson.project_build_root() / 'docs'
++    meson.build_root() / 'docs'
+   ],
+   env: runutf8,
+ )
+diff --git a/meson.build b/meson.build
+index 4d73040b36..306cc9a7fd 100644
+--- a/meson.build
++++ b/meson.build
+@@ -26,7 +26,7 @@ endif
+ conf = configuration_data()
+ 
+ conf.set('_GNU_SOURCE', 1)
+-conf.set_quoted('abs_top_builddir', meson.project_build_root())
++conf.set_quoted('abs_top_builddir', meson.build_root())
+ conf.set_quoted('abs_top_srcdir', meson.source_root())
+ conf.set_quoted('PACKAGE', meson.project_name())
+ conf.set_quoted('PACKAGE_NAME', meson.project_name())
+@@ -2171,7 +2171,7 @@ if git
+   foreach file : dist_files
+     meson.add_dist_script(
+       meson_python_prog.path(), python3_prog.path(), meson_dist_prog.path(),
+-      meson.project_build_root(), file
++      meson.build_root(), file
+     )
+   endforeach
+ endif
+@@ -2183,8 +2183,8 @@ configure_file(output: 'meson-config.h', configuration: conf)
+ 
+ # generate run helper
+ run_conf = configuration_data({
+-  'abs_builddir': meson.project_build_root(),
+-  'abs_top_builddir': meson.project_build_root(),
++  'abs_builddir': meson.build_root(),
++  'abs_top_builddir': meson.build_root(),
+ })
+ 
+ configure_file(
+diff --git a/po/meson.build b/po/meson.build
+index 0f2a1bb617..f5d05e2b31 100644
+--- a/po/meson.build
++++ b/po/meson.build
+@@ -8,7 +8,7 @@ i18n.gettext(
+     '--keyword=N_',
+     '--add-comments=TRANSLATORS:',
+     '--directory=@0@'.format(meson.source_root()),
+-    '--directory=@0@'.format(meson.project_build_root()),
++    '--directory=@0@'.format(meson.build_root()),
+     '--files-from=@0@'.format(meson.current_source_dir() / 'POTFILES'),
+     '--msgid-bugs-address=https://libvirt.org/bugs.html',
+     '--package-version=@0@'.format(meson.project_version()),
+diff --git a/src/esx/meson.build b/src/esx/meson.build
+index 2d05294ba1..5861e90afa 100644
+--- a/src/esx/meson.build
++++ b/src/esx/meson.build
+@@ -27,7 +27,7 @@ esx_gen_headers = custom_target(
+   command: [
+     meson_python_prog, python3_prog, esx_vi_generator_prog,
+     meson.source_root() / 'src',
+-    meson.project_build_root() / 'src',
++    meson.build_root() / 'src',
+     'header',
+   ],
+ )
+@@ -48,7 +48,7 @@ esx_gen_sources = custom_target(
+   command: [
+     meson_python_prog, python3_prog, esx_vi_generator_prog,
+     meson.source_root() / 'src',
+-    meson.project_build_root() / 'src',
++    meson.build_root() / 'src',
+     'source',
+   ],
+ )
+diff --git a/src/hyperv/meson.build b/src/hyperv/meson.build
+index 2589fc5437..0f0cdb9e54 100644
+--- a/src/hyperv/meson.build
++++ b/src/hyperv/meson.build
+@@ -19,7 +19,7 @@ hyperv_gen_sources = custom_target(
+   command: [
+     meson_python_prog, python3_prog, hyperv_wmi_generator_prog,
+     meson.source_root() / 'src',
+-    meson.project_build_root() / 'src',
++    meson.build_root() / 'src',
+   ],
+ )
+ 
+diff --git a/src/meson.build b/src/meson.build
+index 8000796733..88a6f15760 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -3,7 +3,7 @@ src_inc_dir = include_directories('.')
+ src_dep = declare_dependency(
+   compile_args: [
+     '-DIN_LIBVIRT',
+-    '-Dabs_top_builddir="@0@"'.format(meson.project_build_root()),
++    '-Dabs_top_builddir="@0@"'.format(meson.build_root()),
+     '-Dabs_top_srcdir="@0@"'.format(meson.source_root()),
+   ] + coverage_flags + win32_flags,
+   dependencies: [
+@@ -1032,7 +1032,7 @@ run_pkg_config_files = [
+ 
+ run_pkg_config_conf = configuration_data({
+   'VERSION': meson.project_version(),
+-  'abs_top_builddir': meson.project_build_root(),
++  'abs_top_builddir': meson.build_root(),
+   'abs_top_srcdir': meson.source_root(),
+ })
+ 
+diff --git a/tests/meson.build b/tests/meson.build
+index 3819eb8ba9..2556b71444 100644
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -1,7 +1,7 @@
+ tests_dep = declare_dependency(
+   compile_args: [
+     '-Dabs_builddir="@0@"'.format(meson.current_build_dir()),
+-    '-Dabs_top_builddir="@0@"'.format(meson.project_build_root()),
++    '-Dabs_top_builddir="@0@"'.format(meson.build_root()),
+     '-Dabs_srcdir="@0@"'.format(meson.current_source_dir()),
+     '-Dabs_top_srcdir="@0@"'.format(meson.source_root()),
+   ] + coverage_flags + cc_flags_relaxed_frame_limit,
+@@ -36,7 +36,7 @@ tests_dep = declare_dependency(
+ tests_env = [
+   'abs_builddir=@0@'.format(meson.current_build_dir()),
+   'abs_srcdir=@0@'.format(meson.current_source_dir()),
+-  'abs_top_builddir=@0@'.format(meson.project_build_root()),
++  'abs_top_builddir=@0@'.format(meson.build_root()),
+   'abs_top_srcdir=@0@'.format(meson.source_root()),
+   'LC_ALL=C',
+   'LIBVIRT_AUTOSTART=0',
+-- 
+2.37.3
+

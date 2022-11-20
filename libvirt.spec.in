@@ -4,7 +4,7 @@
 # that's still supported by the vendor. It may work on other distros
 # or versions, but no effort will be made to ensure that going forward.
 %define min_rhel 8
-%define min_fedora 33
+%define min_fedora 32
 
 %define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x
 %if 0%{?rhel}
@@ -298,6 +298,10 @@ Patch0012: 0012-libxl-Fix-setting-invtsc-in-Xen-4.14.patch
 Patch0013: 0013-libxl-fail-with-distinct-error-on-unsupported-PM-sus.patch
 Patch0014: 0014-libxl-add-support-for-xengt-video-device.patch
 Patch0015: 0015-tests-Fix-libxlxml2domconfigtest.patch
+Patch0016: 0016-Revert-meson-Replace-meson.source_root-with-meson.pr.patch
+Patch0017: 0017-Revert-meson-Replace-external_program.path-with-exte.patch
+Patch0018: 0018-Revert-meson-Replace-meson.build_root-with-meson.pro.patch
+Patch0019: 0019-Revert-meson-Bump-minimal-required-meson-version.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}
@@ -335,7 +339,8 @@ Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 # listed against each sub-RPM
 BuildRequires: python3-docutils
 BuildRequires: gcc
-BuildRequires: meson >= 0.56.0
+#BuildRequires: meson >= 0.56.0
+BuildRequires: meson >= 0.54.0
 BuildRequires: ninja-build
 BuildRequires: git
 BuildRequires: perl-interpreter

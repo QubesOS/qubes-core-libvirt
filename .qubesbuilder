@@ -5,11 +5,11 @@ host:
     - libvirt-python.spec
 source:
   files:
-  - url: https://libvirt.org/sources/libvirt-6.6.0.tar.xz
-    signature: https://libvirt.org/sources/libvirt-6.6.0.tar.xz.asc
+  - url: https://libvirt.org/sources/libvirt-@VERSION@.tar.xz
+    signature: https://libvirt.org/sources/libvirt-@VERSION@.tar.xz.asc
     pubkeys: &id001
     - redhat-jiri-denemark-key.asc
     - redhat-veillard-key.asc
-  - url: https://libvirt.org/sources/python/libvirt-python-6.6.0.tar.gz
-    signature: https://libvirt.org/sources/python/libvirt-python-6.6.0.tar.gz.asc
+  - url: https://libvirt.org/sources/python/libvirt-python-@VERSION@.tar.gz
+    signature: https://libvirt.org/sources/python/libvirt-python-@VERSION@.tar.gz.asc
     pubkeys: *id001

@@ -1,0 +1,54 @@
+From f51be39eed27e9ef21c80c6310540206657aeaa2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Wed, 14 Dec 2022 14:51:45 +0100
+Subject: [PATCH] libxl: adjust 'ich6' sound card name
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Xen 4.17 has strict parsing of 'soundhw' option that allows only
+specific values (instead of passing through any value directly to qemu).
+For 'intel-hda' audio device, it requires "hda" string. "hda" works with
+older libxl too. Other supported models are the same as in libvirt XML.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index d13e48abb2..b84257bc12 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -593,7 +593,26 @@ libxlMakeDomBuildInfo(virDomainDef *def,
+              */
+             virDomainSoundDef *snd = def->sounds[0];
+ 
+-            b_info->u.hvm.soundhw = g_strdup(virDomainSoundModelTypeToString(snd->model));
++            switch (snd->model) {
++                case VIR_DOMAIN_SOUND_MODEL_ICH6:
++                    b_info->u.hvm.soundhw = g_strdup("hda");
++                    break;
++                case VIR_DOMAIN_SOUND_MODEL_ES1370:
++                case VIR_DOMAIN_SOUND_MODEL_AC97:
++                case VIR_DOMAIN_SOUND_MODEL_SB16:
++                    b_info->u.hvm.soundhw = g_strdup(virDomainSoundModelTypeToString(snd->model));
++                    break;
++                default:
++                case VIR_DOMAIN_SOUND_MODEL_PCSPK:
++                case VIR_DOMAIN_SOUND_MODEL_ICH7:
++                case VIR_DOMAIN_SOUND_MODEL_USB:
++                case VIR_DOMAIN_SOUND_MODEL_ICH9:
++                case VIR_DOMAIN_SOUND_MODEL_LAST:
++                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
++                            _("unsupported audio model %s"),
++                            virDomainSoundModelTypeToString(snd->model));
++                    return -1;
++            }
+         }
+ 
+         for (i = 0; i < def->os.nBootDevs; i++) {
+-- 
+2.38.1
+

@@ -184,11 +184,6 @@
     %define with_modular_daemons 1
 %endif
 
-%define with_mingw 0
-%if 0%{?fedora}
-    %define with_mingw 0%{!?_without_mingw:1}
-%endif
-
 ### Qubes settings ####
 # Disable some drivers not used by Qubes (like network storage)
 %define with_storage_fs 0
@@ -416,13 +411,14 @@ BuildRequires: fuse-devel >= 2.8.6
 %if %{with_libssh2}
 BuildRequires: libssh2-devel >= 1.3.0
 %endif
-
+%if %{with_netcf}
 BuildRequires: netcf-devel >= 0.2.2
+%endif
 %if %{with_esx}
 BuildRequires: libcurl-devel
 %endif
 %if %{with_hyperv}
-BuildRequires: libwsman-devel >= 2.2.3
+BuildRequires: libwsman-devel >= 2.6.3
 %endif
 BuildRequires: audit-libs-devel
 # we need /usr/sbin/dtrace
@@ -432,9 +428,6 @@ BuildRequires: systemtap-sdt-devel
 BuildRequires: util-linux
 # For showmount in FS driver (netfs discovery)
 BuildRequires: nfs-utils
-
-# Communication with the firewall and polkit daemons use DBus
-BuildRequires: dbus-devel
 
 # Fedora build root suckage
 BuildRequires: gawk
@@ -447,11 +440,11 @@ BuildRequires: numad
 %endif
 
 %if %{with_wireshark}
-BuildRequires: wireshark-devel >= 2.4.0
+BuildRequires: wireshark-devel
 %endif
 
 %if %{with_libssh}
-BuildRequires: libssh-devel >= 0.7.0
+BuildRequires: libssh-devel >= 0.8.1
 %endif
 
 %if 0%{?fedora} || 0%{?rhel} > 7
@@ -459,11 +452,40 @@ BuildRequires: rpcgen
 BuildRequires: libtirpc-devel
 %endif
 
+# Needed for the firewalld_reload macro
 %if %{with_firewalld_zone}
 BuildRequires: firewalld-filesystem
 %endif
 
-Provides: bundled(gnulib)
+%if %{with_mingw}
+BuildRequires: mingw32-filesystem
+BuildRequires: mingw32-gcc
+BuildRequires: mingw32-binutils
+BuildRequires: mingw32-glib2 >= 2.48
+BuildRequires: mingw32-libgpg-error
+BuildRequires: mingw32-libgcrypt
+BuildRequires: mingw32-gnutls
+BuildRequires: mingw32-gettext
+BuildRequires: mingw32-libxml2
+BuildRequires: mingw32-portablexdr
+BuildRequires: mingw32-dlfcn
+BuildRequires: mingw32-libssh2
+BuildRequires: mingw32-curl
+
+BuildRequires: mingw64-filesystem
+BuildRequires: mingw64-gcc
+BuildRequires: mingw64-binutils
+BuildRequires: mingw64-glib2 >= 2.48
+BuildRequires: mingw64-libgpg-error
+BuildRequires: mingw64-libgcrypt
+BuildRequires: mingw64-gnutls
+BuildRequires: mingw64-gettext
+BuildRequires: mingw64-libxml2
+BuildRequires: mingw64-portablexdr
+BuildRequires: mingw64-dlfcn
+BuildRequires: mingw64-libssh2
+BuildRequires: mingw64-curl
+%endif
 
 %description
 Libvirt is a C toolkit to interact with the virtualization capabilities
@@ -500,15 +522,12 @@ Requires: iproute-tc
 %endif
 
 Requires: polkit >= 0.112
-%ifarch %{ix86} x86_64 ia64
+%if %{with_dmidecode}
 # For virConnectGetSysinfo
 Requires: dmidecode
 %endif
 # For service management
-Requires(post): systemd-units
-Requires(post): systemd-sysv
-Requires(preun): systemd-units
-Requires(postun): systemd-units
+Requires(post): /usr/bin/systemctl
 %if %{with_numad}
 Requires: numad
 %endif
@@ -516,6 +535,11 @@ Requires: numad
 Requires: dbus
 # For uid creation during pre
 Requires(pre): shadow-utils
+
+# Ensure smooth upgrades
+Obsoletes: libvirt-admin < 7.3.0
+Provides: libvirt-admin = %{version}-%{release}
+Obsoletes: libvirt-bash-completion < 7.3.0
 
 %description daemon
 Server side daemon required to manage the virtualization capabilities

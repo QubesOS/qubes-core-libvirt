@@ -1,0 +1,323 @@
+From c525832d8ecd3275415b406ccc6d6d7f1e3dc327 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 5 Jan 2023 17:53:53 +0100
+Subject: [PATCH] libxl: set net/disk trusted parameter based on backend domain
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If backend lives in dom0, set trusted=true, otherwise - false.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c                                  | 6 ++++++
+ tests/libxlxml2domconfigdata/basic-hvm.json             | 6 ++++--
+ tests/libxlxml2domconfigdata/basic-pv.json              | 6 ++++--
+ tests/libxlxml2domconfigdata/basic-pvh.json             | 6 ++++--
+ tests/libxlxml2domconfigdata/cpu-shares-hvm.json        | 6 ++++--
+ tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json    | 3 ++-
+ tests/libxlxml2domconfigdata/fullvirt-cpuid.json        | 3 ++-
+ tests/libxlxml2domconfigdata/max-eventchannels-hvm.json | 6 ++++--
+ tests/libxlxml2domconfigdata/max-gntframes-hvm.json     | 6 ++++--
+ tests/libxlxml2domconfigdata/moredevs-hvm.json          | 9 ++++++---
+ tests/libxlxml2domconfigdata/multiple-ip.json           | 3 ++-
+ tests/libxlxml2domconfigdata/variable-clock-hvm.json    | 6 ++++--
+ tests/libxlxml2domconfigdata/vnuma-hvm.json             | 6 ++++--
+ 13 files changed, 50 insertions(+), 22 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index fef19e6ace..fd57ebf79b 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -1265,6 +1265,9 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
+ 
+     if (l_disk->domain_name)
+         x_disk->backend_domname = g_strdup(l_disk->domain_name);
++#ifdef LIBXL_HAVE_DISK_TRUSTED
++    libxl_defbool_set(&x_disk->trusted, l_disk->domain_name == NULL);
++#endif
+ 
+     return 0;
+ }
+@@ -1480,6 +1483,9 @@ libxlMakeNic(virDomainDef *def,
+ 
+     if (l_nic->domain_name)
+         x_nic->backend_domname = g_strdup(l_nic->domain_name);
++#ifdef LIBXL_HAVE_NIC_TRUSTED
++    libxl_defbool_set(&x_nic->trusted, l_nic->domain_name == NULL);
++#endif
+ 
+     /*
+      * Set bandwidth.
+diff --git a/tests/libxlxml2domconfigdata/basic-hvm.json b/tests/libxlxml2domconfigdata/basic-hvm.json
+index d30875420d..eed2d3a66a 100644
+--- a/tests/libxlxml2domconfigdata/basic-hvm.json
++++ b/tests/libxlxml2domconfigdata/basic-hvm.json
+@@ -55,7 +55,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -64,7 +65,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/basic-pv.json b/tests/libxlxml2domconfigdata/basic-pv.json
+index 32d188fabd..ab163a8300 100644
+--- a/tests/libxlxml2domconfigdata/basic-pv.json
++++ b/tests/libxlxml2domconfigdata/basic-pv.json
+@@ -32,7 +32,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -41,7 +42,8 @@
+             "mac": "00:16:3e:3e:86:60",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif"
++            "nictype": "vif",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/basic-pvh.json b/tests/libxlxml2domconfigdata/basic-pvh.json
+index f51957aa85..19ac7d69eb 100644
+--- a/tests/libxlxml2domconfigdata/basic-pvh.json
++++ b/tests/libxlxml2domconfigdata/basic-pvh.json
+@@ -33,7 +33,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -42,7 +43,8 @@
+             "mac": "00:16:3e:3e:86:60",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif"
++            "nictype": "vif",
++            "trusted": "True"
+         }
+     ],
+     "on_reboot": "restart"
+diff --git a/tests/libxlxml2domconfigdata/cpu-shares-hvm.json b/tests/libxlxml2domconfigdata/cpu-shares-hvm.json
+index 15105c83ad..298acbc2db 100644
+--- a/tests/libxlxml2domconfigdata/cpu-shares-hvm.json
++++ b/tests/libxlxml2domconfigdata/cpu-shares-hvm.json
+@@ -55,7 +55,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -64,7 +65,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json b/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
+index 26f5abefee..0df15776ef 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json
+@@ -48,7 +48,8 @@
+             "backend": "phy",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "on_reboot": "restart",
+diff --git a/tests/libxlxml2domconfigdata/fullvirt-cpuid.json b/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
+index 8bf41894a5..9093b09d88 100644
+--- a/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
++++ b/tests/libxlxml2domconfigdata/fullvirt-cpuid.json
+@@ -55,7 +55,8 @@
+             "backend": "phy",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "on_reboot": "restart",
+diff --git a/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json b/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json
+index 6f0daa065f..a9cf305410 100644
+--- a/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json
++++ b/tests/libxlxml2domconfigdata/max-eventchannels-hvm.json
+@@ -56,7 +56,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -65,7 +66,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/max-gntframes-hvm.json b/tests/libxlxml2domconfigdata/max-gntframes-hvm.json
+index 35de588abc..ea45f16be8 100644
+--- a/tests/libxlxml2domconfigdata/max-gntframes-hvm.json
++++ b/tests/libxlxml2domconfigdata/max-gntframes-hvm.json
+@@ -56,7 +56,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -65,7 +66,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/moredevs-hvm.json b/tests/libxlxml2domconfigdata/moredevs-hvm.json
+index bdc9afc29b..8b3cbe786c 100644
+--- a/tests/libxlxml2domconfigdata/moredevs-hvm.json
++++ b/tests/libxlxml2domconfigdata/moredevs-hvm.json
+@@ -62,7 +62,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         },
+         {
+             "pdev_path": "/root/boot.iso",
+@@ -70,7 +71,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "is_cdrom": 1
++            "is_cdrom": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -80,7 +82,8 @@
+             "mac": "00:16:3e:7a:35:ce",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif"
++            "nictype": "vif",
++            "trusted": "True"
+         }
+     ],
+     "pcidevs": [
+diff --git a/tests/libxlxml2domconfigdata/multiple-ip.json b/tests/libxlxml2domconfigdata/multiple-ip.json
+index e0b37aa795..1bbb209a16 100644
+--- a/tests/libxlxml2domconfigdata/multiple-ip.json
++++ b/tests/libxlxml2domconfigdata/multiple-ip.json
+@@ -31,7 +31,8 @@
+             "mac": "00:16:3e:3e:86:60",
+             "ip": "10.0.0.1 2000:abcd::1",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif"
++            "nictype": "vif",
++            "trusted": "True"
+         }
+     ],
+     "on_reboot": "restart"
+diff --git a/tests/libxlxml2domconfigdata/variable-clock-hvm.json b/tests/libxlxml2domconfigdata/variable-clock-hvm.json
+index 3c131c603c..5328c5daab 100644
+--- a/tests/libxlxml2domconfigdata/variable-clock-hvm.json
++++ b/tests/libxlxml2domconfigdata/variable-clock-hvm.json
+@@ -57,7 +57,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -66,7 +67,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/vnuma-hvm.json b/tests/libxlxml2domconfigdata/vnuma-hvm.json
+index 68c1c2501d..4d3507e7da 100644
+--- a/tests/libxlxml2domconfigdata/vnuma-hvm.json
++++ b/tests/libxlxml2domconfigdata/vnuma-hvm.json
+@@ -149,7 +149,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -158,7 +159,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+-- 
+2.37.3
+

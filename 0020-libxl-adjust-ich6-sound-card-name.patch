@@ -1,4 +1,4 @@
-From f51be39eed27e9ef21c80c6310540206657aeaa2 Mon Sep 17 00:00:00 2001
+From 071dcab02e16adf6e91b4c606cae61bc41e88d49 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 14 Dec 2022 14:51:45 +0100
@@ -18,10 +18,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 20 insertions(+), 1 deletion(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index d13e48abb2..b84257bc12 100644
+index 85abe92e3c..fef19e6ace 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -593,7 +593,26 @@ libxlMakeDomBuildInfo(virDomainDef *def,
+@@ -596,7 +596,26 @@ libxlMakeDomBuildInfo(virDomainDef *def,
               */
              virDomainSoundDef *snd = def->sounds[0];
  
@@ -50,5 +50,5 @@ index d13e48abb2..b84257bc12 100644
  
          for (i = 0; i < def->os.nBootDevs; i++) {
 -- 
-2.38.1
+2.37.3
 

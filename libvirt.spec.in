@@ -303,6 +303,7 @@ Patch0017: 0017-Revert-meson-Replace-external_program.path-with-exte.patch
 Patch0018: 0018-Revert-meson-Replace-meson.build_root-with-meson.pro.patch
 Patch0019: 0019-Revert-meson-Bump-minimal-required-meson-version.patch
 Patch0020: 0020-libxl-adjust-ich6-sound-card-name.patch
+Patch0021: 0021-libxl-set-net-disk-trusted-parameter-based-on-backen.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}

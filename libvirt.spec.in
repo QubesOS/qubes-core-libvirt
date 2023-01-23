@@ -613,7 +613,9 @@ capabilities.
 Summary: Interface driver plugin for the libvirtd daemon
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
+%if %{with_netcf}
 Requires: netcf-libs >= 0.2.2
+%endif
 
 %description daemon-driver-interface
 The interface driver plugin for the libvirtd daemon, providing

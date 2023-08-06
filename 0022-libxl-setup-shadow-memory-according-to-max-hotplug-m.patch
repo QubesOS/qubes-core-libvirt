@@ -1,0 +1,55 @@
+From 3a9226aa90cd9d3e7da4bb2e1de7bc72dab087a9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Sat, 5 Aug 2023 22:53:39 +0200
+Subject: [PATCH] libxl: setup shadow memory according to max hotplug memory
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The '<maxMemory>' domain XML element is about maximum memory to be hot
+plugged. Make libxl support this for calculating shadow memory amount,
+which is used by Xen for internal accounting of domain memory (among
+other things). If shadow memory is calculated based on initial memory,
+then the domain can hotplug up to about twice that memory, but not more
+(it silently doesn't get more).
+
+The 'slots' attribute of the '<maxMemory>' element is ignored.
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/libxl/libxl_conf.c   | 5 +++--
+ src/libxl/libxl_domain.c | 1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index fd57ebf79b..f89f2dd978 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -874,8 +874,9 @@ libxlMakeDomBuildInfo(virDomainDef *def,
+ 
+     /* Allow libxl to calculate shadow memory requirements */
+     b_info->shadow_memkb =
+-        libxl_get_required_shadow_memory(b_info->max_memkb,
+-                                         b_info->max_vcpus);
++        libxl_get_required_shadow_memory(
++                def->mem.max_memory ? : b_info->max_memkb,
++                b_info->max_vcpus);
+ 
+     if (def->namespaceData) {
+         libxlDomainXmlNsDef *nsdata = def->namespaceData;
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index 8620efc4f0..6c2313fdf8 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -325,6 +325,7 @@ virDomainDefParserConfig libxlDomainDefParserConfig = {
+ 
+     .features = VIR_DOMAIN_DEF_FEATURE_USER_ALIAS |
+                 VIR_DOMAIN_DEF_FEATURE_FW_AUTOSELECT |
++                VIR_DOMAIN_DEF_FEATURE_MEMORY_HOTPLUG |
+                 VIR_DOMAIN_DEF_FEATURE_NET_MODEL_STRING,
+ };
+ 
+-- 
+2.41.0
+

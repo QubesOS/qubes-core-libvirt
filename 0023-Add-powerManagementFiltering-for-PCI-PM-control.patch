@@ -1,0 +1,156 @@
+From 0cecd8256c4c6fdc466d7beb9612ed080e1aeb07 Mon Sep 17 00:00:00 2001
+From: Simon Gaiser <simon@invisiblethingslab.com>
+Date: Mon, 12 Feb 2024 10:53:55 +0100
+Subject: [PATCH] Add powerManagementFiltering for PCI PM control
+
+TODO: doc, non-libxl
+---
+ src/conf/domain_conf.c            |  9 +++++++++
+ src/conf/domain_conf.h            |  1 +
+ src/conf/schemas/domaincommon.rng |  5 +++++
+ src/libxl/libxl_conf.c            |  1 +
+ src/libxl/xen_common.c            | 29 +++++++++++++++++++++++++++--
+ 5 files changed, 43 insertions(+), 2 deletions(-)
+
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index e7cfddf11c..6db1f2693f 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -5654,6 +5654,11 @@ virDomainHostdevSubsysPCIDefParseXML(xmlNodePtr node,
+                                &def->writeFiltering) < 0)
+         return -1;
+ 
++    if (virXMLPropTristateBool(node, "powerManagementFiltering",
++                               VIR_XML_PROP_NONE,
++                               &def->powerManagementFiltering) < 0)
++        return -1;
++
+     if ((address = virXPathNode("./address", ctxt)) &&
+         virPCIDeviceAddressParseXML(address, &def->source.subsys.u.pci.addr) < 0)
+         return -1;
+@@ -22991,6 +22996,10 @@ virDomainHostdevDefFormatSubsysPCI(virBuffer *buf,
+             virBufferAsprintf(&sourceAttrBuf, " writeFiltering='%s'",
+                               virTristateBoolTypeToString(def->writeFiltering));
+ 
++    if (def->powerManagementFiltering != VIR_TRISTATE_BOOL_ABSENT)
++            virBufferAsprintf(&sourceAttrBuf, " powerManagementFiltering='%s'",
++                              virTristateBoolTypeToString(def->powerManagementFiltering));
++
+     if (pcisrc->backend != VIR_DOMAIN_HOSTDEV_PCI_BACKEND_DEFAULT) {
+         const char *backend = virDomainHostdevSubsysPCIBackendTypeToString(pcisrc->backend);
+ 
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index 07937bad34..293d17bd09 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -388,6 +388,7 @@ struct _virDomainHostdevDef {
+     bool readonly;
+     bool shareable;
+     virTristateBool writeFiltering;
++    virTristateBool powerManagementFiltering;
+     bool nostrictreset;
+     union {
+         virDomainHostdevSubsys subsys;
+diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
+index 735125c14a..b7692c20ea 100644
+--- a/src/conf/schemas/domaincommon.rng
++++ b/src/conf/schemas/domaincommon.rng
+@@ -6070,6 +6070,11 @@
+             <ref name="virYesNo"/>
+           </attribute>
+         </optional>
++        <optional>
++          <attribute name="powerManagementFiltering">
++            <ref name="virYesNo"/>
++          </attribute>
++        </optional>
+         <element name="address">
+           <ref name="pciaddress"/>
+         </element>
+diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
+index f89f2dd978..aa2062bef3 100644
+--- a/src/libxl/libxl_conf.c
++++ b/src/libxl/libxl_conf.c
+@@ -2351,6 +2351,7 @@ libxlMakePCI(virDomainHostdevDef *hostdev, libxl_device_pci *pcidev)
+     pcidev->dev = pcisrc->addr.slot;
+     pcidev->func = pcisrc->addr.function;
+     pcidev->permissive = hostdev->writeFiltering == VIR_TRISTATE_BOOL_NO;
++    pcidev->power_mgmt = hostdev->powerManagementFiltering == VIR_TRISTATE_BOOL_NO;
+     /* there is no LIBXL_HAVE_xxx for this field... */
+     if (hostdev->nostrictreset)
+         pcidev->rdm_policy = LIBXL_RDM_RESERVE_POLICY_RELAXED;
+diff --git a/src/libxl/xen_common.c b/src/libxl/xen_common.c
+index 6918a4b121..dcb01b2b52 100644
+--- a/src/libxl/xen_common.c
++++ b/src/libxl/xen_common.c
+@@ -380,6 +380,7 @@ xenParsePCI(char *entry)
+     int slot;
+     int func;
+     virTristateBool filtered = VIR_TRISTATE_BOOL_ABSENT;
++    virTristateBool powerManagementFiltering = VIR_TRISTATE_BOOL_ABSENT;
+ 
+     /* pci=['00:1b.0','0000:00:13.0,permissive=1'] */
+     if (!(tokens = g_strsplit(entry, ":", 3)))
+@@ -440,6 +441,14 @@ xenParsePCI(char *entry)
+                     return NULL;
+                 filtered = intval ? VIR_TRISTATE_BOOL_NO : VIR_TRISTATE_BOOL_YES;
+             }
++            if (STREQ(options[i], "power_mgmt")) {
++                int intval;
++
++                /* xl.cfg(5) specifies false as 0 and true as any other numeric value */
++                if (virStrToLong_i(val, NULL, 10, &intval) < 0)
++                    return NULL;
++                powerManagementFiltering = intval ? VIR_TRISTATE_BOOL_NO : VIR_TRISTATE_BOOL_YES;
++            }
+         }
+     }
+ 
+@@ -448,6 +457,7 @@ xenParsePCI(char *entry)
+ 
+     hostdev->managed = false;
+     hostdev->writeFiltering = filtered;
++    hostdev->powerManagementFiltering = powerManagementFiltering;
+     hostdev->source.subsys.type = VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI;
+     hostdev->source.subsys.u.pci.addr.domain = domain;
+     hostdev->source.subsys.u.pci.addr.bus = bus;
+@@ -1751,6 +1761,7 @@ xenFormatPCI(virConf *conf, virDomainDef *def)
+             virConfValue *tmp;
+             char *buf;
+             const char *permissive_str = NULL;
++            const char *power_mgmt_str = NULL;
+ 
+             switch (def->hostdevs[i]->writeFiltering) {
+                 case VIR_TRISTATE_BOOL_YES:
+@@ -1765,12 +1776,26 @@ xenFormatPCI(virConf *conf, virDomainDef *def)
+                     break;
+             }
+ 
+-            buf = g_strdup_printf("%04x:%02x:%02x.%x%s",
++            switch (def->hostdevs[i]->powerManagementFiltering) {
++                case VIR_TRISTATE_BOOL_YES:
++                    power_mgmt_str = ",power_mgmt=0";
++                    break;
++                case VIR_TRISTATE_BOOL_NO:
++                    power_mgmt_str = ",power_mgmt=1";
++                    break;
++                case VIR_TRISTATE_BOOL_ABSENT:
++                case VIR_TRISTATE_BOOL_LAST:
++                    power_mgmt_str = "";
++                    break;
++            }
++
++            buf = g_strdup_printf("%04x:%02x:%02x.%x%s%s",
+                                   def->hostdevs[i]->source.subsys.u.pci.addr.domain,
+                                   def->hostdevs[i]->source.subsys.u.pci.addr.bus,
+                                   def->hostdevs[i]->source.subsys.u.pci.addr.slot,
+                                   def->hostdevs[i]->source.subsys.u.pci.addr.function,
+-                                  permissive_str);
++                                  permissive_str,
++                                  power_mgmt_str);
+ 
+ 
+             val = g_new0(virConfValue, 1);
+-- 
+2.41.0
+

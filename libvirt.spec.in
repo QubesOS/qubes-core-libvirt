@@ -301,6 +301,7 @@ Patch0020: 0020-libxl-adjust-ich6-sound-card-name.patch
 Patch0021: 0021-libxl-set-net-disk-trusted-parameter-based-on-backen.patch
 Patch0022: 0022-libxl-setup-shadow-memory-according-to-max-hotplug-m.patch
 Patch0023: 0023-Add-powerManagementFiltering-for-PCI-PM-control.patch
+Patch0024: 0024-libxl-don-t-create-vkb-device-for-qubes-graphics-out.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}

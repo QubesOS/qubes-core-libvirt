@@ -1,4 +1,4 @@
-From 84dc98be7c2821804cb5234e8e8827ff1407a1c6 Mon Sep 17 00:00:00 2001
+From afa10e786e8ebb608c39770637edf00a8a96a4d5 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:41:04 +0200
 Subject: [PATCH] libxl: use disk 'script' attribute
@@ -18,10 +18,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 918303c8d0..134af3e767 100644
+index 62e1be6672..6cdbd9698a 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1080,6 +1080,8 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
+@@ -1092,6 +1092,8 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
  
      x_disk->vdev = g_strdup(l_disk->dst);
  
@@ -31,5 +31,5 @@ index 918303c8d0..134af3e767 100644
          if (STREQ(driver, "tap") || STREQ(driver, "tap2")) {
              switch (format) {
 -- 
-2.37.3
+2.45.2
 

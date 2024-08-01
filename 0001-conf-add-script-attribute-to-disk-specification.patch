@@ -1,4 +1,4 @@
-From 8a2678d184a2a888a12a34370a255d69785a3779 Mon Sep 17 00:00:00 2001
+From 3afc6d4ba5838cf6cd2a31032442491401989094 Mon Sep 17 00:00:00 2001
 From: Marek Marczykowski <marmarek@invisiblethingslab.com>
 Date: Fri, 5 Apr 2013 01:37:29 +0200
 Subject: [PATCH] conf: add 'script' attribute to disk specification
@@ -24,18 +24,18 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  3 files changed, 12 insertions(+)
 
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 7dba65cfeb..93b411b96b 100644
+index cb1154b23f..bcc5e17204 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -2287,6 +2287,7 @@ virDomainDiskDefFree(virDomainDiskDef *def)
+@@ -2392,6 +2392,7 @@ virDomainDiskDefFree(virDomainDiskDef *def)
      g_free(def->domain_name);
      g_free(def->blkdeviotune.group_name);
      g_free(def->virtio);
 +    g_free(def->script);
      virDomainDeviceInfoClear(&def->info);
      virObjectUnref(def->privateData);
- 
-@@ -7927,6 +7928,7 @@ virDomainDiskDefParseXML(virDomainXMLOption *xmlopt,
+     g_slist_free_full(def->iothreads, (GDestroyNotify) virDomainDiskIothreadDefFree);
+@@ -8194,6 +8195,7 @@ virDomainDiskDefParseXML(virDomainXMLOption *xmlopt,
          return NULL;
  
      def->domain_name = virXPathString("string(./backenddomain/@name)", ctxt);
@@ -43,7 +43,7 @@ index 7dba65cfeb..93b411b96b 100644
      def->serial = virXPathString("string(./serial)", ctxt);
      def->wwn = virXPathString("string(./wwn)", ctxt);
      def->vendor = virXPathString("string(./vendor)", ctxt);
-@@ -22332,6 +22334,7 @@ virDomainDiskDefFormat(virBuffer *buf,
+@@ -23016,6 +23018,7 @@ virDomainDiskDefFormat(virBuffer *buf,
          return -1;
  
      virBufferEscapeString(&childBuf, "<backenddomain name='%s'/>\n", def->domain_name);
@@ -52,10 +52,10 @@ index 7dba65cfeb..93b411b96b 100644
      virDomainDiskGeometryDefFormat(&childBuf, def);
      virDomainDiskBlockIoDefFormat(&childBuf, def);
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 8f8a54bc41..1d54075de3 100644
+index 2818a9f1f5..8f1245f202 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -622,6 +622,7 @@ struct _virDomainDiskDef {
+@@ -580,6 +580,7 @@ struct _virDomainDiskDef {
      unsigned int queue_size;
      virDomainDiskModel model;
      virDomainVirtioOptions *virtio;
@@ -64,10 +64,10 @@ index 8f8a54bc41..1d54075de3 100644
      bool diskElementAuth;
      bool diskElementEnc;
 diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
-index d346442510..bdc0d4ff6d 100644
+index 844a931deb..faaf69bdee 100644
 --- a/src/conf/schemas/domaincommon.rng
 +++ b/src/conf/schemas/domaincommon.rng
-@@ -1518,6 +1518,14 @@
+@@ -1601,6 +1601,14 @@
            <empty/>
          </element>
        </optional>
@@ -83,5 +83,5 @@ index d346442510..bdc0d4ff6d 100644
          <element name="readonly">
            <empty/>
 -- 
-2.37.3
+2.45.2
 

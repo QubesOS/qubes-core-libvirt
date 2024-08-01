@@ -1,4 +1,4 @@
-From 264f321508b5efde63323cf4ad449d487c66a33b Mon Sep 17 00:00:00 2001
+From 38b6bf3ec3d7df7c1dcfedf8b648cb72f7c6859c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 23 May 2015 04:25:01 +0200
@@ -20,28 +20,28 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  src/conf/domain_conf.h            |  1 +
  src/conf/schemas/domaincommon.rng |  5 +++++
  src/hypervisor/virhostdev.c       |  2 ++
- src/util/virpci.c                 | 19 ++++++++++++++++++-
+ src/util/virpci.c                 | 18 ++++++++++++++++++
  src/util/virpci.h                 |  2 ++
- 7 files changed, 42 insertions(+), 1 deletion(-)
+ 7 files changed, 42 insertions(+)
 
 diff --git a/docs/formatdomain.rst b/docs/formatdomain.rst
-index 4deb290433..f040059172 100644
+index 1629b84407..582571e4e8 100644
 --- a/docs/formatdomain.rst
 +++ b/docs/formatdomain.rst
-@@ -4216,6 +4216,8 @@ or:
-       starting the guest or hot-plugging the device and
-       ``virNodeDeviceReAttach`` (or ``virsh nodedev-reattach``) after hot-unplug
-       or stopping the guest.
+@@ -4424,6 +4424,8 @@ or:
+       to the guest. This framebuffer allows the vgpu to be used as a boot display
+       before the gpu driver is loaded within the guest. ``ramfb`` requires the
+       ``display`` attribute to be set to ``on``.
 +      Additionally when ``strictreset`` is ``no``, device will be assigned to
 +      the domain, even when reset fails. The default is ``yes``.
     ``scsi``
        For SCSI devices, user is responsible to make sure the device is not used
        by host. If supported by the hypervisor and OS, the optional ``sgio`` (
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index ae258b51d6..502a3c87ac 100644
+index c41bb3492e..a5459c9ae9 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -6021,6 +6021,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -6226,6 +6226,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
      virDomainHostdevSubsysSCSIVHost *scsihostsrc = &def->source.subsys.u.scsi_host;
      virDomainHostdevSubsysMediatedDev *mdevsrc = &def->source.subsys.u.mdev;
      virTristateBool managed;
@@ -49,7 +49,7 @@ index ae258b51d6..502a3c87ac 100644
      g_autofree char *model = NULL;
      int rv;
  
-@@ -6033,6 +6034,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -6238,6 +6239,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
                                          VIR_XML_PROP_NONE, &managed));
      virTristateBoolToBool(managed, &def->managed);
  
@@ -61,7 +61,7 @@ index ae258b51d6..502a3c87ac 100644
      model = virXMLPropString(node, "model");
  
      /* @type is passed in from the caller rather than read from the
-@@ -23205,6 +23211,8 @@ virDomainActualNetDefFormat(virBuffer *buf,
+@@ -23906,6 +23912,8 @@ virDomainActualNetDefFormat(virBuffer *buf,
          virDomainHostdevDef *hostdef = virDomainNetGetActualHostdev(def);
          if  (hostdef && hostdef->managed)
              virBufferAddLit(buf, " managed='yes'");
@@ -70,7 +70,7 @@ index ae258b51d6..502a3c87ac 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -23400,6 +23408,8 @@ virDomainNetDefFormat(virBuffer *buf,
+@@ -24200,6 +24208,8 @@ virDomainNetDefFormat(virBuffer *buf,
      virBufferAsprintf(buf, "<interface type='%s'", typeStr);
      if (hostdef && hostdef->managed)
          virBufferAddLit(buf, " managed='yes'");
@@ -79,7 +79,7 @@ index ae258b51d6..502a3c87ac 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -25491,6 +25501,8 @@ virDomainHostdevDefFormat(virBuffer *buf,
+@@ -26409,6 +26419,8 @@ virDomainHostdevDefFormat(virBuffer *buf,
      if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
          virBufferAsprintf(buf, " managed='%s'",
                            def->managed ? "yes" : "no");
@@ -89,10 +89,10 @@ index ae258b51d6..502a3c87ac 100644
          if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
              scsisrc->sgio)
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 1de6504859..e70aaeea31 100644
+index d149eae979..f0db176cd1 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -388,6 +388,7 @@ struct _virDomainHostdevDef {
+@@ -368,6 +368,7 @@ struct _virDomainHostdevDef {
      bool readonly;
      bool shareable;
      virTristateBool writeFiltering;
@@ -101,10 +101,10 @@ index 1de6504859..e70aaeea31 100644
          virDomainHostdevSubsys subsys;
          virDomainHostdevCaps caps;
 diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
-index bca958c55a..af2f9a86e4 100644
+index 69cdb2e8c8..583b0421dc 100644
 --- a/src/conf/schemas/domaincommon.rng
 +++ b/src/conf/schemas/domaincommon.rng
-@@ -3402,6 +3402,11 @@
+@@ -3618,6 +3618,11 @@
                <ref name="virYesNo"/>
              </attribute>
            </optional>
@@ -117,7 +117,7 @@ index bca958c55a..af2f9a86e4 100644
              <element name="source">
                <optional>
 diff --git a/src/hypervisor/virhostdev.c b/src/hypervisor/virhostdev.c
-index c0ce867596..d8abf0727e 100644
+index 185ec2ca50..03e493ea57 100644
 --- a/src/hypervisor/virhostdev.c
 +++ b/src/hypervisor/virhostdev.c
 @@ -255,6 +255,8 @@ virHostdevGetPCIHostDevice(const virDomainHostdevDef *hostdev,
@@ -130,19 +130,18 @@ index c0ce867596..d8abf0727e 100644
      return 0;
  }
 diff --git a/src/util/virpci.c b/src/util/virpci.c
-index 7800966963..ec7bd6bb2b 100644
+index 289c0b330b..38163699f1 100644
 --- a/src/util/virpci.c
 +++ b/src/util/virpci.c
-@@ -86,7 +86,7 @@ struct _virPCIDevice {
+@@ -91,6 +91,7 @@ struct _virPCIDevice {
      /**/
  
      bool          managed;
--
 +    bool          strictreset;
-     virPCIStubDriver stubDriver;
  
-     /* used by reattach function */
-@@ -1075,6 +1075,9 @@ virPCIDeviceReset(virPCIDevice *dev,
+     virPCIStubDriver stubDriverType;
+     char            *stubDriverName; /* if blank, use default for type */
+@@ -1157,6 +1158,9 @@ virPCIDeviceReset(virPCIDevice *dev,
                         dev->name,
                         err ? err->message :
                         _("no FLR, PM reset or bus reset available"));
@@ -152,7 +151,7 @@ index 7800966963..ec7bd6bb2b 100644
      }
  
   cleanup:
-@@ -1462,6 +1465,8 @@ virPCIDeviceNew(const virPCIDeviceAddress *address)
+@@ -1873,6 +1877,8 @@ virPCIDeviceNew(const virPCIDeviceAddress *address)
  
      virPCIDeviceAddressCopy(&dev->address, address);
  
@@ -161,7 +160,7 @@ index 7800966963..ec7bd6bb2b 100644
      dev->name = virPCIDeviceAddressAsString(&dev->address);
  
      dev->path = g_strdup_printf(PCI_SYSFS "devices/%s/config", dev->name);
-@@ -1574,6 +1579,18 @@ virPCIDeviceGetManaged(virPCIDevice *dev)
+@@ -1987,6 +1993,18 @@ virPCIDeviceGetManaged(virPCIDevice *dev)
      return dev->managed;
  }
  
@@ -178,21 +177,21 @@ index 7800966963..ec7bd6bb2b 100644
 +}
 +
  void
- virPCIDeviceSetStubDriver(virPCIDevice *dev, virPCIStubDriver driver)
+ virPCIDeviceSetStubDriverType(virPCIDevice *dev, virPCIStubDriver driverType)
  {
 diff --git a/src/util/virpci.h b/src/util/virpci.h
-index 4d9193f24e..49350d0940 100644
+index ba5e0ae6f1..c6f5a784f3 100644
 --- a/src/util/virpci.h
 +++ b/src/util/virpci.h
-@@ -137,6 +137,8 @@ bool virPCIDeviceGetManaged(virPCIDevice *dev);
- void virPCIDeviceSetStubDriver(virPCIDevice *dev,
-                                virPCIStubDriver driver);
- virPCIStubDriver virPCIDeviceGetStubDriver(virPCIDevice *dev);
+@@ -135,6 +135,8 @@ virPCIStubDriver virPCIDeviceGetStubDriverType(virPCIDevice *dev);
+ void virPCIDeviceSetStubDriverName(virPCIDevice *dev,
+                                    const char *driverName);
+ const char *virPCIDeviceGetStubDriverName(virPCIDevice *dev);
 +void virPCIDeviceSetStrictReset(virPCIDevice *dev, bool strictreset);
 +unsigned int virPCIDeviceGetStrictReset(virPCIDevice *dev);
  virPCIDeviceAddress *virPCIDeviceGetAddress(virPCIDevice *dev);
  int virPCIDeviceSetUsedBy(virPCIDevice *dev,
                            const char *drv_name,
 -- 
-2.37.3
+2.45.2
 

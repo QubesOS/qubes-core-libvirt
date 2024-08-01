@@ -4,7 +4,7 @@
 # that's still supported by the vendor. It may work on other distros
 # or versions, but no effort will be made to ensure that going forward
 %define min_rhel 8
-%define min_fedora 32
+%define min_fedora 33
 
 %if (0%{?fedora} && 0%{?fedora} >= %{min_fedora}) || (0%{?rhel} && 0%{?rhel} >= %{min_rhel})
     %define supported_platform 1
@@ -17,13 +17,14 @@ Name: libvirt-python
 Version: @VERSION@
 Release: @REL@%{?dist}
 Epoch: 1000
-Source0: %{name}-%{version}.tar.gz
+Source0: https://libvirt.org/sources/python/%{name}-%{version}.tar.gz
 Url: https://libvirt.org
-License: LGPLv2+
+License: LGPL-2.1-or-later
 BuildRequires: libvirt-devel == %{epoch}:%{version}
 BuildRequires: python3-devel
 BuildRequires: python3-pytest
 BuildRequires: python3-lxml
+BuildRequires: python3-setuptools
 BuildRequires: gcc
 
 # Don't want provides for python shared objects
@@ -70,10 +71,10 @@ exit 1
 %py3_install
 
 %check
-%{__python3} setup.py test
+%pytest
 
 %files -n python3-libvirt
-%doc ChangeLog AUTHORS README COPYING COPYING.LESSER examples/
+%doc ChangeLog AUTHORS README COPYING examples/
 %{python3_sitearch}/libvirt.py*
 %{python3_sitearch}/libvirtaio.py*
 %{python3_sitearch}/libvirt_qemu.py*

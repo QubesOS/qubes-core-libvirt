@@ -1,4 +1,4 @@
-From f0a1b52e902fcf41244e1b57b2814d6bdcacbd43 Mon Sep 17 00:00:00 2001
+From de6dcd12f817428e8ec90611b04c86d5ff5a2c47 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 13 Apr 2022 15:58:50 +0200
@@ -17,10 +17,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 7 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 1ca48fb3a7..017c5ee590 100644
+index 39a97b0405..389b6a1411 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -512,6 +512,13 @@ libxlMakeDomBuildInfo(virDomainDef *def,
+@@ -516,6 +516,13 @@ libxlMakeDomBuildInfo(virDomainDef *def,
                                  hasHwVirt = true;
                                  continue;
                              }
@@ -35,5 +35,5 @@ index 1ca48fb3a7..017c5ee590 100644
                              g_snprintf(xlCPU,
                                         sizeof(xlCPU),
 -- 
-2.37.3
+2.45.2
 

@@ -1,4 +1,4 @@
-From e33af4836a12f29e2560468915a3ccde1626222e Mon Sep 17 00:00:00 2001
+From 5fbbb1f38f5687eee7a25c129abbebfa5d036b0c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Fri, 28 Oct 2022 03:21:40 +0200
@@ -17,7 +17,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 76fd07ada0..45b95070e4 100644
+index 6aac88d940..e96684e483 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
 @@ -1491,7 +1491,11 @@ libxlDomainPMSuspendForDuration(virDomainPtr dom,
@@ -27,12 +27,12 @@ index 76fd07ada0..45b95070e4 100644
 -    if (ret < 0) {
 +    if (ret == ERROR_NOPARAVIRT) {
 +        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
-+                       _("Domain '%d' does not support suspend"), vm->def->id);
++                       _("Domain '%1$d' does not support suspend"), vm->def->id);
 +        goto endjob;
 +    } else if (ret < 0) {
          virReportError(VIR_ERR_INTERNAL_ERROR,
-                        _("Failed to suspend domain '%d'"), vm->def->id);
+                        _("Failed to suspend domain '%1$d'"), vm->def->id);
          goto endjob;
 -- 
-2.37.3
+2.45.2
 

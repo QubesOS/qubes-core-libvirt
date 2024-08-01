@@ -1,4 +1,4 @@
-From c525832d8ecd3275415b406ccc6d6d7f1e3dc327 Mon Sep 17 00:00:00 2001
+From 52d7efc085374cf207acc407aa9e0d8ec5c7bcfa Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 5 Jan 2023 17:53:53 +0100
@@ -16,6 +16,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  tests/libxlxml2domconfigdata/basic-pv.json              | 6 ++++--
  tests/libxlxml2domconfigdata/basic-pvh.json             | 6 ++++--
  tests/libxlxml2domconfigdata/cpu-shares-hvm.json        | 6 ++++--
+ tests/libxlxml2domconfigdata/efi-hvm.json               | 6 ++++--
  tests/libxlxml2domconfigdata/fullvirt-acpi-slic.json    | 3 ++-
  tests/libxlxml2domconfigdata/fullvirt-cpuid.json        | 3 ++-
  tests/libxlxml2domconfigdata/max-eventchannels-hvm.json | 6 ++++--
@@ -24,23 +25,23 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  tests/libxlxml2domconfigdata/multiple-ip.json           | 3 ++-
  tests/libxlxml2domconfigdata/variable-clock-hvm.json    | 6 ++++--
  tests/libxlxml2domconfigdata/vnuma-hvm.json             | 6 ++++--
- 13 files changed, 50 insertions(+), 22 deletions(-)
+ 14 files changed, 54 insertions(+), 24 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index fef19e6ace..fd57ebf79b 100644
+index 444e76d117..fa1701d505 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1265,6 +1265,9 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
+@@ -1254,6 +1254,9 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
+     }
  
-     if (l_disk->domain_name)
-         x_disk->backend_domname = g_strdup(l_disk->domain_name);
+     x_disk->backend_domname = g_strdup(l_disk->domain_name);
 +#ifdef LIBXL_HAVE_DISK_TRUSTED
 +    libxl_defbool_set(&x_disk->trusted, l_disk->domain_name == NULL);
 +#endif
  
      return 0;
  }
-@@ -1480,6 +1483,9 @@ libxlMakeNic(virDomainDef *def,
+@@ -1467,6 +1470,9 @@ libxlMakeNic(virDomainDef *def,
  
      if (l_nic->domain_name)
          x_nic->backend_domname = g_strdup(l_nic->domain_name);
@@ -137,6 +138,30 @@ index 15105c83ad..298acbc2db 100644
      ],
      "nics": [
 @@ -64,7 +65,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/efi-hvm.json b/tests/libxlxml2domconfigdata/efi-hvm.json
+index 32b5a49c3f..f2128b1a9c 100644
+--- a/tests/libxlxml2domconfigdata/efi-hvm.json
++++ b/tests/libxlxml2domconfigdata/efi-hvm.json
+@@ -57,7 +57,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -66,7 +67,8 @@
              "mac": "00:16:3e:66:12:b4",
              "bridge": "br0",
              "script": "/etc/xen/scripts/vif-bridge",
@@ -319,5 +344,5 @@ index 68c1c2501d..4d3507e7da 100644
      ],
      "vfbs": [
 -- 
-2.37.3
+2.45.2
 

@@ -1,4 +1,4 @@
-From d83ee492f5fd0263773f4c31ba06740abef82393 Mon Sep 17 00:00:00 2001
+From 12ba2585c1866785b35e06d25efc24d104b42569 Mon Sep 17 00:00:00 2001
 From: Ivan Kardykov <kardykov@tabit.pro>
 Date: Sat, 19 Nov 2022 23:40:29 +0100
 Subject: [PATCH] libxl: add support for xengt video device
@@ -11,18 +11,22 @@ Add ability to configure xengt video device with options.
 Signed-off-by: Ivan Kardykov <kardykov@tabit.pro>
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
 ---
- src/conf/domain_conf.c            | 29 +++++++++++++++++++++++++++++
+ src/conf/domain_conf.c            | 11 +++++++++++
  src/conf/domain_conf.h            |  4 ++++
  src/conf/schemas/domaincommon.rng | 20 ++++++++++++++++++++
  src/libxl/libxl_conf.c            |  9 +++++++++
  src/libxl/libxl_domain.c          |  1 +
- 5 files changed, 63 insertions(+)
+ src/qemu/qemu_command.c           |  3 +++
+ src/qemu/qemu_domain_address.c    |  1 +
+ src/qemu/qemu_monitor_json.c      |  2 ++
+ src/qemu/qemu_process.c           |  1 +
+ 9 files changed, 52 insertions(+)
 
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 6b15766804..e7cfddf11c 100644
+index 93daae18f6..d9efdeef11 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -859,6 +859,7 @@ VIR_ENUM_IMPL(virDomainVideo,
+@@ -884,6 +884,7 @@ VIR_ENUM_IMPL(virDomainVideo,
                "cirrus",
                "vmvga",
                "xen",
@@ -30,7 +34,7 @@ index 6b15766804..e7cfddf11c 100644
                "vbox",
                "qxl",
                "parallels",
-@@ -12606,6 +12607,7 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
+@@ -12969,6 +12970,7 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
      switch (type) {
      case VIR_DOMAIN_VIDEO_TYPE_VGA:
      case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
@@ -38,52 +42,27 @@ index 6b15766804..e7cfddf11c 100644
      case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
          if (def->virtType == VIR_DOMAIN_VIRT_VBOX)
              return 8 * 1024;
-@@ -12731,6 +12733,9 @@ virDomainVideoDefParseXML(virDomainXMLOption *xmlopt,
-     g_autofree char *ram = NULL;
-     g_autofree char *vgamem = NULL;
-     g_autofree char *primary = NULL;
-+    g_autofree char *low_gm_sz = NULL;
-+    g_autofree char *high_gm_sz = NULL;
-+    g_autofree char *fence_sz = NULL;
+@@ -13117,6 +13119,15 @@ virDomainVideoModelDefParseXML(virDomainVideoDef *def,
+     if (virXMLPropUInt(node, "vgamem", 10, VIR_XML_PROP_NONE, &def->vgamem) < 0)
+         return -1;
  
-     if (!(def = virDomainVideoDefNew(xmlopt)))
-         return NULL;
-@@ -12799,6 +12804,30 @@ virDomainVideoDefParseXML(virDomainXMLOption *xmlopt,
-         }
-     }
++    if (virXMLPropUInt(node, "low_gm_sz", 10, VIR_XML_PROP_NONE, &def->low_gm_sz) < 0)
++        return -1;
++
++    if (virXMLPropUInt(node, "high_gm_sz", 10, VIR_XML_PROP_NONE, &def->high_gm_sz) < 0)
++        return -1;
++
++    if (virXMLPropUInt(node, "fence_sz", 10, VIR_XML_PROP_NONE, &def->fence_sz) < 0)
++        return -1;
++
+     if (virXMLPropUIntDefault(node, "heads", 10, VIR_XML_PROP_NONE, &def->heads, 1) < 0)
+         return -1;
  
-+    if ((heads = virXPathString("string(./model/@low_gm_sz)", ctxt))) {
-+        if (virStrToLong_uip(heads, NULL, 10, &def->low_gm_sz) < 0) {
-+            virReportError(VIR_ERR_INTERNAL_ERROR,
-+                           _("cannot parse video low_gm_sz '%s'"), heads);
-+            return NULL;
-+        }
-+    }
-+
-+    if ((heads = virXPathString("string(./model/@high_gm_sz)", ctxt))) {
-+        if (virStrToLong_uip(heads, NULL, 10, &def->high_gm_sz) < 0) {
-+            virReportError(VIR_ERR_INTERNAL_ERROR,
-+                           _("cannot parse video high_gm_sz '%s'"), heads);
-+            return NULL;
-+        }
-+    }
-+
-+    if ((heads = virXPathString("string(./model/@fence_sz)", ctxt))) {
-+        if (virStrToLong_uip(heads, NULL, 10, &def->fence_sz) < 0) {
-+            virReportError(VIR_ERR_INTERNAL_ERROR,
-+                           _("cannot parse video fence_sz '%s'"), heads);
-+            return NULL;
-+        }
-+    }
-+
-     if ((heads = virXPathString("string(./model/@heads)", ctxt))) {
-         if (virStrToLong_uip(heads, NULL, 10, &def->heads) < 0) {
-             virReportError(VIR_ERR_INTERNAL_ERROR,
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index 566c4beeb4..07937bad34 100644
+index b3edac1587..1ee3149603 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -1741,6 +1741,7 @@ typedef enum {
+@@ -1786,6 +1786,7 @@ typedef enum {
      VIR_DOMAIN_VIDEO_TYPE_CIRRUS,
      VIR_DOMAIN_VIDEO_TYPE_VMVGA,
      VIR_DOMAIN_VIDEO_TYPE_XEN,
@@ -91,7 +70,7 @@ index 566c4beeb4..07937bad34 100644
      VIR_DOMAIN_VIDEO_TYPE_VBOX,
      VIR_DOMAIN_VIDEO_TYPE_QXL,
      VIR_DOMAIN_VIDEO_TYPE_PARALLELS, /* pseudo device for VNC in containers */
-@@ -1789,6 +1790,9 @@ struct _virDomainVideoDef {
+@@ -1834,6 +1835,9 @@ struct _virDomainVideoDef {
      unsigned int vram64; /* kibibytes (multiples of 1024) */
      unsigned int vgamem; /* kibibytes (multiples of 1024) */
      unsigned int heads;
@@ -102,10 +81,10 @@ index 566c4beeb4..07937bad34 100644
      virDomainVideoAccelDef *accel;
      virDomainVideoResolutionDef *res;
 diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
-index 7e674d6a6e..735125c14a 100644
+index 44c21582ce..1f0f942065 100644
 --- a/src/conf/schemas/domaincommon.rng
 +++ b/src/conf/schemas/domaincommon.rng
-@@ -4465,6 +4465,26 @@
+@@ -4737,6 +4737,26 @@
                    </attribute>
                  </optional>
                </group>
@@ -133,10 +112,10 @@ index 7e674d6a6e..735125c14a 100644
              <optional>
                <attribute name="vram">
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 017c5ee590..85abe92e3c 100644
+index 389b6a1411..444e76d117 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2434,6 +2434,15 @@ libxlMakeVideo(virDomainDef *def, libxl_domain_config *d_config)
+@@ -2437,6 +2437,15 @@ libxlMakeVideo(virDomainDef *def, libxl_domain_config *d_config)
                  return -1;
              }
              break;
@@ -150,13 +129,13 @@ index 017c5ee590..85abe92e3c 100644
 +               b_info->u.hvm.vgt_fence_sz = def->videos[0]->fence_sz;
 +            break;
  
-         default:
-             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+         case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
+         case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index ad27c4ef8b..8620efc4f0 100644
+index 1a2487e999..d9f5256f86 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
-@@ -189,6 +189,7 @@ libxlDomainDeviceDefPostParse(virDomainDeviceDef *dev,
+@@ -195,6 +195,7 @@ libxlDomainDeviceDefPostParse(virDomainDeviceDef *dev,
                              dev->data.video->vram = 8 * 1024;
                      }
                      break;
@@ -164,6 +143,78 @@ index ad27c4ef8b..8620efc4f0 100644
                  case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
                      if (dev->data.video->vram == 0) {
                          if (dm_type == LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN)
+diff --git a/src/qemu/qemu_command.c b/src/qemu/qemu_command.c
+index b02b09a825..61beb44260 100644
+--- a/src/qemu/qemu_command.c
++++ b/src/qemu/qemu_command.c
+@@ -80,6 +80,7 @@ VIR_ENUM_IMPL(qemuVideo,
+               "cirrus",
+               "vmware",
+               "", /* don't support xen */
++              "", /* don't support xengt */
+               "", /* don't support vbox */
+               "qxl",
+               "", /* don't support parallels */
+@@ -756,6 +757,7 @@ qemuDeviceVideoGetModel(virQEMUCaps *qemuCaps,
+                 break;
+             case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
+             case VIR_DOMAIN_VIDEO_TYPE_XEN:
++            case VIR_DOMAIN_VIDEO_TYPE_XENGT:
+             case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+             case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+             case VIR_DOMAIN_VIDEO_TYPE_GOP:
+@@ -783,6 +785,7 @@ qemuDeviceVideoGetModel(virQEMUCaps *qemuCaps,
+             case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+             case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
+             case VIR_DOMAIN_VIDEO_TYPE_XEN:
++            case VIR_DOMAIN_VIDEO_TYPE_XENGT:
+             case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+             case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+             case VIR_DOMAIN_VIDEO_TYPE_GOP:
+diff --git a/src/qemu/qemu_domain_address.c b/src/qemu/qemu_domain_address.c
+index 251f5b7e1a..52e11584b3 100644
+--- a/src/qemu/qemu_domain_address.c
++++ b/src/qemu/qemu_domain_address.c
+@@ -871,6 +871,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDef *dev,
+         case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+         case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
+         case VIR_DOMAIN_VIDEO_TYPE_XEN:
++        case VIR_DOMAIN_VIDEO_TYPE_XENGT:
+         case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+         case VIR_DOMAIN_VIDEO_TYPE_QXL:
+         case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+diff --git a/src/qemu/qemu_monitor_json.c b/src/qemu/qemu_monitor_json.c
+index 89ea33a3ab..0b842838d8 100644
+--- a/src/qemu/qemu_monitor_json.c
++++ b/src/qemu/qemu_monitor_json.c
+@@ -1803,6 +1803,7 @@ qemuMonitorJSONUpdateVideoMemorySize(qemuMonitor *mon,
+     case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
+     case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+     case VIR_DOMAIN_VIDEO_TYPE_XEN:
++    case VIR_DOMAIN_VIDEO_TYPE_XENGT:
+     case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+     case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+     case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
+@@ -1852,6 +1853,7 @@ qemuMonitorJSONUpdateVideoVram64Size(qemuMonitor *mon,
+     case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+     case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
+     case VIR_DOMAIN_VIDEO_TYPE_XEN:
++    case VIR_DOMAIN_VIDEO_TYPE_XENGT:
+     case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+     case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+     case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
+diff --git a/src/qemu/qemu_process.c b/src/qemu/qemu_process.c
+index 6f5ff93cf6..bce65382d1 100644
+--- a/src/qemu/qemu_process.c
++++ b/src/qemu/qemu_process.c
+@@ -3045,6 +3045,7 @@ qemuProcessUpdateVideoRamSize(virQEMUDriver *driver,
+         case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
+         case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+         case VIR_DOMAIN_VIDEO_TYPE_XEN:
++        case VIR_DOMAIN_VIDEO_TYPE_XENGT:
+         case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+         case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+         case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
 -- 
-2.37.3
+2.45.2
 

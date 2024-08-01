@@ -1,4 +1,4 @@
-From c7ae3b0eaa021bd7beb1ff7d4d42b9df8e3a9b37 Mon Sep 17 00:00:00 2001
+From c282684f846ee39dfa28084dbcaad33f7c07a46a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Wed, 25 Nov 2015 00:48:56 +0100
@@ -16,7 +16,7 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 30 insertions(+)
 
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 3e99ed7212..8da16e55d3 100644
+index 2feaefc00c..9c0b8c866c 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
 @@ -1167,6 +1167,15 @@ libxlDomainSuspend(virDomainPtr dom)
@@ -27,14 +27,14 @@ index 3e99ed7212..8da16e55d3 100644
 +        if (stubdom_domid) {
 +            if (libxlDomainPauseWrapper(cfg->ctx, stubdom_domid) != 0) {
 +                virReportError(VIR_ERR_INTERNAL_ERROR,
-+                               _("Failed to suspend domain '%d' with libxenlight"),
++                               _("Failed to suspend domain '%1$d' with libxenlight"),
 +                               stubdom_domid);
 +                goto endjob;
 +            }
 +        }
          if (libxlDomainPauseWrapper(cfg->ctx, vm->def->id) != 0) {
              virReportError(VIR_ERR_INTERNAL_ERROR,
-                            _("Failed to suspend domain '%d' with libxenlight"),
+                            _("Failed to suspend domain '%1$d' with libxenlight"),
 @@ -1203,6 +1212,8 @@ libxlDomainResume(virDomainPtr dom)
      libxlDriverConfig *cfg = libxlDriverConfigGet(driver);
      virDomainObj *vm;
@@ -51,7 +51,7 @@ index 3e99ed7212..8da16e55d3 100644
 +        stubdom_domid = libxl_get_stubdom_id(cfg->ctx, vm->def->id);
          if (libxlDomainUnpauseWrapper(cfg->ctx, vm->def->id) != 0) {
              virReportError(VIR_ERR_INTERNAL_ERROR,
-                            _("Failed to resume domain '%d' with libxenlight"),
+                            _("Failed to resume domain '%1$d' with libxenlight"),
                             vm->def->id);
              goto endjob;
          }
@@ -62,13 +62,13 @@ index 3e99ed7212..8da16e55d3 100644
 +             */
 +            if (libxl_domain_info(cfg->ctx, &d_info, stubdom_domid) != 0) {
 +                virReportError(VIR_ERR_INTERNAL_ERROR,
-+                               _("Failed to get '%d' stubdomain state with libxenlight"),
++                               _("Failed to get '%1$d' stubdomain state with libxenlight"),
 +                               stubdom_domid);
 +                goto endjob;
 +            }
 +            if (d_info.paused && libxlDomainUnpauseWrapper(cfg->ctx, stubdom_domid) != 0) {
 +                virReportError(VIR_ERR_INTERNAL_ERROR,
-+                               _("Failed to resume domain '%d' with libxenlight"),
++                               _("Failed to resume domain '%1$d' with libxenlight"),
 +                               stubdom_domid);
 +                goto endjob;
 +            }
@@ -77,5 +77,5 @@ index 3e99ed7212..8da16e55d3 100644
          virDomainObjSetState(vm, VIR_DOMAIN_RUNNING,
                               VIR_DOMAIN_RUNNING_UNPAUSED);
 -- 
-2.37.3
+2.45.2
 

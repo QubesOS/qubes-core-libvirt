@@ -285,10 +285,15 @@
 %define with_hyperv        0
 %define with_xenapi        0
 %define with_parallels     0
-%define with_qemu 0
 %define with_lxc 0
 %define with_uml 0
 %define with_hal 0
+
+# Enabled only to keep some package dependencies happy (like make libguestfs
+# installable)
+%define with_qemu 1
+%define with_qemu_kvm 1
+%define with_qemu_tcg 1
 
 # This isn't useful for Qubes OS (with xen provided network setup scripts
 # inside netvm), but perhaps would be enabled in the future for other VMM
@@ -364,8 +369,9 @@ Requires: libvirt-daemon-driver-libxl = %{epoch}:%{version}-%{release}
 Requires: libvirt-daemon-driver-lxc = %{epoch}:%{version}-%{release}
 %endif
 %if %{with_qemu}
-Requires: libvirt-daemon-driver-qemu = %{epoch}:%{version}-%{release}
-Requires: libvirt-client-qemu = %{epoch}:%{version}-%{release}
+# Not on Qubes:
+#Requires: libvirt-daemon-driver-qemu = %{epoch}:%{version}-%{release}
+#Requires: libvirt-client-qemu = %{epoch}:%{version}-%{release}
 %endif
 # We had UML driver, but we've removed it.
 Obsoletes: libvirt-daemon-driver-uml <= 5.0.0
@@ -741,7 +747,7 @@ Requires: util-linux
 Requires: scrub
     %if %{with_qemu}
 # From QEMU RPMs
-Requires: /usr/bin/qemu-img
+# Not on Qubes: Requires: /usr/bin/qemu-img
     %endif
     %if !%{with_storage_rbd}
 Obsoletes: libvirt-daemon-driver-storage-rbd < 5.2.0

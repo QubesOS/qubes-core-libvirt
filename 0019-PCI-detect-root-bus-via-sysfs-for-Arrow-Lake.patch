@@ -1,0 +1,149 @@
+From 4fe3da13e222a358bb47cf4b21a2a33ae8ff387a Mon Sep 17 00:00:00 2001
+From: ehanoc <ehanoc@protonmail.com>
+Date: Sat, 25 Apr 2026 15:06:45 +0100
+Subject: [PATCH] util: Allow for PCI root buses not numbered "0"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/util/virpci.c | 106 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 100 insertions(+), 6 deletions(-)
+
+diff --git a/src/util/virpci.c b/src/util/virpci.c
+index d43fa1ef54..642717d23c 100644
+--- a/src/util/virpci.c
++++ b/src/util/virpci.c
+@@ -1080,6 +1080,87 @@ virPCIDeviceInit(virPCIDevice *dev, int cfgfd)
+     return 0;
+ }
+ 
++/*
++ * Check if a PCI device is directly attached to a root bus (no parent bridge).
++ *
++ * A PCIe topology can have multiple root buses (a "root" bus is any
++ * PCI bus that doesn't have yet another higher level PCI bus as its
++ * parent), so by definition we can't detect a root bus by just
++ * looking for bus 0. Instead, we can detect if a bus is attached to a
++ * root bus by examining the *canonical* path of the device's
++ * directory in sysfs: a device is connected directly to a root bus if
++ * its canonicalized sysfs path is a direct child of a
++ * /sys/devices/pciXXXX:YY directory. For example, this device:
++ *
++ *   /sys/bus/pci/devices/0000:00:14.0      (path in "flat" sysfs pci namespace)
++ *   /sys/devices/pci0000:80/0000:80:14.0). (canonicalized version of above)
++
++ * is connnected to a root bus. Conversely, if the given device's
++ * canonial path has yet another PCI device as its parent in the
++ * sys/device's hierarchy, then it *isn't* attached to a root bus,
++ * e.g.:
++ *
++ *   /sys/bus/pci/devices/0000:04:00.1                  (link in "flat" namespace)
++ *   /sys/devices/pci0000:00/0000:00:1c.4/0000:04:00.0  (canonicalized)
++ *
++ * Returns 1 if the given device is directly attached to a root bus,
++ * 0 if not, -1 on error.
++ */
++static int
++virPCIDeviceIsOnRootBus(virPCIDevice *dev)
++{
++    unsigned int domain, bus;
++    g_autofree char *devPath = NULL;
++    g_autofree char *canonicalPath = NULL;
++    g_autofree char *parentPath = NULL;
++    g_autofree char *parentName = NULL;
++
++    /* Get the sysfs symlink path for this device */
++    devPath = g_strdup_printf(PCI_SYSFS "devices/%s", dev->name);
++
++    /* Resolve the symlink to get the real path in /sys/devices/... */
++    if (virFileResolveLink(devPath, &canonicalPath) < 0) {
++        virReportSystemError(errno, _("failed to resolve links in PCI device %1$s sysfs path '%2$s'"),
++                             dev->name, devPath);
++        return -1;
++    }
++
++    /* get just the final component of the parent directory */
++    parentPath = g_path_get_dirname(canonicalPath);
++    parentName = g_path_get_basename(parentPath);
++
++    /*
++     * Detect root bus by parsing the parent directory name with sscanf.
++     *
++     * PCI root buses in /sys/devices follow the naming convention:
++     * pci<domain>:<bus>
++     *
++     *   <domain>: number (0000-ffff, hex)
++     *   <bus>:    number within the domain (00-ff, hex)
++     *
++     * This format is defined in:
++     * https://www.kernel.org/doc/html/latest/PCI/sysfs-pci.html
++     *
++     * Examples from Intel Arrow Lake systems:
++     *   - pci0000:00  (CPU root bus)
++     *   - pci0000:80  (PCH root bus)
++     *
++     * We aren't concerned with the actual values parsed by sscanf,
++     * only whether or not the parse was successful - if soo, then we
++     * return 1 indicating this device is attached to a root bus,
++     * otherwise 0.
++     */
++    if (sscanf(parentName, "pci%x:%x", &domain, &bus) == 2) {
++        VIR_DEBUG("%s %s: device is on root bus (parent=%s)",
++                  dev->id, dev->name, parentName);
++        return 1;
++    }
++
++    VIR_DEBUG("%s %s: device is not on root bus (parent=%s)",
++              dev->id, dev->name, parentName);
++    return 0;
++}
++
+ int
+ virPCIDeviceReset(virPCIDevice *dev,
+                   virPCIDeviceList *activeDevs,
+@@ -1145,9 +1226,18 @@ virPCIDeviceReset(virPCIDevice *dev,
+     if (dev->has_pm_reset)
+         ret = virPCIDeviceTryPowerManagementReset(dev, fd);
+ 
+-    /* Bus reset is not an option with the root bus */
+-    if (ret < 0 && dev->address.bus != 0)
+-        ret = virPCIDeviceTrySecondaryBusReset(dev, fd, inactiveDevs);
++    /* If power management reset isn't available (or if it failed),
++     * and the bus we're attached to isn't a root bus, try a secondary
++     * bus reset. (This is not an option if we are attached directly
++     * to a root bus).
++     */
++    if (ret < 0) {
++        int onRootBus = virPCIDeviceIsOnRootBus(dev);
++        if (onRootBus < 0)
++            goto cleanup;
++        if (!onRootBus)
++            ret = virPCIDeviceTrySecondaryBusReset(dev, fd, inactiveDevs);
++    }
+ 
+     if (ret < 0) {
+         virErrorPtr err = virGetLastError();
+@@ -2531,15 +2621,19 @@ static int
+ virPCIDeviceIsBehindSwitchLackingACS(virPCIDevice *dev)
+ {
+     g_autoptr(virPCIDevice) parent = NULL;
++    int onRootBus;
+ 
+     if (virPCIDeviceGetParent(dev, &parent) < 0)
+         return -1;
+     if (!parent) {
+-        /* if we have no parent, and this is the root bus, ACS doesn't come
+-         * into play since devices on the root bus can't P2P without going
++        /* if we have no parent, and this is a root bus, ACS doesn't come
++         * into play since devices on root buses can't P2P without going
+          * through the root IOMMU.
+          */
+-        if (dev->address.bus == 0) {
++        onRootBus = virPCIDeviceIsOnRootBus(dev);
++        if (onRootBus < 0)
++            return -1;
++        if (onRootBus) {
+             return 0;
+         } else {
+             virReportError(VIR_ERR_INTERNAL_ERROR,

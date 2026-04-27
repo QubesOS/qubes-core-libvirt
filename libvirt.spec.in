@@ -356,6 +356,7 @@ Patch0015: 0015-libxl-set-net-disk-trusted-parameter-based-on-backen.patch
 Patch0016: 0016-libxl-setup-shadow-memory-according-to-max-hotplug-m.patch
 Patch0017: 0017-Add-powerManagementFiltering-for-PCI-PM-control.patch
 Patch0018: 0018-libxl-don-t-create-vkb-device-for-qubes-graphics-out.patch
+Patch0019: 0019-PCI-detect-root-bus-via-sysfs-for-Arrow-Lake.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}

@@ -1,0 +1,66 @@
+From 61453b0c50b5b470da51e3cf8661dc22423ea324 Mon Sep 17 00:00:00 2001
+Message-ID: <61453b0c50b5b470da51e3cf8661dc22423ea324.1792077638.git.ben@invisiblethingslab.com>
+In-Reply-To: <cover.1792077638.git.ben@invisiblethingslab.com>
+References: <cover.1792077638.git.ben@invisiblethingslab.com>
+From: Ben Grande <ben@invisiblethingslab.com>
+Date: Thu, 15 Oct 2026 14:45:16 +0200
+Subject: [PATCH 1/3] libxl: Propagate reboot stopped reason
+To: devel@lists.libvirt.org
+Cc: marmarek@invisiblethingslab.com
+
+The VIR_DOMAIN_EVENT_STOPPED_REBOOT detail type is sent when guest or
+host requested a reboot, and "on_reboot" is set to "restart" or
+"destroy". The value "destroy" is useful for applications that have
+routines run between restarts.
+
+Resolves: https://github.com/QubesOS/qubes-issues/issues/8196
+Signed-off-by: Ben Grande <ben@invisiblethingslab.com>
+---
+ include/libvirt/libvirt-domain.h | 1 +
+ src/libvirt-domain.c             | 4 +++-
+ src/libxl/libxl_domain.c         | 2 +-
+ 3 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/include/libvirt/libvirt-domain.h b/include/libvirt/libvirt-domain.h
+index 8f00e9e959..c5876e6261 100644
+--- a/include/libvirt/libvirt-domain.h
++++ b/include/libvirt/libvirt-domain.h
+@@ -3889,6 +3889,7 @@ typedef enum {
+  * Since: 0.5.0
+  */
+ typedef enum {
++    VIR_DOMAIN_EVENT_STOPPED_REBOOT = 8,    /* Host or guest requested reboot (Since: 10.5.0) */
+     VIR_DOMAIN_EVENT_STOPPED_SHUTDOWN = 0,  /* Normal shutdown (Since: 0.5.0) */
+     VIR_DOMAIN_EVENT_STOPPED_DESTROYED = 1, /* Forced poweroff from host (Since: 0.5.0) */
+     VIR_DOMAIN_EVENT_STOPPED_CRASHED = 2,   /* Guest crashed (Since: 0.5.0) */
+diff --git a/src/libvirt-domain.c b/src/libvirt-domain.c
+index 7c6b93963c..c22dbc0f54 100644
+--- a/src/libvirt-domain.c
++++ b/src/libvirt-domain.c
+@@ -1716,7 +1716,9 @@ virDomainShutdownFlags(virDomainPtr domain, unsigned int flags)
+  * Note that the guest OS may ignore the request.
+  * Additionally, the hypervisor may check and support the domain
+  * 'on_reboot' XML setting resulting in a domain that shuts down instead
+- * of rebooting.
++ * of rebooting. Depending on the hypervisor and 'on_reboot' setting,
++ * VIR_DOMAIN_EVENT_ID_REBOOT might be emitted. For more information, see
++ * https://libvirt.org/formatdomain.html#events-configuration
+  *
+  * If @flags is set to zero, then the hypervisor will choose the
+  * method of shutdown it considers best. To have greater control
+diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
+index 0f129ec69c..bbf5a55ae7 100644
+--- a/src/libxl/libxl_domain.c
++++ b/src/libxl/libxl_domain.c
+@@ -477,7 +477,7 @@ libxlDomainShutdownThread(void *opaque)
+ 
+         dom_event = virDomainEventLifecycleNewFromObj(vm,
+                                            VIR_DOMAIN_EVENT_STOPPED,
+-                                           VIR_DOMAIN_EVENT_STOPPED_SHUTDOWN);
++                                           VIR_DOMAIN_EVENT_STOPPED_REBOOT);
+         switch ((virDomainLifecycleAction) vm->def->onReboot) {
+         case VIR_DOMAIN_LIFECYCLE_ACTION_DESTROY:
+             libxlDomainShutdownHandleDestroy(driver, vm);
+-- 
+Benjamin Grande
+

@@ -1,0 +1,40 @@
+From 5896525538a9112738d94710588852e28c6a8fb1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 15 Oct 2026 23:45:37 +0200
+Subject: [PATCH] virpci: fix handling newline in PCI device class
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The referenced commit removed trimming newline resulting in errors like:
+
+        Unusual value in /sys/bus/pci//devices/0000:00:17.0/class: 0x010601
+
+It's perfectly valid class, it's just the newline that virStrToLong_ui
+didn't like (as it wasn't parsed end endptr is given NULL).
+
+Restore stripping newline, but do so a bit nicer than hardcoded offset.
+
+Fixes: 58b3a78aff "virPCIDeviceReadClass: Don't write beyond end of buffer from virFileReadAll"
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ src/util/virpci.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/util/virpci.c b/src/util/virpci.c
+index 34fc70e261..66500132c9 100644
+--- a/src/util/virpci.c
++++ b/src/util/virpci.c
+@@ -488,6 +488,8 @@ virPCIDeviceReadClass(virPCIDevice *dev, uint16_t *device_class)
+     if (virFileReadAll(path, 9, &id_str) < 0)
+         return -1;
+ 
++    virStringTrimOptionalNewline(id_str);
++
+     if (virStrToLong_ui(id_str, NULL, 16, &value) < 0) {
+         virReportError(VIR_ERR_INTERNAL_ERROR,
+                        _("Unusual value in %1$s/devices/%2$s/class: %3$s"),
+-- 
+2.54.0
+

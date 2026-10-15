@@ -1,0 +1,102 @@
+From 4db869467ced2c09b7cc0d237359683437c9356e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
+ <marmarek@invisiblethingslab.com>
+Date: Thu, 15 Oct 2026 18:28:02 +0200
+Subject: [PATCH] build: set firewall_backend_priority regardless of
+ driver_network
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Set firewall_backend_priority whenever WITH_NWFILTER is set. And
+similarly, print firewall backends on the same condition.
+
+Otherwise a build with -Ddriver_network=disabled fails with:
+
+    src/nwfilter/meson.build:51:43: ERROR: Unknown variable "firewall_backend_priority".
+
+Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
+---
+ meson.build | 52 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 927665b5fb..049d259555 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1650,31 +1650,6 @@ endif
+ 
+ if not get_option('driver_network').disabled() and conf.has('WITH_LIBVIRTD')
+   conf.set('WITH_NETWORK', 1)
+-
+-  firewall_backend_priority = get_option('firewall_backend_priority')
+-  if firewall_backend_priority.length() == 0
+-      if host_machine.system() == 'linux'
+-          firewall_backend_priority = ['nftables', 'iptables']
+-      elif host_machine.system() == 'freebsd'
+-          firewall_backend_priority = ['pf']
+-      else
+-          # No firewall impl on non-Linux so far, so force 'none'
+-          # as placeholder
+-          firewall_backend_priority = ['none']
+-      endif
+-  else
+-      if host_machine.system() != 'linux'
+-          error('firewall backend priority only supported on linux hosts')
+-      endif
+-  endif
+-
+-  backends = []
+-  foreach backend: firewall_backend_priority
+-      backend = 'VIR_FIREWALL_BACKEND_' + backend.to_upper()
+-      backends += backend
+-  endforeach
+-
+-  conf.set('FIREWALL_BACKENDS', ', '.join(backends))
+ elif get_option('driver_network').enabled()
+   error('libvirtd must be enabled to build the network driver')
+ endif
+@@ -2033,6 +2008,31 @@ endif
+ # libvirt daemon is also being compiled
+ if conf.has('WITH_LIBVIRTD') and host_machine.system() == 'linux'
+   conf.set('WITH_NWFILTER', 1)
++
++  firewall_backend_priority = get_option('firewall_backend_priority')
++  if firewall_backend_priority.length() == 0
++      if host_machine.system() == 'linux'
++          firewall_backend_priority = ['nftables', 'iptables']
++      elif host_machine.system() == 'freebsd'
++          firewall_backend_priority = ['pf']
++      else
++          # No firewall impl on non-Linux so far, so force 'none'
++          # as placeholder
++          firewall_backend_priority = ['none']
++      endif
++  else
++      if host_machine.system() != 'linux'
++          error('firewall backend priority only supported on linux hosts')
++      endif
++  endif
++
++  backends = []
++  foreach backend: firewall_backend_priority
++      backend = 'VIR_FIREWALL_BACKEND_' + backend.to_upper()
++      backends += backend
++  endforeach
++
++  conf.set('FIREWALL_BACKENDS', ', '.join(backends))
+ endif
+ 
+ if not get_option('pm_utils').disabled()
+@@ -2373,7 +2373,7 @@ misc_summary = {
+   'virt-login-shell': conf.has('WITH_LOGIN_SHELL'),
+   'Warning Flags': supported_cc_flags,
+ }
+-if conf.has('WITH_NETWORK')
++if conf.has('WITH_NWFILTER')
+   misc_summary += {
+     'firewall backends': firewall_backend_priority,
+   }
+-- 
+2.54.0
+

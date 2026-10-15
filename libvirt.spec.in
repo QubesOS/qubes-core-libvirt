@@ -282,7 +282,10 @@
 %define with_storage_iscsi_direct 0
 %define with_storage_mpath 0
 %define with_storage_rbd 0
+%define with_storage_gluster 0
 %define with_libssh2_transport 0
+%define with_libssh2 0
+%define with_libssh 0
 %define with_sanlock 0
 %define with_firewalld 0
 %define with_firewalld_zone 0

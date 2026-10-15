@@ -351,12 +351,10 @@ Patch0010: 0010-libxl-add-support-for-stubdom_mem-option.patch
 Patch0011: 0011-libxl-add-support-for-emulator-kernel-and-ramdisk-pa.patch
 Patch0012: 0012-libxl-Fix-setting-invtsc-in-Xen-4.14.patch
 Patch0013: 0013-libxl-fail-with-distinct-error-on-unsupported-PM-sus.patch
-Patch0014: 0014-libxl-add-support-for-xengt-video-device.patch
-Patch0015: 0015-libxl-set-net-disk-trusted-parameter-based-on-backen.patch
-Patch0016: 0016-libxl-setup-shadow-memory-according-to-max-hotplug-m.patch
-Patch0017: 0017-Add-powerManagementFiltering-for-PCI-PM-control.patch
-Patch0018: 0018-libxl-don-t-create-vkb-device-for-qubes-graphics-out.patch
-Patch0019: 0019-PCI-detect-root-bus-via-sysfs-for-Arrow-Lake.patch
+Patch0014: 0014-libxl-set-net-disk-trusted-parameter-based-on-backen.patch
+Patch0015: 0015-libxl-setup-shadow-memory-according-to-max-hotplug-m.patch
+Patch0016: 0016-Add-powerManagementFiltering-for-PCI-PM-control.patch
+Patch0017: 0017-libxl-don-t-create-vkb-device-for-qubes-graphics-out.patch
 
 Requires: libvirt-daemon = %{epoch}:%{version}-%{release}
 %if %{with_network}
@@ -1083,7 +1081,6 @@ Requires: libvirt-daemon-driver-secret = %{version}-%{release}
 Requires: libvirt-daemon-driver-storage = %{version}-%{release}
 %endif
 Requires: xen
-Provides: libvirt-gvt
 
 %description daemon-xen
 Server side daemon and driver required to manage the virtualization

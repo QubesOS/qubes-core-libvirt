@@ -1,4 +1,4 @@
-From d9407161ed3a0e78e27f67ffb3ca99eb605c69d5 Mon Sep 17 00:00:00 2001
+From ec75a02a7ba53fda0c73931011694345913a799a Mon Sep 17 00:00:00 2001
 From: HW42 <hw42@ipsumj.de>
 Date: Sat, 22 Apr 2017 08:57:58 +0200
 Subject: [PATCH] libxl: add support for qubes graphic device
@@ -11,23 +11,24 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  src/conf/domain_conf.c            | 43 +++++++++++++++++++++++++++++++
  src/conf/domain_conf.h            |  5 ++++
  src/conf/schemas/domaincommon.rng | 13 ++++++++++
- src/libxl/libxl_conf.c            |  9 +++++++
+ src/libxl/libxl_conf.c            | 11 ++++++++
  src/libxl/libxl_domain.c          |  1 +
  src/libxl/libxl_driver.c          |  1 +
  src/qemu/qemu_command.c           |  2 ++
  src/qemu/qemu_domain.c            |  1 +
  src/qemu/qemu_driver.c            |  2 ++
+ src/qemu/qemu_extdevice.c         |  2 ++
  src/qemu/qemu_hotplug.c           |  1 +
  src/qemu/qemu_process.c           |  5 ++++
  src/qemu/qemu_validate.c          |  1 +
  src/vmx/vmx.c                     |  1 +
- 13 files changed, 85 insertions(+)
+ 14 files changed, 89 insertions(+)
 
 diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 093568fd1c..befc5e97ff 100644
+index 332c2259d0..845377690f 100644
 --- a/src/conf/domain_conf.c
 +++ b/src/conf/domain_conf.c
-@@ -952,6 +952,7 @@ VIR_ENUM_IMPL(virDomainGraphics,
+@@ -973,6 +973,7 @@ VIR_ENUM_IMPL(virDomainGraphics,
                "vnc",
                "rdp",
                "desktop",
@@ -35,7 +36,7 @@ index 093568fd1c..befc5e97ff 100644
                "spice",
                "egl-headless",
                "dbus",
-@@ -2003,6 +2004,10 @@ void virDomainGraphicsDefFree(virDomainGraphicsDef *def)
+@@ -2081,6 +2082,10 @@ void virDomainGraphicsDefFree(virDomainGraphicsDef *def)
          g_free(def->data.desktop.display);
          break;
  
@@ -46,8 +47,8 @@ index 093568fd1c..befc5e97ff 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          g_free(def->data.spice.rendernode);
          g_free(def->data.spice.keymap);
-@@ -11531,6 +11536,30 @@ virDomainGraphicsDefParseXMLDesktop(virDomainGraphicsDef *def,
-     return 0;
+@@ -12298,6 +12303,30 @@ virDomainGraphicsDefParseXMLDesktop(virDomainGraphicsDef *def,
+     def->data.desktop.display = virXMLPropString(node, "display");
  }
  
 +static int virDomainGraphicsDefParseXMLQubes(virDomainGraphicsDef *def,
@@ -77,9 +78,9 @@ index 093568fd1c..befc5e97ff 100644
  
  static int
  virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDef *def,
-@@ -11817,6 +11846,10 @@ virDomainGraphicsDefParseXML(virDomainXMLOption *xmlopt,
-         if (virDomainGraphicsDefParseXMLDesktop(def, node) < 0)
-             goto error;
+@@ -12583,6 +12612,10 @@ virDomainGraphicsDefParseXML(virDomainXMLOption *xmlopt,
+     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+         virDomainGraphicsDefParseXMLDesktop(def, node);
          break;
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
 +        if (virDomainGraphicsDefParseXMLQubes(def, node) < 0)
@@ -88,8 +89,8 @@ index 093568fd1c..befc5e97ff 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
          if (virDomainGraphicsDefParseXMLSpice(def, node, ctxt, flags) < 0)
              goto error;
-@@ -26157,6 +26190,14 @@ virDomainGraphicsDefFormat(virBuffer *buf,
- 
+@@ -28276,6 +28309,14 @@ virDomainGraphicsDefFormat(virBuffer *buf,
+         virDomainGraphicsDefFormatDesktop(&attrBuf, def);
          break;
  
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
@@ -101,9 +102,9 @@ index 093568fd1c..befc5e97ff 100644
 +        break;
 +
      case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-         if (!glisten) {
-             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-@@ -31048,6 +31089,7 @@ virDomainGraphicsDefHasOpenGL(const virDomainDef *def)
+         if (virDomainGraphicsDefFormatSpice(&attrBuf, &childBuf, def, flags) < 0)
+             return -1;
+@@ -33289,6 +33330,7 @@ virDomainGraphicsDefHasOpenGL(const virDomainDef *def)
          switch (graphics->type) {
          case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
          case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -111,7 +112,7 @@ index 093568fd1c..befc5e97ff 100644
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
              continue;
          case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-@@ -31109,6 +31151,7 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics)
+@@ -33350,6 +33392,7 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics)
      case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
      case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
      case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -120,10 +121,10 @@ index 093568fd1c..befc5e97ff 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
          break;
 diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index b1b29df20d..44a9a6ab5c 100644
+index ec6c4e8e30..dda5930b75 100644
 --- a/src/conf/domain_conf.h
 +++ b/src/conf/domain_conf.h
-@@ -1850,6 +1850,7 @@ typedef enum {
+@@ -1944,6 +1944,7 @@ typedef enum {
      VIR_DOMAIN_GRAPHICS_TYPE_VNC,
      VIR_DOMAIN_GRAPHICS_TYPE_RDP,
      VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP,
@@ -131,7 +132,7 @@ index b1b29df20d..44a9a6ab5c 100644
      VIR_DOMAIN_GRAPHICS_TYPE_SPICE,
      VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS,
      VIR_DOMAIN_GRAPHICS_TYPE_DBUS,
-@@ -2026,6 +2027,10 @@ struct _virDomainGraphicsDef {
+@@ -2123,6 +2124,10 @@ struct _virDomainGraphicsDef {
              virTristateBool gl;
              char *rendernode;
          } spice;
@@ -143,10 +144,10 @@ index b1b29df20d..44a9a6ab5c 100644
              char *rendernode;
          } egl_headless;
 diff --git a/src/conf/schemas/domaincommon.rng b/src/conf/schemas/domaincommon.rng
-index 684335d6a2..3e21b51dd8 100644
+index e83c91c05b..9c085456a0 100644
 --- a/src/conf/schemas/domaincommon.rng
 +++ b/src/conf/schemas/domaincommon.rng
-@@ -4285,6 +4285,19 @@
+@@ -4545,6 +4545,19 @@
              <ref name="listenElements"/>
            </interleave>
          </group>
@@ -167,20 +168,22 @@ index 684335d6a2..3e21b51dd8 100644
            <attribute name="type">
              <value>spice</value>
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 80d17a0b0b..40106d901c 100644
+index f9b001cf2e..c5e993b545 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1576,6 +1576,9 @@ libxlMakeVfb(virPortAllocatorRange *graphicsports,
-         case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
-         case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+@@ -1661,6 +1661,11 @@ libxlMakeVfb(virPortAllocatorRange *graphicsports,
+         case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
              break;
+ 
 +        case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
 +            libxl_defbool_set(&x_vfb->vnc.enable, false);
 +            libxl_defbool_set(&x_vfb->sdl.enable, false);
-     }
- 
-     return 0;
-@@ -1650,6 +1653,12 @@ libxlMakeBuildInfoVfb(virPortAllocatorRange *graphicsports,
++            break;
++
+         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+         case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+         case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+@@ -1744,6 +1749,12 @@ libxlMakeBuildInfoVfb(virPortAllocatorRange *graphicsports,
          unsigned short port;
          virDomainGraphicsListenDef *glisten = NULL;
  
@@ -194,10 +197,10 @@ index 80d17a0b0b..40106d901c 100644
              continue;
  
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index 0f129ec69c..1a2487e999 100644
+index 51dc3edcc2..ea7a9a444b 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
-@@ -876,6 +876,7 @@ libxlDomainCleanup(libxlDriverPrivate *driver,
+@@ -946,6 +946,7 @@ libxlDomainCleanup(libxlDriverPrivate *driver,
          case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
          case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
@@ -206,10 +209,10 @@ index 0f129ec69c..1a2487e999 100644
          case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
          case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
 diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
-index 9c0b8c866c..6aac88d940 100644
+index 05590de01f..4407222fbb 100644
 --- a/src/libxl/libxl_driver.c
 +++ b/src/libxl/libxl_driver.c
-@@ -461,6 +461,7 @@ libxlReconnectDomain(virDomainObj *vm,
+@@ -448,6 +448,7 @@ libxlReconnectDomain(virDomainObj *vm,
           case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
           case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
           case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
@@ -218,30 +221,30 @@ index 9c0b8c866c..6aac88d940 100644
           case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
           case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
 diff --git a/src/qemu/qemu_command.c b/src/qemu/qemu_command.c
-index 6ec1e9cbef..b02b09a825 100644
+index bcddb9c922..9ee3cb1d6c 100644
 --- a/src/qemu/qemu_command.c
 +++ b/src/qemu/qemu_command.c
-@@ -8560,6 +8560,7 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfig *cfg,
-             break;
+@@ -8822,6 +8822,7 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfig *cfg,
          case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+             break;
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
 +        case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
              return -1;
          case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
          default:
-@@ -10149,6 +10150,7 @@ qemuBuildCommandLineValidate(virQEMUDriver *driver,
+@@ -10496,6 +10497,7 @@ qemuBuildCommandLineValidate(virQEMUDriver *driver,
+             ++rdp;
              break;
-         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
 +        case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
          case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
              break;
          }
 diff --git a/src/qemu/qemu_domain.c b/src/qemu/qemu_domain.c
-index 1a90311ca5..4f993c2935 100644
+index a4e5f92840..606ac553b0 100644
 --- a/src/qemu/qemu_domain.c
 +++ b/src/qemu/qemu_domain.c
-@@ -3973,6 +3973,7 @@ qemuDomainDefSuggestDefaultAudioBackend(virQEMUDriver *driver,
+@@ -4103,6 +4103,7 @@ qemuDomainDefSuggestDefaultAudioBackend(virQEMUDriver *driver,
  
          case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
@@ -250,10 +253,10 @@ index 1a90311ca5..4f993c2935 100644
          case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
              break;
 diff --git a/src/qemu/qemu_driver.c b/src/qemu/qemu_driver.c
-index fc1704f4fc..0ece9924e4 100644
+index ebf19d7c0f..f8961e582d 100644
 --- a/src/qemu/qemu_driver.c
 +++ b/src/qemu/qemu_driver.c
-@@ -14712,6 +14712,7 @@ qemuDomainOpenGraphics(virDomainPtr dom,
+@@ -15376,6 +15376,7 @@ qemuDomainOpenGraphics(virDomainPtr dom,
          break;
      case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
      case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -261,7 +264,7 @@ index fc1704f4fc..0ece9924e4 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
      case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
          virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-@@ -14783,6 +14784,7 @@ qemuDomainOpenGraphicsFD(virDomainPtr dom,
+@@ -15478,6 +15479,7 @@ qemuDomainOpenGraphicsFD(virDomainPtr dom,
          break;
      case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
      case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -269,79 +272,99 @@ index fc1704f4fc..0ece9924e4 100644
      case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
      case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
          virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+diff --git a/src/qemu/qemu_extdevice.c b/src/qemu/qemu_extdevice.c
+index 93a070f892..adc8eb6b15 100644
+--- a/src/qemu/qemu_extdevice.c
++++ b/src/qemu/qemu_extdevice.c
+@@ -255,6 +255,7 @@ qemuExtDevicesStart(virQEMUDriver *driver,
+             continue;
+         }
+         case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++        case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+         case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+         case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+         case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+@@ -339,6 +340,7 @@ qemuExtDevicesStop(virQEMUDriver *driver,
+         }
+         case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
+         case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++        case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+         case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+         case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+         case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
 diff --git a/src/qemu/qemu_hotplug.c b/src/qemu/qemu_hotplug.c
-index 4a3f4f657e..1fbb52a77b 100644
+index 961885c0e2..fca8a0a19a 100644
 --- a/src/qemu/qemu_hotplug.c
 +++ b/src/qemu/qemu_hotplug.c
-@@ -4445,6 +4445,7 @@ qemuDomainChangeGraphics(virQEMUDriver *driver,
- 
+@@ -4785,6 +4785,7 @@ qemuDomainChangeGraphics(virQEMUDriver *driver,
+         }
+         break;
      case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
      case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
      case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
      case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
 diff --git a/src/qemu/qemu_process.c b/src/qemu/qemu_process.c
-index b9b6ccf1de..6f5ff93cf6 100644
+index 57a3ed3720..e2c0587e3a 100644
 --- a/src/qemu/qemu_process.c
 +++ b/src/qemu/qemu_process.c
-@@ -4819,6 +4819,7 @@ qemuProcessGraphicsReservePorts(virDomainGraphicsDef *graphics,
- 
-     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-+    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
-@@ -4859,6 +4860,7 @@ qemuProcessGraphicsAllocatePorts(virQEMUDriver *driver,
- 
-     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-+    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
-@@ -5027,6 +5029,7 @@ qemuProcessGraphicsSetupListen(virQEMUDriver *driver,
- 
-     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-+    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
-@@ -5113,6 +5116,7 @@ qemuProcessGraphicsSetupRenderNode(virDomainGraphicsDef *graphics,
-     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
-     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-+    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
-     case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
-         virReportEnumRangeError(virDomainGraphicsType, graphics->type);
-         break;
-@@ -5334,6 +5338,7 @@ qemuProcessStartValidateGraphics(virDomainObj *vm)
- 
+@@ -3227,6 +3227,7 @@ qemuProcessInitPasswords(virQEMUDriver *driver,
+                 cfg->rdpUsername, cfg->rdpPassword, asyncJob);
+             break;
          case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
 +        case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
          case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
          case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
          case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
-diff --git a/src/qemu/qemu_validate.c b/src/qemu/qemu_validate.c
-index b392428f48..f0a0a91bf5 100644
---- a/src/qemu/qemu_validate.c
-+++ b/src/qemu/qemu_validate.c
-@@ -4412,6 +4412,7 @@ qemuValidateDomainDeviceDefGraphics(const virDomainGraphicsDef *graphics,
+@@ -5318,6 +5319,7 @@ qemuProcessGraphicsReservePorts(virDomainGraphicsDef *graphics,
+         break;
  
      case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
+@@ -5362,6 +5364,7 @@ qemuProcessGraphicsAllocatePorts(virQEMUDriver *driver,
+         break;
+ 
+     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
+@@ -5533,6 +5536,7 @@ qemuProcessGraphicsSetupListen(virQEMUDriver *driver,
+         break;
+ 
+     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+     case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DBUS:
+@@ -5616,6 +5620,7 @@ qemuProcessGraphicsSetupRenderNode(virDomainGraphicsDef *graphics,
+         rendernode = &graphics->data.dbus.rendernode;
+         break;
+     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
++    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
+     case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
      case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+diff --git a/src/qemu/qemu_validate.c b/src/qemu/qemu_validate.c
+index 08f5a6659d..129f0d9685 100644
+--- a/src/qemu/qemu_validate.c
++++ b/src/qemu/qemu_validate.c
+@@ -5142,6 +5142,7 @@ qemuValidateDomainDeviceDefGraphics(const virDomainGraphicsDef *graphics,
+         break;
+ 
+     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
 +    case VIR_DOMAIN_GRAPHICS_TYPE_QUBES:
      case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
      case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
          break;
 diff --git a/src/vmx/vmx.c b/src/vmx/vmx.c
-index d082a07660..1cbdcaf5b5 100644
+index 1bbe0144d2..e9e6cc0366 100644
 --- a/src/vmx/vmx.c
 +++ b/src/vmx/vmx.c
-@@ -3511,6 +3511,7 @@ virVMXFormatConfig(virVMXContext *ctx, virDomainXMLOption *xmlopt, virDomainDef
+@@ -3726,6 +3726,7 @@ virVMXFormatConfig(virVMXContext *ctx, virDomainXMLOption *xmlopt, virDomainDef
  
            case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
            case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
@@ -350,5 +373,5 @@ index d082a07660..1cbdcaf5b5 100644
            case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
            case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
 -- 
-2.45.2
+2.54.0
 

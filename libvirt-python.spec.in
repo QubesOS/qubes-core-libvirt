@@ -6,6 +6,8 @@
 %define min_rhel 8
 %define min_fedora 33
 
+%define pypi_name libvirt_python
+
 %if (0%{?fedora} && 0%{?fedora} >= %{min_fedora}) || (0%{?rhel} && 0%{?rhel} >= %{min_rhel})
     %define supported_platform 1
 %else
@@ -17,7 +19,7 @@ Name: libvirt-python
 Version: @VERSION@
 Release: @REL@%{?dist}
 Epoch: 1000
-Source0: https://libvirt.org/sources/python/%{name}-%{version}.tar.gz
+Source0: https://libvirt.org/sources/python/%{pypi_name}-%{version}.tar.gz
 Url: https://libvirt.org
 License: LGPL-2.1-or-later
 BuildRequires: libvirt-devel == %{epoch}:%{version}
@@ -52,7 +54,7 @@ supplied by the libvirt library to use the virtualization capabilities
 of recent versions of Linux (and other OSes).
 
 %prep
-%setup -q
+%setup -q -n %{pypi_name}-%{version}
 
 # Unset execute bit for example scripts; it can introduce spurious
 # RPM dependencies, like /usr/bin/python3

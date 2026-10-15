@@ -1,4 +1,4 @@
-From 52d7efc085374cf207acc407aa9e0d8ec5c7bcfa Mon Sep 17 00:00:00 2001
+From 8343ad3a43c6b18a5304174d0295c4ec2a564691 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Thu, 5 Jan 2023 17:53:53 +0100
@@ -24,14 +24,17 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  tests/libxlxml2domconfigdata/moredevs-hvm.json          | 9 ++++++---
  tests/libxlxml2domconfigdata/multiple-ip.json           | 3 ++-
  tests/libxlxml2domconfigdata/variable-clock-hvm.json    | 6 ++++--
+ tests/libxlxml2domconfigdata/viridian-hvm-full.json     | 6 ++++--
+ tests/libxlxml2domconfigdata/viridian-hvm.json          | 6 ++++--
+ tests/libxlxml2domconfigdata/viridian-passthrough.json  | 6 ++++--
  tests/libxlxml2domconfigdata/vnuma-hvm.json             | 6 ++++--
- 14 files changed, 54 insertions(+), 24 deletions(-)
+ 17 files changed, 66 insertions(+), 30 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 444e76d117..fa1701d505 100644
+index c39422ddbc..0d55cfa899 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1254,6 +1254,9 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
+@@ -1343,6 +1343,9 @@ libxlMakeDisk(virDomainDiskDef *l_disk, libxl_device_disk *x_disk)
      }
  
      x_disk->backend_domname = g_strdup(l_disk->domain_name);
@@ -41,7 +44,7 @@ index 444e76d117..fa1701d505 100644
  
      return 0;
  }
-@@ -1467,6 +1470,9 @@ libxlMakeNic(virDomainDef *def,
+@@ -1556,6 +1559,9 @@ libxlMakeNic(virDomainDef *def,
  
      if (l_nic->domain_name)
          x_nic->backend_domname = g_strdup(l_nic->domain_name);
@@ -319,6 +322,78 @@ index 3c131c603c..5328c5daab 100644
          }
      ],
      "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/viridian-hvm-full.json b/tests/libxlxml2domconfigdata/viridian-hvm-full.json
+index 5cb69f7b5d..0b301ecbb6 100644
+--- a/tests/libxlxml2domconfigdata/viridian-hvm-full.json
++++ b/tests/libxlxml2domconfigdata/viridian-hvm-full.json
+@@ -67,7 +67,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -76,7 +77,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/viridian-hvm.json b/tests/libxlxml2domconfigdata/viridian-hvm.json
+index 4f9a52ed89..bbc5349d4a 100644
+--- a/tests/libxlxml2domconfigdata/viridian-hvm.json
++++ b/tests/libxlxml2domconfigdata/viridian-hvm.json
+@@ -65,7 +65,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -74,7 +75,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
+diff --git a/tests/libxlxml2domconfigdata/viridian-passthrough.json b/tests/libxlxml2domconfigdata/viridian-passthrough.json
+index 66069931f6..43dfb47673 100644
+--- a/tests/libxlxml2domconfigdata/viridian-passthrough.json
++++ b/tests/libxlxml2domconfigdata/viridian-passthrough.json
+@@ -121,7 +121,8 @@
+             "backend": "qdisk",
+             "format": "raw",
+             "removable": 1,
+-            "readwrite": 1
++            "readwrite": 1,
++            "trusted": "True"
+         }
+     ],
+     "nics": [
+@@ -130,7 +131,8 @@
+             "mac": "00:16:3e:66:12:b4",
+             "bridge": "br0",
+             "script": "/etc/xen/scripts/vif-bridge",
+-            "nictype": "vif_ioemu"
++            "nictype": "vif_ioemu",
++            "trusted": "True"
+         }
+     ],
+     "vfbs": [
 diff --git a/tests/libxlxml2domconfigdata/vnuma-hvm.json b/tests/libxlxml2domconfigdata/vnuma-hvm.json
 index 68c1c2501d..4d3507e7da 100644
 --- a/tests/libxlxml2domconfigdata/vnuma-hvm.json
@@ -344,5 +419,5 @@ index 68c1c2501d..4d3507e7da 100644
      ],
      "vfbs": [
 -- 
-2.45.2
+2.54.0
 

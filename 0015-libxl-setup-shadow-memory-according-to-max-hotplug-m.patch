@@ -1,4 +1,4 @@
-From 27a514c9604fcfa5f9397e8a700253e9d271b7c1 Mon Sep 17 00:00:00 2001
+From f5472554022a0692278cec68afcd3a5ffdbf2a56 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 5 Aug 2023 22:53:39 +0200
@@ -23,10 +23,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index fa1701d505..0fb48e7995 100644
+index 0d55cfa899..3e86138b77 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -873,8 +873,9 @@ libxlMakeDomBuildInfo(virDomainDef *def,
+@@ -962,8 +962,9 @@ libxlMakeDomBuildInfo(virDomainDef *def,
  
      /* Allow libxl to calculate shadow memory requirements */
      b_info->shadow_memkb =
@@ -39,10 +39,10 @@ index fa1701d505..0fb48e7995 100644
      if (def->namespaceData) {
          libxlDomainXmlNsDef *nsdata = def->namespaceData;
 diff --git a/src/libxl/libxl_domain.c b/src/libxl/libxl_domain.c
-index d9f5256f86..7991909bab 100644
+index ea7a9a444b..43cbcb5e87 100644
 --- a/src/libxl/libxl_domain.c
 +++ b/src/libxl/libxl_domain.c
-@@ -366,6 +366,7 @@ virDomainDefParserConfig libxlDomainDefParserConfig = {
+@@ -433,6 +433,7 @@ virDomainDefParserConfig libxlDomainDefParserConfig = {
  
      .features = VIR_DOMAIN_DEF_FEATURE_USER_ALIAS |
                  VIR_DOMAIN_DEF_FEATURE_FW_AUTOSELECT |
@@ -51,5 +51,5 @@ index d9f5256f86..7991909bab 100644
  };
  
 -- 
-2.45.2
+2.54.0
 

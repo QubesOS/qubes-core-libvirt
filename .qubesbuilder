@@ -10,6 +10,6 @@ source:
     pubkeys: &id001
     - redhat-jiri-denemark-key.asc
     - redhat-veillard-key.asc
-  - url: https://download.libvirt.org/python/libvirt-python-@VERSION@.tar.gz
-    signature: https://download.libvirt.org/python/libvirt-python-@VERSION@.tar.gz.asc
+  - url: https://download.libvirt.org/python/libvirt_python-@VERSION@.tar.gz
+    signature: https://download.libvirt.org/python/libvirt_python-@VERSION@.tar.gz.asc
     pubkeys: *id001

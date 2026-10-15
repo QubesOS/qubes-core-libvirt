@@ -1,4 +1,4 @@
-From b106b295a60a73b987f8c58993e3e84ea1f9a42e Mon Sep 17 00:00:00 2001
+From 3edc74ec5f0645836670974effdce9745dc1f529 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 28 Nov 2015 18:27:59 +0100
@@ -33,10 +33,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 3221b8f0d9..edd8d15b64 100644
+index 804bc057b3..93e96d2843 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -2284,6 +2284,9 @@ libxlMakePCI(virDomainHostdevDef *hostdev, libxl_device_pci *pcidev)
+@@ -2376,6 +2376,9 @@ libxlMakePCI(virDomainHostdevDef *hostdev, libxl_device_pci *pcidev)
      pcidev->dev = pcisrc->addr.slot;
      pcidev->func = pcisrc->addr.function;
      pcidev->permissive = hostdev->writeFiltering == VIR_TRISTATE_BOOL_NO;
@@ -47,5 +47,5 @@ index 3221b8f0d9..edd8d15b64 100644
      return 0;
  }
 -- 
-2.45.2
+2.54.0
 

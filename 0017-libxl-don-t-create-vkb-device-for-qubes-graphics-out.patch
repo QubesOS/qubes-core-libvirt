@@ -1,4 +1,4 @@
-From 99f18f4f033ab3087e3147305e38d53ff545b291 Mon Sep 17 00:00:00 2001
+From 2ec63bcc7ef9e183e86eeed7eba3a0a80ef6c3a0 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Marek=20Marczykowski-G=C3=B3recki?=
  <marmarek@invisiblethingslab.com>
 Date: Sat, 13 Jul 2024 23:56:29 +0200
@@ -15,10 +15,10 @@ Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/src/libxl/libxl_conf.c b/src/libxl/libxl_conf.c
-index 96d6e68472..c368dc4f4a 100644
+index b597e875cb..40af14fb4f 100644
 --- a/src/libxl/libxl_conf.c
 +++ b/src/libxl/libxl_conf.c
-@@ -1627,6 +1627,7 @@ libxlMakeVfbList(virPortAllocatorRange *graphicsports,
+@@ -1723,6 +1723,7 @@ libxlMakeVfbList(virPortAllocatorRange *graphicsports,
  {
      virDomainGraphicsDef **l_vfbs = def->graphics;
      int nvfbs = def->ngraphics;
@@ -26,7 +26,7 @@ index 96d6e68472..c368dc4f4a 100644
      libxl_device_vfb *x_vfbs;
      libxl_device_vkb *x_vkbs;
      size_t i;
-@@ -1638,7 +1639,8 @@ libxlMakeVfbList(virPortAllocatorRange *graphicsports,
+@@ -1734,7 +1735,8 @@ libxlMakeVfbList(virPortAllocatorRange *graphicsports,
      x_vkbs = g_new0(libxl_device_vkb, nvfbs);
  
      for (i = 0; i < nvfbs; i++) {
@@ -36,7 +36,7 @@ index 96d6e68472..c368dc4f4a 100644
  
          if (libxlMakeVfb(graphicsports, l_vfbs[i], &x_vfbs[i]) < 0)
              goto error;
-@@ -1646,7 +1648,8 @@ libxlMakeVfbList(virPortAllocatorRange *graphicsports,
+@@ -1742,7 +1744,8 @@ libxlMakeVfbList(virPortAllocatorRange *graphicsports,
  
      d_config->vfbs = x_vfbs;
      d_config->vkbs = x_vkbs;
@@ -47,5 +47,5 @@ index 96d6e68472..c368dc4f4a 100644
      return 0;
  
 -- 
-2.45.2
+2.54.0
 

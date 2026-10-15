@@ -3,15 +3,15 @@
 # This spec file assumes you are building on a Fedora or RHEL version
 # that's still supported by the vendor. It may work on other distros
 # or versions, but no effort will be made to ensure that going forward.
-%define min_rhel 8
-%define min_fedora 37
+%define min_rhel 9
+%define min_fedora 41
 
-%define arches_qemu_kvm         %{ix86} x86_64 %{power64} %{arm} aarch64 s390x
+%define arches_qemu_kvm         %{ix86} x86_64 %{power64} aarch64 s390x riscv64
 %if 0%{?rhel}
-    %if 0%{?rhel} > 8
-        %define arches_qemu_kvm     x86_64 aarch64 s390x
+    %if 0%{?rhel} >= 10
+        %define arches_qemu_kvm     x86_64 aarch64 s390x riscv64
     %else
-        %define arches_qemu_kvm     x86_64 %{power64} aarch64 s390x
+        %define arches_qemu_kvm     x86_64 aarch64 s390x
     %endif
 %endif
 
@@ -19,7 +19,7 @@
 %define arches_x86              %{ix86} x86_64
 
 %define arches_systemtap_64bit  %{arches_64bit}
-%define arches_dmidecode        %{arches_x86}
+%define arches_dmidecode        %{arches_x86} aarch64 riscv64
 %define arches_xen              %{arches_x86} aarch64
 %if 0%{?fedora}
     %define arches_xen          x86_64 aarch64
@@ -29,17 +29,38 @@
 %define arches_zfs              %{arches_x86} %{power64} %{arm}
 %define arches_numactl          %{arches_x86} %{power64} aarch64 s390x
 %define arches_numad            %{arches_x86} %{power64} aarch64
+%define arches_ch               x86_64 aarch64
 
-# The hypervisor drivers that run in libvirtd
-%define with_qemu          0%{!?_without_qemu:1}
+# The monolithic libvirtd
+%define with_libvirtd      0%{!?_without_libvirtd:1}
+
+# The hypervisor drivers that run in monolithic libvirtd, or a modular daemon
 %define with_lxc           0%{!?_without_lxc:1}
 %define with_libxl         0%{!?_without_libxl:1}
 %define with_vbox          0%{!?_without_vbox:1}
+%define with_ch            0%{!?_without_ch:1}
+
+%ifarch %{arches_64bit}
+    %define with_qemu      0%{!?_without_qemu:1}
+%else
+    # QEMU drops 32-bit in Fedora 44
+    %if 0%{?fedora} > 43
+        %define with_qemu  0
+    %else
+        %define with_qemu  0%{!?_without_qemu:1}
+    %endif
+%endif
 
 %ifarch %{arches_qemu_kvm}
     %define with_qemu_kvm      %{with_qemu}
 %else
     %define with_qemu_kvm      0
+%endif
+
+%if 0%{?fedora} >= 42
+    %define with_account_add 0
+%else
+    %define with_account_add 1
 %endif
 
 %define with_qemu_tcg      %{with_qemu}
@@ -64,18 +85,13 @@
 
 %define with_storage_gluster 0%{!?_without_storage_gluster:1}
 %if 0%{?rhel}
-    # Glusterfs has been dropped in RHEL-9, and before that
-    # was only enabled on arches where KVM exists
-    %if 0%{?rhel} > 8
-        %define with_storage_gluster 0
-    %else
-        %ifnarch %{arches_qemu_kvm}
-            %define with_storage_gluster 0
-        %endif
-    %endif
+    # Glusterfs has been dropped in RHEL-9.
+    %define with_storage_gluster 0
 %endif
 
-# Fedora has zfs-fuse
+# On Fedora 43, the 'zfs-fuse' package was removed, but is obtainable via
+# other means. Build the backend, but it's no longer considered to be part
+# of 'daemon-driver-storage'.
 %if 0%{?fedora}
     %define with_storage_zfs      0%{!?_without_storage_zfs:1}
 %else
@@ -84,13 +100,12 @@
 
 %define with_storage_iscsi_direct 0%{!?_without_storage_iscsi_direct:1}
 # libiscsi has been dropped in RHEL-9
-%if 0%{?rhel} > 8
+%if 0%{?rhel}
     %define with_storage_iscsi_direct 0
 %endif
 
 # Other optional features
 %define with_numactl          0%{!?_without_numactl:1}
-%define with_userfaultfd_sysctl 0%{!?_without_userfaultfd_sysctl:1}
 
 # A few optional bits off by default, we enable later
 %define with_fuse             0
@@ -124,6 +139,9 @@
 %ifnarch %{arches_ceph}
     %define with_storage_rbd 0
 %endif
+%ifnarch %{arches_ch}
+    %define with_ch 0
+%endif
 
 # RHEL doesn't ship many hypervisor drivers
 %if 0%{?rhel}
@@ -131,15 +149,11 @@
     %define with_vbox 0
     %define with_vmware 0
     %define with_libxl 0
-    %define with_hyperv 0
     %define with_lxc 0
+    %define with_ch 0
 %endif
 
 %define with_firewalld_zone 0%{!?_without_firewalld_zone:1}
-
-%if 0%{?rhel} && 0%{?rhel} < 9
-    %define with_netcf 0%{!?_without_netcf:1}
-%endif
 
 # fuse is used to provide virtualized /proc for LXC
 %if %{with_lxc}
@@ -182,8 +196,7 @@
 # Right now that's not the case anywhere, but things should be fine by the time
 # Fedora 40 is released.
 %if %{with_qemu}
-    # rhel-8 lacks pidfd_open
-    %if 0%{?fedora} || 0%{?rhel} >= 9
+    %if 0%{?fedora} || 0%{?rhel}
         %define with_nbdkit 0%{!?_without_nbdkit:1}
 
         # setting 'with_nbdkit_config_default' must be done only when compiling
@@ -191,7 +204,7 @@
         #
         # TODO: add RHEL 9 once a minor release that contains the necessary SELinux
         #       bits exists (we only support the most recent minor release)
-        %if 0%{?fedora} >= 40
+        %if 0%{?fedora}
             %define with_nbdkit_config_default 0%{!?_without_nbdkit_config_default:1}
         %endif
     %endif
@@ -202,9 +215,21 @@
 %endif
 
 %define with_modular_daemons 0
-%if 0%{?fedora} || 0%{?rhel} >= 9
+%if 0%{?fedora} || 0%{?rhel}
     %define with_modular_daemons 1
 %endif
+
+# Prefer nftables for future OS releases but keep using iptables
+# for existing ones
+%if 0%{?rhel} >= 10 || 0%{?fedora}
+    %define prefer_nftables 1
+    %define firewall_backend_priority nftables,iptables
+%else
+    %define prefer_nftables 0
+    %define firewall_backend_priority iptables,nftables
+%endif
+
+
 
 # Force QEMU to run as non-root
 %define qemu_user  qemu
@@ -241,17 +266,12 @@
 
 # RHEL releases provide stable tool chains and so it is safe to turn
 # compiler warning into errors without being worried about frequent
-# changes in reported warnings
-%if 0%{?rhel}
+# changes in reported warnings. ELN is a rebuild of Rawhide so should
+# be treated as unstable for this flag
+%if 0%{?rhel} && !0%{?eln}
     %define enable_werror -Dwerror=true
 %else
     %define enable_werror -Dwerror=false -Dgit_werror=disabled
-%endif
-
-# Fedora and RHEL-9 are new enough to support /dev/userfaultfd, which
-# does not require enabling vm.unprivileged_userfaultfd sysctl.
-%if 0%{?fedora} || 0%{?rhel} >= 9
-    %define with_userfaultfd_sysctl 0
 %endif
 
 %define tls_priority "@LIBVIRT,SYSTEM"
@@ -288,6 +308,7 @@
 %define with_lxc 0
 %define with_uml 0
 %define with_hal 0
+%define with_ch 0
 
 # Enabled only to keep some package dependencies happy (like make libguestfs
 # installable)
@@ -380,6 +401,9 @@ Obsoletes: libvirt-daemon-uml <= 5.0.0
 %if %{with_vbox}
 Requires: libvirt-daemon-driver-vbox = %{epoch}:%{version}-%{release}
 %endif
+%if %{with_ch}
+Requires: libvirt-daemon-driver-ch = %{epoch}:%{version}-%{release}
+%endif
 Requires: libvirt-daemon-driver-nwfilter = %{epoch}:%{version}-%{release}
 
 Requires: libvirt-daemon-driver-interface = %{epoch}:%{version}-%{release}
@@ -397,7 +421,7 @@ Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 BuildRequires: python3-docutils
 BuildRequires: meson >= 0.56.0
 BuildRequires: ninja-build
-BuildRequires: git
+BuildRequires: git-core
 BuildRequires: perl-interpreter
 BuildRequires: python3
 BuildRequires: python3-pytest
@@ -414,7 +438,7 @@ BuildRequires: gcc
     %if %{with_libxl}
 BuildRequires: xen-devel >= 2001:4.14.5-7
     %endif
-BuildRequires: glib2-devel >= 2.56
+BuildRequires: glib2-devel >= 2.66
 BuildRequires: libxml2-devel
 BuildRequires: readline-devel
 BuildRequires: pkgconfig(bash-completion) >= 2.0
@@ -428,21 +452,14 @@ BuildRequires: augeas
 BuildRequires: systemd-devel >= 185
 BuildRequires: systemd-rpm-macros
 BuildRequires: libpciaccess-devel >= 0.10.9
-BuildRequires: yajl-devel
+BuildRequires: json-c-devel
     %if %{with_sanlock}
 BuildRequires: sanlock-devel >= 2.4
     %endif
 BuildRequires: libpcap-devel >= 1.5.0
 BuildRequires: libnl3-devel
 BuildRequires: libselinux-devel
-BuildRequires: iptables
-BuildRequires: ebtables
-# For modprobe
-BuildRequires: kmod
 BuildRequires: cyrus-sasl-devel
-BuildRequires: polkit >= 0.112
-# For mount/umount in FS driver
-BuildRequires: util-linux
     %if %{with_qemu}
 # For managing ACLs
 BuildRequires: libacl-devel
@@ -453,10 +470,6 @@ BuildRequires: libacl-devel
     %if %{with_nbdkit}
 BuildRequires: libnbd-devel
     %endif
-# For LVM drivers
-BuildRequires: lvm2
-# For pool type=iscsi
-BuildRequires: iscsi-initiator-utils
     %if %{with_storage_iscsi_direct}
 # For pool type=iscsi-direct
 BuildRequires: libiscsi-devel
@@ -479,7 +492,7 @@ BuildRequires: numactl-devel
     %endif
 BuildRequires: libcap-ng-devel >= 0.5.0
     %if %{with_fuse}
-BuildRequires: fuse-devel >= 2.8.6
+BuildRequires: fuse3-devel
     %endif
     %if %{with_libssh2}
 BuildRequires: libssh2-devel >= 1.3.0
@@ -495,16 +508,7 @@ BuildRequires: libwsman-devel >= 2.6.3
     %endif
 BuildRequires: audit-libs-devel
 BuildRequires: systemtap-sdt-devel
-# we need /usr/sbin/dtrace
-BuildRequires: systemtap-sdt-dtrace
-
-# For mount/umount in FS driver
-BuildRequires: util-linux
-# For showmount in FS driver (netfs discovery)
-BuildRequires: nfs-utils
-    %if %{with_numad}
-BuildRequires: numad
-    %endif
+BuildRequires: /usr/bin/dtrace
     %if %{with_wireshark}
 BuildRequires: wireshark-devel
     %endif
@@ -585,6 +589,8 @@ Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 # Recommends here will install libvirt-client by default (if available), but
 # RPM won't complain if the package is unavailable, masked, or removed later.
 Recommends: libvirt-client = %{epoch}:%{version}-%{release}
+# For modprobe and rmmod
+Requires: kmod
 # for /sbin/ip
 Requires: iproute
 # for /sbin/tc
@@ -599,8 +605,10 @@ Requires(posttrans): /usr/bin/systemctl
 Requires(preun): /usr/bin/systemctl
 # libvirtd depends on 'messagebus' service
 Requires: dbus
+    %if %{with_account_add}
 # For uid creation during pre
 Requires(pre): shadow-utils
+    %endif
 # Needed by /usr/libexec/libvirt-guests.sh script.
     %if 0%{?fedora}
 Requires: gettext-runtime
@@ -627,6 +635,7 @@ resources
 %package daemon-plugin-lockd
 Summary: lockd client plugin for virtlockd
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
+Requires: libvirt-daemon-common = %{epoch}:%{version}-%{release}
 Requires: libvirt-daemon-lock = %{epoch}:%{version}-%{release}
 
 %description daemon-plugin-lockd
@@ -678,7 +687,11 @@ Summary: Network driver plugin for the libvirtd daemon
 Requires: libvirt-daemon-common = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
 Requires: dnsmasq >= 2.41
+    %if %{prefer_nftables}
+Requires: nftables
+    %else
 Requires: iptables
+    %endif
 
 %description daemon-driver-network
 The network driver plugin for the libvirtd daemon, providing
@@ -686,13 +699,16 @@ an implementation of the virtual network APIs using the Linux
 bridge capabilities.
 %endif
 
-
 %package daemon-driver-nwfilter
 Summary: Nwfilter driver plugin for the libvirtd daemon
 Requires: libvirt-daemon-common = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
+    %if %{prefer_nftables}
+Requires: nftables
+    %else
 Requires: iptables
 Requires: ebtables
+    %endif
 
 %description daemon-driver-nwfilter
 The nwfilter driver plugin for the libvirtd daemon, providing
@@ -741,8 +757,8 @@ an implementation of the secret key APIs.
 Summary: Storage driver plugin including base backends for the libvirtd daemon
 Requires: libvirt-daemon-common = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
-Requires: nfs-utils
-# For mkfs
+Recommends: nfs-utils
+# For mkfs and mount/umount
 Requires: util-linux
 # For storage wiping with different algorithms
 Requires: scrub
@@ -854,9 +870,13 @@ volumes using the ceph protocol.
 Summary: Storage driver plugin for ZFS
 Requires: libvirt-daemon-driver-storage-core = %{epoch}:%{version}-%{release}
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
-# Support any conforming implementation of zfs
+# Starting with Fedora 43 the 'zfs-fuse' is no longer shipped but obtainable
+# externally. The package builds fine without these. Users will have to provide
+# their own implementation.
+        %if 0%{?fedora} && 0%{?fedora} < 43
 Requires: /sbin/zfs
 Requires: /sbin/zpool
+        %endif
 
 %description daemon-driver-storage-zfs
 The storage driver backend adding implementation of the storage APIs for
@@ -880,7 +900,10 @@ Requires: libvirt-daemon-driver-storage-gluster = %{epoch}:%{version}-%{release}
     %if %{with_storage_rbd}
 Requires: libvirt-daemon-driver-storage-rbd = %{epoch}:%{version}-%{release}
     %endif
-    %if %{with_storage_zfs}
+# Starting with Fedora 43 the 'zfs-fuse' is no longer shipped but obtainable
+# externally. We do not want to install this as part of 'daemon-driver-storage'
+# any more.
+    %if %{with_storage_zfs} && 0%{?fedora} && 0%{?fedora} < 43
 Requires: libvirt-daemon-driver-storage-zfs = %{epoch}:%{version}-%{release}
     %endif
 
@@ -901,12 +924,13 @@ Requires: gzip
 Requires: bzip2
 Requires: lzop
 Requires: xz
+Requires: zstd
 Requires: systemd-container
 Requires: swtpm-tools
         %if %{with_numad}
 Requires: numad
         %endif
-        %if 0%{?fedora} || 0%{?rhel} >= 9
+        %if 0%{?fedora} || 0%{?rhel}
 Recommends: passt
 Recommends: passt-selinux
         %endif
@@ -1115,11 +1139,23 @@ Server side daemon and driver required to manage the virtualization
 capabilities of VirtualBox
     %endif
 
+    %if %{with_ch}
+%package daemon-driver-ch
+Summary: Cloud-Hypervisor driver plugin for libvirtd daemon
+Requires: libvirt-daemon-common = %{epoch}:%{version}-%{release}
+Requires: libvirt-daemon-log = %{epoch}:%{version}-%{release}
+Requires: libvirt-libs = %{epoch}:%{version}-%{release}
+
+%description daemon-driver-ch
+The ch driver plugin for the libvirtd daemon, providing
+an implementation of the hypervisor driver APIs by
+Cloud-Hypervisor
+    %endif
+
+
 %package client
 Summary: Client side utilities of the libvirt library
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
-# Needed by virt-pki-validate script.
-Requires: gnutls-utils
 
 # Ensure smooth upgrades
 Obsoletes: libvirt-bash-completion < 7.3.0
@@ -1141,8 +1177,6 @@ with some QEMU specific features of libvirt.
 
 %package libs
 Summary: Client side libraries
-# So remote clients can access libvirt over SSH tunnel
-Requires: cyrus-sasl
 # Needed by default sasl.conf - no onerous extra deps, since
 # 100's of other things on a system already pull in krb5-libs
 Requires: cyrus-sasl-gssapi
@@ -1164,6 +1198,10 @@ Wireshark dissector plugin for better analysis of libvirt RPC traffic.
 %package login-shell
 Summary: Login shell for connecting users to an LXC container
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
+        %if %{with_account_add}
+# For uid creation during pre
+Requires(pre): shadow-utils
+        %endif
 
 %description login-shell
 Provides the set-uid virt-login-shell binary that is used to
@@ -1186,6 +1224,7 @@ Requires: sanlock >= 2.4
 #for virt-sanlock-cleanup require augeas
 Requires: augeas
 Requires: libvirt-libs = %{epoch}:%{version}-%{release}
+Requires: libvirt-daemon-common = %{epoch}:%{version}-%{release}
 Obsoletes: libvirt-lock-sanlock < %{epoch}:9.1.0
 Provides: libvirt-lock-sanlock = %{epoch}:%{version}-%{release}
 
@@ -1245,6 +1284,12 @@ echo "This RPM requires either Fedora >= %{min_fedora} or RHEL >= %{min_rhel}"
 exit 1
 %endif
 
+%if %{with_libvirtd}
+    %define arg_libvirtd -Dlibvirtd=enabled
+%else
+    %define arg_libvirtd -Dlibvirtd=disabled
+%endif
+
 %if %{with_qemu}
     %define arg_qemu -Ddriver_qemu=enabled
 %else
@@ -1278,9 +1323,15 @@ exit 1
 %endif
 
 %if %{with_esx}
-    %define arg_esx -Ddriver_esx=enabled -Dcurl=enabled
+    %define arg_esx -Ddriver_esx=enabled
 %else
-    %define arg_esx -Ddriver_esx=disabled -Dcurl=disabled
+    %define arg_esx -Ddriver_esx=disabled
+%endif
+
+%if %{with_esx} || %{with_ch}
+    %define arg_curl -Dcurl=enabled
+%else
+    %define arg_curl -Dcurl=disabled
 %endif
 
 %if %{with_hyperv}
@@ -1293,6 +1344,12 @@ exit 1
     %define arg_vmware -Ddriver_vmware=enabled
 %else
     %define arg_vmware -Ddriver_vmware=disabled
+%endif
+
+%if %{with_ch}
+    %define arg_ch -Ddriver_ch=enabled
+%else
+    %define arg_ch -Ddriver_ch=disabled
 %endif
 
 %if %{with_storage_rbd}
@@ -1409,12 +1466,6 @@ exit 1
     %define arg_remote_mode -Dremote_default_mode=legacy
 %endif
 
-%if %{with_userfaultfd_sysctl}
-    %define arg_userfaultfd_sysctl -Duserfaultfd_sysctl=enabled
-%else
-    %define arg_userfaultfd_sysctl -Duserfaultfd_sysctl=disabled
-%endif
-
 %define when  %(date +"%%F-%%T")
 %define where %(hostname)
 %define who   %{?packager}%{!?packager:Unknown}
@@ -1433,6 +1484,8 @@ exit 1
 %meson \
            -Drunstatedir=%{_rundir} \
            -Dinitconfdir=%{_sysconfdir}/sysconfig \
+           -Dunitdir=%{_unitdir} \
+           -Dsysusersdir=%{_sysusersdir} \
            %{?arg_qemu} \
            %{?arg_openvz} \
            %{?arg_lxc} \
@@ -1441,14 +1494,16 @@ exit 1
            -Dsasl=enabled \
            -Dpolkit=enabled \
            -Ddriver_libvirtd=enabled \
+           %{?arg_libvirtd} \
            -Ddriver_remote=enabled \
            -Ddriver_test=enabled \
            %{?arg_esx} \
+           %{?arg_curl} \
            %{?arg_hyperv} \
            %{?arg_vmware} \
+           %{?arg_ch} \
            -Ddriver_vz=disabled \
            -Ddriver_bhyve=disabled \
-           -Ddriver_ch=disabled \
            %{?arg_remote_mode} \
            -Ddriver_interface=enabled \
            %{?arg_network} \
@@ -1475,7 +1530,7 @@ exit 1
            -Dapparmor_profiles=disabled \
            -Dsecdriver_apparmor=disabled \
            -Dudev=enabled \
-           -Dyajl=enabled \
+           -Djson_c=enabled \
            %{?arg_sanlock} \
            -Dlibpcap=enabled \
            %{?arg_nbdkit} \
@@ -1499,10 +1554,12 @@ exit 1
            -Dqemu_datadir=%{qemu_datadir} \
            -Dtls_priority=%{tls_priority} \
            -Dsysctl_config=enabled \
-           %{?arg_userfaultfd_sysctl} \
            %{?enable_werror} \
            -Dexpensive_tests=enabled \
            -Dinit_script=systemd \
+           %if %{with_firewalld}
+           -Dfirewall_backend_priority=%{firewall_backend_priority} \
+           %endif
            -Ddocs=enabled \
            -Dtests=enabled \
            -Drpath=disabled \
@@ -1527,6 +1584,7 @@ exit 1
   -Dblkid=disabled \
   -Dcapng=disabled \
   -Ddriver_bhyve=disabled \
+  -Ddriver_ch=disabled \
   -Ddriver_hyperv=disabled \
   -Ddriver_interface=disabled \
   -Ddriver_libvirtd=disabled \
@@ -1546,6 +1604,7 @@ exit 1
   -Dfuse=disabled \
   -Dglusterfs=disabled \
   -Dhost_validate=disabled \
+  -Djson_c=disabled \
   -Dlibiscsi=disabled \
   -Dnbdkit=disabled \
   -Dnbdkit_config_default=disabled \
@@ -1553,7 +1612,6 @@ exit 1
   -Dlibpcap=disabled \
   -Dlibssh2=disabled \
   -Dlibssh=disabled \
-  -Dssh_proxy=disabled \
   -Dlogin_shell=disabled \
   -Dnetcf=disabled \
   -Dnls=enabled \
@@ -1584,12 +1642,12 @@ exit 1
   -Dstorage_vstorage=disabled \
   -Dstorage_zfs=disabled \
   -Dsysctl_config=disabled \
-  -Duserfaultfd_sysctl=disabled \
+  -Dssh_proxy=disabled \
   -Dtests=disabled \
   -Dudev=disabled \
   -Dwireshark_dissector=disabled \
-  -Dyajl=disabled
-    %mingw_ninja
+  %{?enable_werror}
+%mingw_ninja
 %endif
 
 cat >> src/remote/libvirtd.conf <<__EOF__
@@ -1661,6 +1719,10 @@ rm -rf $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/libvirtd.libxl
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_libxl.aug
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_libxl.aug
     %endif
+    %if ! %{with_ch}
+rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_ch.aug
+rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_ch.aug
+    %endif
 
 # Copied into libvirt-docs subpackage eventually
 mv $RPM_BUILD_ROOT%{_datadir}/doc/libvirt libvirt-docs
@@ -1713,7 +1775,8 @@ rm -f libvirtd-tcp.socket libvirtd-tls.socket virtproxyd-tcp.socket virtproxyd-t
 %if %{with_native}
 # Building on slow archs, like emulated s390x in Fedora copr, requires
 # raising the test timeout
-VIR_TEST_DEBUG=1 %meson_test --no-suite syntax-check --timeout-multiplier 10
+export VIR_TEST_DEBUG=1
+%meson_test --no-suite syntax-check --timeout-multiplier 10
 %endif
 
 %define libvirt_rpmstatedir %{_localstatedir}/lib/rpm-state/libvirt
@@ -1877,10 +1940,12 @@ VIR_TEST_DEBUG=1 %meson_test --no-suite syntax-check --timeout-multiplier 10
 %pre daemon-common
 %libvirt_sysconfig_pre libvirt-guests
 %libvirt_systemd_oneshot_pre libvirt-guests
+    %if %{with_account_add}
 # 'libvirt' group is just to allow password-less polkit access to libvirt
 # daemons. The uid number is irrelevant, so we use dynamic allocation.
 getent group libvirt >/dev/null || groupadd -r libvirt
 exit 0
+    %endif
 
 %posttrans daemon-common
 %libvirt_sysconfig_posttrans libvirt-guests
@@ -1988,13 +2053,16 @@ systemctl try-restart libvirtd.service virtxend.service >/dev/null 2>&1 || :
 %pre daemon-driver-secret
 %libvirt_sysconfig_pre virtsecretd
 %libvirt_systemd_unix_pre virtsecretd
+%libvirt_systemd_oneshot_pre virt-secret-init-encryption
 
 %posttrans daemon-driver-secret
 %libvirt_sysconfig_posttrans virtsecretd
 %libvirt_systemd_unix_posttrans virtsecretd
+%libvirt_systemd_unix_posttrans virt-secret-init-encryption
 
 %preun daemon-driver-secret
 %libvirt_systemd_unix_preun virtsecretd
+%libvirt_systemd_unix_preun virt-secret-init-encryption
 
 %pre daemon-driver-storage-core
 %libvirt_sysconfig_pre virtstoraged
@@ -2012,6 +2080,7 @@ systemctl try-restart libvirtd.service virtxend.service >/dev/null 2>&1 || :
 %libvirt_sysconfig_pre virtqemud
 %libvirt_systemd_unix_pre virtqemud
 
+        %if %{with_account_add}
 # We want soft static allocation of well-known ids, as disk images
 # are commonly shared across NFS mounts by id rather than name.
 # See https://docs.fedoraproject.org/en-US/packaging-guidelines/UsersAndGroups/
@@ -2027,6 +2096,7 @@ if ! getent passwd 'qemu' >/dev/null; then
   fi
 fi
 exit 0
+        %endif
 
 %posttrans daemon-driver-qemu
 %libvirt_sysconfig_posttrans virtqemud
@@ -2075,6 +2145,18 @@ exit 0
 %libvirt_systemd_unix_preun virtxend
     %endif
 
+    %if %{with_ch}
+%pre daemon-driver-ch
+%libvirt_sysconfig_pre virtchd
+%libvirt_systemd_unix_pre virtchd
+
+%posttrans daemon-driver-ch
+%libvirt_sysconfig_posttrans virtchd
+%libvirt_systemd_unix_posttrans virtchd
+
+%preun daemon-driver-ch
+%libvirt_systemd_unix_preun virtchd
+    %endif
 
 %if %{with_network}
 
@@ -2145,8 +2227,10 @@ done
 
     %if %{with_lxc}
 %pre login-shell
+        %if %{with_account_add}
 getent group virtlogin >/dev/null || groupadd -r virtlogin
 exit 0
+        %endif
     %endif
 %endif
 
@@ -2157,6 +2241,7 @@ exit 0
 %doc AUTHORS.rst NEWS.rst README.rst
 %doc libvirt-docs/*
 
+    %if %{with_libvirtd}
 %files daemon
 %{_unitdir}/libvirtd.service
 %{_unitdir}/libvirtd.socket
@@ -2169,10 +2254,13 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/libvirtd.conf
 %config(noreplace) %{_prefix}/lib/sysctl.d/60-libvirtd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd
+%dir %{_datadir}/augeas/lenses
 %{_datadir}/augeas/lenses/libvirtd.aug
+%dir %{_datadir}/augeas/lenses/tests
 %{_datadir}/augeas/lenses/tests/test_libvirtd.aug
 %attr(0755, root, root) %{_sbindir}/libvirtd
 %{_mandir}/man8/libvirtd.8*
+    %endif
 
 %files daemon-common
 %{_unitdir}/virt-guest-shutdown.target
@@ -2180,7 +2268,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/sasl2/libvirt.conf
 %dir %{_datadir}/libvirt/
 %ghost %dir %{_rundir}/libvirt/
-%ghost %dir %{_rundir}/libvirt/common/
+%ghost %dir %attr(0700, root, root) %{_rundir}/libvirt/common/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/
 %dir %attr(0711, root, root) %{_localstatedir}/lib/libvirt/images/
 %dir %attr(0711, root, root) %{_localstatedir}/lib/libvirt/filesystems/
@@ -2190,9 +2278,11 @@ exit 0
 %dir %attr(0755, root, root) %{_libdir}/libvirt/connection-driver/
 %dir %attr(0755, root, root) %{_libdir}/libvirt/storage-backend/
 %dir %attr(0755, root, root) %{_libdir}/libvirt/storage-file/
+%dir %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/
 %{_datadir}/polkit-1/actions/org.libvirt.unix.policy
 %{_datadir}/polkit-1/actions/org.libvirt.api.policy
 %{_datadir}/polkit-1/rules.d/50-libvirt.rules
+%{_sysusersdir}/libvirt.conf
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/
 %attr(0755, root, root) %{_libexecdir}/libvirt_iohelper
 %attr(0755, root, root) %{_bindir}/virt-ssh-helper
@@ -2220,7 +2310,6 @@ exit 0
 %{_mandir}/man8/virtlockd.8*
 
 %files daemon-plugin-lockd
-%dir %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/
 %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/lockd.so
 
 %files daemon-log
@@ -2270,7 +2359,7 @@ exit 0
 %{_unitdir}/virtinterfaced-ro.socket
 %{_unitdir}/virtinterfaced-admin.socket
 %attr(0755, root, root) %{_sbindir}/virtinterfaced
-%ghost %dir %{_rundir}/libvirt/interface/
+%ghost %dir %attr(0700, root, root) %{_rundir}/libvirt/interface/
 %{_libdir}/libvirt/connection-driver/libvirt_driver_interface.so
 %{_mandir}/man8/virtinterfaced.8*
 
@@ -2279,6 +2368,9 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/virtnetworkd.conf
 %{_datadir}/augeas/lenses/virtnetworkd.aug
 %{_datadir}/augeas/lenses/tests/test_virtnetworkd.aug
+%config(noreplace) %{_sysconfdir}/libvirt/network.conf
+%{_datadir}/augeas/lenses/libvirtd_network.aug
+%{_datadir}/augeas/lenses/tests/test_libvirtd_network.aug
 %{_unitdir}/virtnetworkd.service
 %{_unitdir}/virtnetworkd.socket
 %{_unitdir}/virtnetworkd-ro.socket
@@ -2312,7 +2404,7 @@ exit 0
 %{_unitdir}/virtnodedevd-ro.socket
 %{_unitdir}/virtnodedevd-admin.socket
 %attr(0755, root, root) %{_sbindir}/virtnodedevd
-%ghost %dir %{_rundir}/libvirt/nodedev/
+%ghost %dir %attr(0700, root, root) %{_rundir}/libvirt/nodedev/
 %{_libdir}/libvirt/connection-driver/libvirt_driver_nodedev.so
 %{_mandir}/man8/virtnodedevd.8*
 
@@ -2320,6 +2412,9 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/virtnwfilterd.conf
 %{_datadir}/augeas/lenses/virtnwfilterd.aug
 %{_datadir}/augeas/lenses/tests/test_virtnwfilterd.aug
+%config(noreplace) %{_sysconfdir}/libvirt/nwfilter.conf
+%{_datadir}/augeas/lenses/libvirtd_nwfilter.aug
+%{_datadir}/augeas/lenses/tests/test_libvirtd_nwfilter.aug
 %{_unitdir}/virtnwfilterd.service
 %{_unitdir}/virtnwfilterd.socket
 %{_unitdir}/virtnwfilterd-ro.socket
@@ -2327,8 +2422,8 @@ exit 0
 %attr(0755, root, root) %{_sbindir}/virtnwfilterd
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/nwfilter/
 %ghost %dir %{_rundir}/libvirt/network/
-%ghost %dir %{_rundir}/libvirt/nwfilter-binding/
-%ghost %dir %{_rundir}/libvirt/nwfilter/
+%ghost %dir %attr(0700, root, root) %{_rundir}/libvirt/nwfilter-binding/
+%ghost %dir %attr(0700, root, root) %{_rundir}/libvirt/nwfilter/
 %{_libdir}/libvirt/connection-driver/libvirt_driver_nwfilter.so
 %{_mandir}/man8/virtnwfilterd.8*
 
@@ -2336,13 +2431,20 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/virtsecretd.conf
 %{_datadir}/augeas/lenses/virtsecretd.aug
 %{_datadir}/augeas/lenses/tests/test_virtsecretd.aug
+%{_datadir}/augeas/lenses/libvirt_secrets.aug
+%{_datadir}/augeas/lenses/tests/test_libvirt_secrets.aug
+%config(noreplace) %{_sysconfdir}/libvirt/secret.conf
 %{_unitdir}/virtsecretd.service
+%{_unitdir}/virt-secret-init-encryption.service
 %{_unitdir}/virtsecretd.socket
 %{_unitdir}/virtsecretd-ro.socket
 %{_unitdir}/virtsecretd-admin.socket
+%dir %attr(0755, root, root) %{_unitdir}/libvirtd.service.d/
+%{_unitdir}/libvirtd.service.d/10-secret.conf
 %attr(0755, root, root) %{_sbindir}/virtsecretd
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/secrets/
-%ghost %dir %{_rundir}/libvirt/secrets/
+%dir %attr(0700, root, root) %{_localstatedir}/lib/libvirt/secrets/
+%ghost %dir %attr(0700, root, root) %{_rundir}/libvirt/secrets/
 %{_libdir}/libvirt/connection-driver/libvirt_driver_secret.so
 %{_mandir}/man8/virtsecretd.8*
 
@@ -2363,7 +2465,6 @@ exit 0
 %ghost %dir %{_rundir}/libvirt/storage/
 %{_libdir}/libvirt/connection-driver/libvirt_driver_storage.so
 %{_libdir}/libvirt/storage-backend/libvirt_storage_backend_fs.so
-%{_libdir}/libvirt/storage-file/libvirt_storage_file_fs.so
 %{_mandir}/man8/virtstoraged.8*
 
 %files daemon-driver-storage-disk
@@ -2405,9 +2506,6 @@ exit 0
     %if %{with_qemu}
 %files daemon-driver-qemu
 %config(noreplace) %{_sysconfdir}/libvirt/virtqemud.conf
-        %if %{with_userfaultfd_sysctl}
-%config(noreplace) %{_prefix}/lib/sysctl.d/60-qemu-postcopy-migration.conf
-        %endif
 %{_datadir}/augeas/lenses/virtqemud.aug
 %{_datadir}/augeas/lenses/tests/test_virtqemud.aug
 %{_unitdir}/virtqemud.service
@@ -2421,11 +2519,11 @@ exit 0
 %config(noreplace) %{_sysconfdir}/libvirt/qemu.conf
 %config(noreplace) %{_sysconfdir}/libvirt/qemu-lockd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.qemu
-%ghost %dir %{_rundir}/libvirt/qemu/
-%ghost %dir %{_rundir}/libvirt/qemu/dbus/
-%ghost %dir %{_rundir}/libvirt/qemu/passt/
-%ghost %dir %{_rundir}/libvirt/qemu/slirp/
-%ghost %dir %{_rundir}/libvirt/qemu/swtpm/
+%ghost %dir %attr(0755, %{qemu_user}, %{qemu_group}) %{_rundir}/libvirt/qemu/
+%ghost %dir %attr(0770, %{qemu_user}, %{qemu_group}) %{_rundir}/libvirt/qemu/dbus/
+%ghost %dir %attr(0755, %{qemu_user}, %{qemu_group}) %{_rundir}/libvirt/qemu/passt/
+%ghost %dir %attr(0755, %{qemu_user}, %{qemu_group}) %{_rundir}/libvirt/qemu/slirp/
+%ghost %dir %attr(0770, %{qemu_user}, %{qemu_group}) %{_rundir}/libvirt/qemu/swtpm/
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/checkpoint/
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/dump/
@@ -2433,6 +2531,7 @@ exit 0
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/ram/
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/save/
 %dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/snapshot/
+%dir %attr(0751, %{qemu_user}, %{qemu_group}) %{_localstatedir}/lib/libvirt/qemu/varstore/
 %dir %attr(0750, root, root) %{_localstatedir}/cache/libvirt/qemu/
 %{_datadir}/augeas/lenses/libvirtd_qemu.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd_qemu.aug
@@ -2539,7 +2638,6 @@ exit 0
         %if %{with_libxl}
 %config(noreplace) %{_sysconfdir}/libvirt/libxl-sanlock.conf
         %endif
-%dir %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/
 %attr(0755, root, root) %{_libdir}/libvirt/lock-driver/sanlock.so
 %{_datadir}/augeas/lenses/libvirt_sanlock.aug
 %{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
@@ -2547,6 +2645,22 @@ exit 0
 %{_sbindir}/virt-sanlock-cleanup
 %{_mandir}/man8/virt-sanlock-cleanup.8*
 %attr(0755, root, root) %{_libexecdir}/libvirt_sanlock_helper
+    %endif
+
+    %if %{with_ch}
+%files daemon-driver-ch
+%attr(0755, root, root) %{_sbindir}/virtchd
+%config(noreplace) %{_sysconfdir}/libvirt/virtchd.conf
+%{_datadir}/augeas/lenses/virtchd.aug
+%{_datadir}/augeas/lenses/tests/test_virtchd.aug
+%{_unitdir}/virtchd-admin.socket
+%{_unitdir}/virtchd-ro.socket
+%{_unitdir}/virtchd.service
+%{_unitdir}/virtchd.socket
+%{_libdir}/libvirt/connection-driver/libvirt_driver_ch.so
+%config(noreplace) %{_sysconfdir}/libvirt/ch.conf
+%{_datadir}/augeas/lenses/libvirtd_ch.aug
+%{_datadir}/augeas/lenses/tests/test_libvirtd_ch.aug
     %endif
 
 %files client
@@ -2579,15 +2693,17 @@ exit 0
 %{_libdir}/libvirt-lxc.so.*
 %{_libdir}/libvirt-admin.so.*
 %dir %{_datadir}/libvirt/
+%{_datadir}/libvirt/test-screenshot.png
 %dir %{_datadir}/libvirt/schemas/
+%{_datadir}/libvirt/schemas/*.rng
+%dir %{_datadir}/systemtap/tapset/
 %{_datadir}/systemtap/tapset/libvirt_probes*.stp
 %{_datadir}/systemtap/tapset/libvirt_functions.stp
     %if %{with_qemu}
 %{_datadir}/systemtap/tapset/libvirt_qemu_probes*.stp
     %endif
-%{_datadir}/libvirt/schemas/*.rng
+%dir %{_datadir}/libvirt/cpu_map
 %{_datadir}/libvirt/cpu_map/*.xml
-%{_datadir}/libvirt/test-screenshot.png
 
     %if %{with_wireshark}
 %files wireshark
@@ -2605,6 +2721,7 @@ exit 0
 %attr(4750, root, virtlogin) %{_bindir}/virt-login-shell
 %{_libexecdir}/virt-login-shell-helper
 %config(noreplace) %{_sysconfdir}/libvirt/virt-login-shell.conf
+%{_sysusersdir}/libvirt-login-shell.conf
 %{_mandir}/man1/virt-login-shell.1*
     %endif
 
@@ -2654,7 +2771,7 @@ exit 0
 %{mingw32_bindir}/virt-xml-validate
 %{mingw32_bindir}/virt-pki-query-dn.exe
     %if %{with_nss}
-%{mingw32_bindir}/virt-pki-validate
+%{mingw32_bindir}/virt-pki-validate.exe
     %endif
 %{mingw32_bindir}/libvirt-lxc-0.dll
 %{mingw32_bindir}/libvirt-qemu-0.dll
@@ -2715,7 +2832,7 @@ exit 0
 %{mingw64_bindir}/virt-xml-validate
 %{mingw64_bindir}/virt-pki-query-dn.exe
     %if %{with_nss}
-%{mingw64_bindir}/virt-pki-validate
+%{mingw64_bindir}/virt-pki-validate.exe
     %endif
 %{mingw64_bindir}/libvirt-lxc-0.dll
 %{mingw64_bindir}/libvirt-qemu-0.dll
@@ -2764,7 +2881,6 @@ exit 0
 %{mingw64_mandir}/man1/virt-pki-validate.1*
 %{mingw64_mandir}/man7/virkey*.7*
 %endif
-
 
 %changelog
 @CHANGELOG@

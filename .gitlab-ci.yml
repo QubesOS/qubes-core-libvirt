@@ -5,3 +5,6 @@ include:
   project: QubesOS/qubes-continuous-integration
 - file: /devel/gitlab-host-openqa.yml
   project: QubesOS/qubes-continuous-integration
+
+variables:
+  CI_INSTALL_EXCLUDE_DOM0: libvirt-daemon-driver-qemu libvirt-daemon-qemu libvirt-daemon-kvm

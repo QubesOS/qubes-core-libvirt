@@ -1,7 +1,7 @@
 include:
-- file: /r4.3/gitlab-base.yml
+- file: /devel/gitlab-base.yml
   project: QubesOS/qubes-continuous-integration
-- file: /r4.3/gitlab-host.yml
+- file: /devel/gitlab-host.yml
   project: QubesOS/qubes-continuous-integration
-- file: /r4.3/gitlab-host-openqa.yml
+- file: /devel/gitlab-host-openqa.yml
   project: QubesOS/qubes-continuous-integration

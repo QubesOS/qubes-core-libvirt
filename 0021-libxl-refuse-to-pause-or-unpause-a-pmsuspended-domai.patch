@@ -1,0 +1,51 @@
+From 730a0fde52d7b56eb1fa244b8547c855ccaff15b Mon Sep 17 00:00:00 2001
+From: hippalectryon <6502864+hippalectryon-0@users.noreply.github.com>
+Date: Fri, 27 Nov 2026 14:56:05 +0900
+Subject: [PATCH] libxl: refuse to pause or unpause a pmsuspended domain
+
+libvirt keeps one state per domain. Pausing a pmsuspended domain
+replaced PMSUSPENDED with PAUSED, and the later unpause set it to
+RUNNING, while Xen still has the domain suspended. The domain then
+looks running but does nothing, and virDomainPMWakeup refuses to
+wake it because it is "not suspended".
+
+Reject both calls on a pmsuspended domain, like the qemu driver does.
+
+Signed-off-by: hippalectryon <6502864+hippalectryon-0@users.noreply.github.com>
+---
+ src/libxl/libxl_driver.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 6706cae15..b9930ebf7 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -1163,6 +1163,12 @@ libxlDomainSuspend(virDomainPtr dom)
+     if (virDomainObjCheckActive(vm) < 0)
+         goto endjob;
+ 
++    if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PMSUSPENDED) {
++        virReportError(VIR_ERR_OPERATION_INVALID,
++                       "%s", _("domain is pmsuspended"));
++        goto endjob;
++    }
++
+     if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PAUSED) {
+         int stubdom_domid = libxl_get_stubdom_id(cfg->ctx, vm->def->id);
+         if (stubdom_domid) {
+@@ -1227,6 +1233,12 @@ libxlDomainResume(virDomainPtr dom)
+     if (virDomainObjCheckActive(vm) < 0)
+         goto endjob;
+ 
++    if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PMSUSPENDED) {
++        virReportError(VIR_ERR_OPERATION_INVALID,
++                       "%s", _("domain is pmsuspended"));
++        goto endjob;
++    }
++
+     if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {
+         stubdom_domid = libxl_get_stubdom_id(cfg->ctx, vm->def->id);
+         if (libxlDomainUnpauseWrapper(cfg->ctx, vm->def->id) != 0) {
+-- 
+2.53.0
+
